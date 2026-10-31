@@ -264,9 +264,9 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { usePosSettings, normalizeTerminalId } from '~/composables/usePosSettings'
+import { usePosSettings } from '~/composables/usePosSettings'
 import { usePosAudio } from '~/composables/usePosAudio'
-import { CUSTOMER_DISPLAY_CHANNEL } from '~/composables/useCustomerDisplaySync'
+import { CUSTOMER_DISPLAY_CHANNEL, normalizeTerminalId } from '~/composables/useCustomerDisplaySync'
 
 const toast = useAppToast()
 const { settings, loadSettings, saveSettings } = usePosSettings()

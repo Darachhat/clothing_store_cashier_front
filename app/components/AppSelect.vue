@@ -11,7 +11,7 @@
       <option v-if="placeholder" value="" disabled :selected="!modelValue">{{ placeholder }}</option>
       <option
         v-for="opt in options"
-        :key="typeof opt === 'object' ? opt.value : opt"
+        :key="String(typeof opt === 'object' ? opt.value : opt)"
         :value="typeof opt === 'object' ? opt.value : opt"
       >
         {{ typeof opt === 'object' ? opt.label : opt }}
@@ -24,8 +24,8 @@
 defineOptions({ inheritAttrs: false })
 
 withDefaults(defineProps<{
-  modelValue?: string | number | null
-  options: Array<{ label: string; value: string | number } | string>
+  modelValue?: string | number | boolean | null
+  options: Array<{ label: string; value: string | number | boolean } | string>
   placeholder?: string
   disabled?: boolean
   block?: boolean
@@ -34,7 +34,7 @@ withDefaults(defineProps<{
 })
 
 defineEmits<{
-  'update:modelValue': [value: string]
+  'update:modelValue': [value: any]
 }>()
 </script>
 

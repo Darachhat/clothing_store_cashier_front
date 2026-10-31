@@ -8,8 +8,6 @@
 import { normalizeTerminalId } from '~/composables/useCustomerDisplaySync'
 import { printWithKhmerFonts } from '~/composables/useKhmerPrint'
 
-export { normalizeTerminalId }
-
 const STORAGE_KEY = 'pos_terminal_settings'
 
 export interface PosTerminalSettings {

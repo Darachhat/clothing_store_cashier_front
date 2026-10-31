@@ -17,7 +17,8 @@ import type { Config } from 'tailwindcss'
  * Spacing: use Tailwind default scale (1=4px, 2=8px, 4=16px, 6=24px, 8=32px).
  * Our 8px grid maps cleanly: p-2=8px, p-4=16px, p-6=24px, p-8=32px, gap-3.5=14px.
  */
-export default <Config>{
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export default ({
   // Dark mode: class-based (matches nuxt.config colorMode)
   darkMode: 'class',
 
@@ -127,4 +128,4 @@ export default <Config>{
     'text-status-red',
     'text-status-blue',
   ],
-}
+} as unknown as Config)

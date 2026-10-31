@@ -262,7 +262,7 @@ async function startCamera() {
       await videoRef.value.play()
     }
 
-    videoTrack = stream.getVideoTracks()[0]
+    videoTrack = stream.getVideoTracks()[0] ?? null
     const capabilities = (videoTrack as any).getCapabilities?.() || {}
     if (capabilities.torch) {
       hasTorch.value = true

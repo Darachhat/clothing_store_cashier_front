@@ -301,7 +301,7 @@ export const usePosStore = defineStore('pos', {
     resumeCart(heldId: string) {
       const index = this.heldCarts.findIndex((h) => h.id === heldId)
       if (index === -1) return
-      const held = this.heldCarts[index]
+      const held = this.heldCarts[index]!
       if (this.orderSessionId) {
         this.recordClosedSession(this.orderSessionId)
       }

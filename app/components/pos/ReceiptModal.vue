@@ -417,7 +417,8 @@
 
 <script setup lang="ts">
 import { computed, nextTick, ref } from 'vue'
-import { usePosSettings, normalizeTerminalId } from '~/composables/usePosSettings'
+import { usePosSettings } from '~/composables/usePosSettings'
+import { normalizeTerminalId } from '~/composables/useCustomerDisplaySync'
 import {
   ENGLISH_STORE_NAME,
   formatKhmerBranchName,

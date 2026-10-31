@@ -1,5 +1,12 @@
 <script setup lang="ts">
-import type { DropdownMenuItem } from '@nuxt/ui'
+// DropdownMenuItem inlined to avoid module export mismatch with @nuxt/ui
+type DropdownMenuItem = {
+  label?: string
+  to?: string
+  color?: string
+  checked?: boolean
+  type?: string
+}
 
 const items: DropdownMenuItem[] = [{
   label: 'Starter',
@@ -48,7 +55,7 @@ const items: DropdownMenuItem[] = [{
   >
     <UButton
       label="Starter"
-      variant="subtle"
+      variant="ghost"
       trailing-icon="i-lucide-chevron-down"
       size="xs"
       class="-mb-[6px] font-semibold rounded-full truncate"

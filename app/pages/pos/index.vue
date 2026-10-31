@@ -414,7 +414,7 @@ const currentDateStr = ref('')
 const cashierName = computed(() => authStore.currentUser?.full_name || 'Admin Cashier')
 const cashierInitials = computed(() => {
   const parts = cashierName.value.split(' ')
-  return parts.length > 1 ? `${parts[0][0]}${parts[1][0]}`.toUpperCase() : cashierName.value.slice(0, 2).toUpperCase()
+  return parts.length > 1 ? `${parts[0]?.[0] ?? ''}${parts[1]?.[0] ?? ''}`.toUpperCase() : cashierName.value.slice(0, 2).toUpperCase()
 })
 
 const activeBranchName = computed(() => {
@@ -532,16 +532,16 @@ function getProductSizes(prod: any) {
   return result
 }
 
-function getSelectedColor(prodId: string): string | null {
-  return selectedCardColors.value[prodId] || null
+function getSelectedColor(prodId: string): string | undefined {
+  return selectedCardColors.value[prodId] || undefined
 }
 
 function setSelectedColor(prodId: string, colorName: string) {
   selectedCardColors.value[prodId] = colorName
 }
 
-function getSelectedSize(prodId: string): string | null {
-  return selectedCardSizes.value[prodId] || null
+function getSelectedSize(prodId: string): string | undefined {
+  return selectedCardSizes.value[prodId] || undefined
 }
 
 function setSelectedSize(prodId: string, sizeName: string) {
@@ -826,7 +826,7 @@ function handleHoldCart() {
   toast.add({
     title: 'Order Parked',
     description: `${count} parked order${count !== 1 ? 's' : ''} in queue.`,
-    color: 'blue',
+    color: 'default',
   })
 }
 
@@ -1441,7 +1441,7 @@ async function handleAbaCancel() {
     abaResetState()
     showAbaFullScreen.value = false
     notifyCustomerDisplayCancel()
-    toast.add({ title: 'Payment Cancelled', description: 'Order & cart preserved in POS', color: 'gray' })
+    toast.add({ title: 'Payment Cancelled', description: 'Order & cart preserved in POS', color: 'default' })
   } catch (err: any) {
     if (err?.status === 409 || err?.statusCode === 409) {
       // Customer paid just before cancel — keep polling, it will resolve to APPROVED.
@@ -1496,7 +1496,7 @@ async function startAbaModalCheckout(paymentOption: string = 'cards') {
     }
 
     // 2. Obtain form payload with HMAC-SHA512 hash
-    const formResp = await createPurchaseForm(saleId, paymentOption)
+    const formResp = await createPurchaseForm(saleId!, paymentOption)
     abaPaymentId.value = formResp.payment_id
     abaTranId.value = formResp.tran_id
     abaStatus.value = 'PENDING'
@@ -1537,7 +1537,7 @@ async function startAbaModalCheckout(paymentOption: string = 'cards') {
     playError(true)
     toast.add({
       title: 'Checkout Error',
-      description: abaError.value,
+      description: abaError.value || undefined,
       color: 'red',
     })
   } finally {
@@ -1591,7 +1591,7 @@ async function abaCleanupOnClose() {
   abaResetState()
   notifyCustomerDisplayCancel()
   if (wasPending) {
-    toast.add({ title: 'QR Cancelled', description: 'Payment window closed', color: 'gray' })
+    toast.add({ title: 'QR Cancelled', description: 'Payment window closed', color: 'default' })
   }
 }
 
@@ -1872,17 +1872,17 @@ async function loadCatalog() {
     ])
 
     if (categoriesRes.status === 'fulfilled') {
-      categoryList.value = categoriesRes.value || []
+      categoryList.value = (categoriesRes.value as Array<{ id: string; name: string }>) || []
     }
     if (brandsRes.status === 'fulfilled') {
-      brandList.value = brandsRes.value || []
+      brandList.value = (brandsRes.value as Array<{ id: string; name: string; logo_url?: string }>) || []
     }
     if (branchRes.status === 'fulfilled' && branchRes.value?.length) {
       branches.value = branchRes.value
       // Only set branch/warehouse if not already set from a persisted session
-      if (!posStore.branchId) posStore.branchId = branchRes.value[0].id
-      if (!posStore.warehouseId && branchRes.value[0].warehouses?.length) {
-        posStore.warehouseId = branchRes.value[0].warehouses[0].id
+      if (!posStore.branchId) posStore.branchId = branchRes.value[0]!.id
+      if (!posStore.warehouseId && branchRes.value[0]!.warehouses?.length) {
+        posStore.warehouseId = branchRes.value[0]!.warehouses![0]!.id
       }
     }
   } catch (err: any) {

@@ -87,7 +87,7 @@
             {{ sizes.map(s => s.name).join('·') }}
           </span>
           <span v-else-if="sizes.length === 1">
-            {{ sizes[0].name }}
+            {{ sizes[0]?.name }}
           </span>
           <span v-else-if="variantCount > 1">
             {{ variantCount }} vars

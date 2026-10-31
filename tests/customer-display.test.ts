@@ -70,10 +70,10 @@ describe('POS Customer Display — Architecture, Lifecycle & Reliability Suite',
       assert.equal(hydrated.branchName, 'BKK1 Flagship')
       assert.equal(hydrated.customerName, 'Sokha Chan')
       assert.equal(hydrated.items.length, 1)
-      assert.equal(hydrated.items[0].name, 'Linen Relaxed Shirt')
-      assert.equal(hydrated.items[0].imageUrl, '/images/products/linen-shirt.jpg')
-      assert.equal(hydrated.items[0].colorName, 'Black')
-      assert.equal(hydrated.items[0].sizeName, 'M')
+      assert.equal(hydrated.items[0]!.name, 'Linen Relaxed Shirt')
+      assert.equal(hydrated.items[0]!.imageUrl, '/images/products/linen-shirt.jpg')
+      assert.equal(hydrated.items[0]!.colorName, 'Black')
+      assert.equal(hydrated.items[0]!.sizeName, 'M')
       assert.equal(hydrated.grandTotal, 49.0)
       assert.equal(hydrated.khrGrandTotal, toKhrAmount(49.0))
     })
@@ -227,11 +227,11 @@ describe('POS Customer Display — Architecture, Lifecycle & Reliability Suite',
       const res2 = applyIncomingSnapshot(ctx, snap2, now + 100)
       assert.equal(res2.accepted, true)
       assert.equal(res2.snapshot.items.length, 2)
-      assert.equal(res2.snapshot.items[0].variant_id, 'var_tee_m')
-      assert.equal(res2.snapshot.items[0].quantity, 3)
-      assert.equal(res2.snapshot.items[0].lineTotal, 45.0)
-      assert.equal(res2.snapshot.items[1].variant_id, 'var_tee_l')
-      assert.equal(res2.snapshot.items[1].sizeName, 'L')
+      assert.equal(res2.snapshot.items[0]!.variant_id, 'var_tee_m')
+      assert.equal(res2.snapshot.items[0]!.quantity, 3)
+      assert.equal(res2.snapshot.items[0]!.lineTotal, 45.0)
+      assert.equal(res2.snapshot.items[1]!.variant_id, 'var_tee_l')
+      assert.equal(res2.snapshot.items[1]!.sizeName, 'L')
       assert.equal(res2.snapshot.grandTotal, 60.0)
 
       // Out-of-order older seq 1 arriving after seq 2 must be rejected
@@ -301,7 +301,7 @@ describe('POS Customer Display — Architecture, Lifecycle & Reliability Suite',
       })
       applyIncomingSnapshot(ctx, afterRemoveSnap, now + 100)
       assert.equal(ctx.snapshot.items.length, 1)
-      assert.equal(ctx.snapshot.items[0].variant_id, 'v_b')
+      assert.equal(ctx.snapshot.items[0]!.variant_id, 'v_b')
       assert.equal(ctx.snapshot.grandTotal, 22.0)
 
       // Cashier clears the entire cart -> new orderSessionId generated, old session closed
@@ -403,7 +403,7 @@ describe('POS Customer Display — Architecture, Lifecycle & Reliability Suite',
       assert.equal(resumeRes.accepted, true)
       assert.equal(ctx.snapshot.state, 'CART_ACTIVE')
       assert.equal(ctx.snapshot.items.length, 1)
-      assert.equal(ctx.snapshot.items[0].name, 'Silk Midi Dress')
+      assert.equal(ctx.snapshot.items[0]!.name, 'Silk Midi Dress')
       assert.equal(ctx.snapshot.grandTotal, 88)
     })
   })
@@ -772,7 +772,7 @@ describe('POS Customer Display — Architecture, Lifecycle & Reliability Suite',
         ['pos/customer-display.vue', displayVueSource],
         ['pos/scanner.vue', scannerSource],
         ['settings.vue', settingsSource],
-      ]) {
+      ] as const) {
         assert.ok(!src.includes('layout: false'), `${name} must use the default layout instead of layout: false`)
         assert.ok(!src.includes('<AppSidebar'), `${name} must not duplicate <AppSidebar> outside layouts/default.vue`)
       }

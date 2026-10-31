@@ -8,6 +8,7 @@ interface User {
   full_name: string
   roles: Array<{ name: string; permissions: Array<{ code: string }> }>
   status: string
+  branch?: { id?: string; name?: string } | null
 }
 
 interface AuthState {
@@ -60,7 +61,7 @@ export const useAuthStore = defineStore('auth', {
       })
 
       this.accessToken = data.access_token
-      this.refreshToken = data.refresh_token
+      this.$state.refreshToken = data.refresh_token
       this.user = data.user
 
       if (process.client) {
@@ -92,10 +93,6 @@ export const useAuthStore = defineStore('auth', {
         console.warn('[Auth] Token refresh failed:', err)
         return false
       }
-    },
-
-    async refreshToken(): Promise<boolean> {
-      return this.refreshSession()
     },
 
     async logout() {
