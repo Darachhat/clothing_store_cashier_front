@@ -37,10 +37,18 @@ export function useApi() {
       if (!authStore.accessToken && typeof window !== 'undefined') {
         authStore.restoreSession()
       }
-      let token = authStore.accessToken || (typeof window !== 'undefined' ? localStorage.getItem('access_token') : null)
+      let token =
+        authStore.accessToken ||
+        (typeof window !== 'undefined'
+          ? localStorage.getItem('cashier_access_token') || localStorage.getItem('access_token')
+          : null)
 
       if (typeof window !== 'undefined') {
-        const hasRefresh = !!(authStore.$state.refreshToken || localStorage.getItem('refresh_token'))
+        const hasRefresh = !!(
+          authStore.$state.refreshToken ||
+          localStorage.getItem('cashier_refresh_token') ||
+          localStorage.getItem('refresh_token')
+        )
         if (hasRefresh && (!token || isJwtExpired(token, 30))) {
           const ok = await authStore.refreshSession()
           if (ok && authStore.accessToken) {
@@ -52,6 +60,11 @@ export function useApi() {
       const headers = new Headers(options.headers || {})
       if (token) {
         headers.set('Authorization', `Bearer ${token}`)
+      }
+      // Attach system credential server-side only (credential stays private)
+      if (import.meta.server) {
+        const sysAuth = config.apiBaseAuth as string
+        if (sysAuth) headers.set('X-System-Authorization', sysAuth)
       }
       options.headers = headers
     },

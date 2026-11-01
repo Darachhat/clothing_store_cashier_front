@@ -108,7 +108,8 @@ useHead({
 
 const route = useRoute()
 const config = useRuntimeConfig()
-const apiBase = config.public.apiBase || 'http://localhost:8000'
+const apiBase = config.public.apiBase || '/api/proxy'
+const backendBase = (config.public.backendBase as string) || (apiBase.startsWith('http') ? apiBase : 'http://localhost:8000')
 
 const storedSessionId = ref('default')
 const sessionId = computed(() => (route.query.session as string) || storedSessionId.value || 'default')
@@ -153,8 +154,8 @@ function playBeep() {
 
 // Setup WebSocket
 function initWebSocket() {
-  const wsProto = apiBase.startsWith('https') ? 'wss' : 'ws'
-  const wsHost = apiBase.replace(/^https?:\/\//, '')
+  const wsProto = backendBase.startsWith('https') ? 'wss' : 'ws'
+  const wsHost = backendBase.replace(/^https?:\/\//, '')
   const wsUrl = `${wsProto}://${wsHost}/api/v1/scanner/ws/${sessionId.value}?client_type=phone`
 
   try {
@@ -226,7 +227,7 @@ async function sendScan(code: string, format = 'UNKNOWN') {
 
   // 2. Also send via HTTP fallback
   try {
-    await fetch(`${apiBase}/api/v1/scanner/${sessionId.value}/scan`, {
+    await fetch(`${backendBase}/api/v1/scanner/${sessionId.value}/scan`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

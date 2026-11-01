@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="flex-1 min-w-0 min-h-0 flex flex-col overflow-hidden bg-slate-100 text-slate-900 font-sans">
     <!-- ─── Main Content Area ──────────────────────────────────────── -->
     <div class="flex-1 min-w-0 min-h-0 flex flex-col overflow-hidden">
@@ -1479,7 +1479,7 @@ async function startAbaModalCheckout(paymentOption: string = 'cards') {
         branch_id: posStore.branchId || null,
         warehouse_id: posStore.warehouseId || null,
         customer_id: posStore.selectedCustomerId,
-        discount_amount: posStore.totalDiscount,
+        discount_amount: posStore.discountAmount, // order-level only; line discounts are sent per item
         tax_amount: posStore.taxAmount,
         notes: orderNotes.value.trim() || undefined,
         promotion_id: posStore.appliedCoupon?.promotion_id || undefined,
@@ -1648,7 +1648,7 @@ async function handleFinalizeSale() {
         branch_id: posStore.branchId || null,
         warehouse_id: posStore.warehouseId || null,
         customer_id: posStore.selectedCustomerId,
-        discount_amount: posStore.totalDiscount,
+        discount_amount: posStore.discountAmount, // order-level only; line discounts are sent per item
         tax_amount: posStore.taxAmount,
         notes: orderNotes.value.trim() || undefined,
         promotion_id: posStore.appliedCoupon?.promotion_id || undefined,
@@ -1693,7 +1693,7 @@ async function handleFinalizeSale() {
       branch_id: posStore.branchId || null,
       warehouse_id: posStore.warehouseId || null,
       customer_id: posStore.selectedCustomerId,
-      discount_amount: posStore.totalDiscount,
+      discount_amount: posStore.discountAmount, // order-level only; line discounts are sent per item
       tax_amount: posStore.taxAmount,
       notes: orderNotes.value.trim() || undefined,
       promotion_id: posStore.appliedCoupon?.promotion_id || undefined,

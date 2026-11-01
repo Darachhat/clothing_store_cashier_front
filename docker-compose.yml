@@ -1,0 +1,23 @@
+services:
+  cashier-front:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: dev
+    container_name: clothing_store-cashier_front
+    ports:
+      - "${PORT:-3002}:3002"
+    env_file:
+      - .env
+    environment:
+      - NUXT_PUBLIC_API_BASE=${NUXT_PUBLIC_API_BASE:-/api/proxy}
+      - NUXT_PUBLIC_BACKEND_BASE=${NUXT_PUBLIC_BACKEND_BASE:-http://localhost:8000}
+      - NUXT_API_BASE=${NUXT_API_BASE:-http://host.docker.internal:8000}
+      - NUXT_API_BASE_AUTH=${NUXT_API_BASE_AUTH}
+      - HOST=0.0.0.0
+      - PORT=3002
+    volumes:
+      - .:/app
+      - /app/node_modules
+    command: npm run dev
+    restart: unless-stopped

@@ -185,7 +185,8 @@ const emit = defineEmits<{
 }>()
 
 const config = useRuntimeConfig()
-const apiBase = config.public.apiBase || 'http://localhost:8000'
+const apiBase = config.public.apiBase || '/api/proxy'
+const backendBase = (config.public.backendBase as string) || (apiBase.startsWith('http') ? apiBase : 'http://localhost:8000')
 
 const isPC = ref(true)
 const hasLocalCamera = ref(false)
@@ -256,7 +257,7 @@ const pairingUrl = computed(() => {
 })
 
 function updateQrUrl() {
-  qrCodeUrl.value = `${apiBase}/api/v1/scanner/qr?text=${encodeURIComponent(pairingUrl.value)}`
+  qrCodeUrl.value = `${backendBase}/api/v1/scanner/qr?text=${encodeURIComponent(pairingUrl.value)}`
 }
 
 function updateHost() {
@@ -297,8 +298,8 @@ function onBarcodeReceived(barcode: string, source = 'Phone Camera') {
 // WebSocket connection to backend
 function connectWebSocket() {
   if (!sessionId.value) return
-  const wsProto = apiBase.startsWith('https') ? 'wss' : 'ws'
-  const wsHost = apiBase.replace(/^https?:\/\//, '')
+  const wsProto = backendBase.startsWith('https') ? 'wss' : 'ws'
+  const wsHost = backendBase.replace(/^https?:\/\//, '')
   const wsUrl = `${wsProto}://${wsHost}/api/v1/scanner/ws/${sessionId.value}?client_type=pc`
 
   try {
@@ -336,7 +337,7 @@ function jsonParse(str: string) {
 async function pollSession() {
   if (!sessionId.value || !props.modelValue) return
   try {
-    const res = await fetch(`${apiBase}/api/v1/scanner/${sessionId.value}/status`)
+    const res = await fetch(`${backendBase}/api/v1/scanner/${sessionId.value}/status`)
     if (res.ok) {
       const data = await res.json()
       if (data.phone_connected) {

@@ -65,13 +65,17 @@ export const useAuthStore = defineStore('auth', {
       this.user = data.user
 
       if (process.client) {
-        localStorage.setItem('access_token', data.access_token)
-        localStorage.setItem('refresh_token', data.refresh_token)
+        localStorage.setItem('cashier_access_token', data.access_token)
+        localStorage.setItem('cashier_refresh_token', data.refresh_token)
       }
     },
 
     async refreshSession(): Promise<boolean> {
-      const currentRefresh = this.$state.refreshToken || (process.client ? localStorage.getItem('refresh_token') : null)
+      const currentRefresh =
+        this.$state.refreshToken ||
+        (process.client
+          ? localStorage.getItem('cashier_refresh_token') || localStorage.getItem('refresh_token')
+          : null)
       if (!currentRefresh) return false
       try {
         const data = await $fetch<{
@@ -85,8 +89,8 @@ export const useAuthStore = defineStore('auth', {
         this.accessToken = data.access_token
         this.$state.refreshToken = data.refresh_token
         if (process.client) {
-          localStorage.setItem('access_token', data.access_token)
-          localStorage.setItem('refresh_token', data.refresh_token)
+          localStorage.setItem('cashier_access_token', data.access_token)
+          localStorage.setItem('cashier_refresh_token', data.refresh_token)
         }
         return true
       } catch (err) {
@@ -96,7 +100,11 @@ export const useAuthStore = defineStore('auth', {
     },
 
     async logout() {
-      const currentRefresh = this.$state.refreshToken || (process.client ? localStorage.getItem('refresh_token') : null)
+      const currentRefresh =
+        this.$state.refreshToken ||
+        (process.client
+          ? localStorage.getItem('cashier_refresh_token') || localStorage.getItem('refresh_token')
+          : null)
       if (currentRefresh) {
         try {
           await $fetch('/api/cashier/v1/auth/logout', {
@@ -111,6 +119,8 @@ export const useAuthStore = defineStore('auth', {
       this.accessToken = null
       this.$state.refreshToken = null
       if (process.client) {
+        localStorage.removeItem('cashier_access_token')
+        localStorage.removeItem('cashier_refresh_token')
         localStorage.removeItem('access_token')
         localStorage.removeItem('refresh_token')
       }
@@ -118,8 +128,8 @@ export const useAuthStore = defineStore('auth', {
 
     restoreSession() {
       if (process.client) {
-        const token = localStorage.getItem('access_token')
-        const refresh = localStorage.getItem('refresh_token')
+        const token = localStorage.getItem('cashier_access_token') || localStorage.getItem('access_token')
+        const refresh = localStorage.getItem('cashier_refresh_token') || localStorage.getItem('refresh_token')
         if (token) this.accessToken = token
         if (refresh) this.$state.refreshToken = refresh
       }
