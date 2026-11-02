@@ -75,6 +75,10 @@ export default defineNuxtConfig({
     storesDirs: ['./app/stores/**'],
   },
 
+  nitro: {
+    preset: process.env.NITRO_PRESET || (process.env.CF_PAGES ? 'cloudflare_pages' : undefined),
+  },
+
   routeRules: {
     '/pos': { ssr: false },
     '/pos/scanner': { ssr: false },
