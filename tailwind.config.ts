@@ -59,6 +59,13 @@ export default ({
           900: '#111827',  // main brand accent  (`bg-brand-900`, `text-brand-900`)
         },
 
+        // POS primary money-action accent (--pos-pay). Used ONLY for charge/pay.
+        pay: {
+          DEFAULT: '#047857',
+          hover: '#065F46',
+          soft: '#ECFDF5',
+        },
+
         // Status — muted, matches --status-* vars
         status: {
           green:    '#1A7F37',

@@ -4,24 +4,27 @@
       v-if="modelValue && receipt"
       id="pos-receipt-print-overlay"
       :class="activeTemplate === 'A4' ? 'is-printing-a4' : 'is-printing-receipt'"
-      class="fixed inset-0 bg-slate-950/60 backdrop-blur-xs z-50 flex items-center justify-center p-4"
+      class="fixed inset-0 bg-slate-950/60 z-50 flex items-center justify-center p-4"
       @click.self="$emit('newSale')"
     >
       <div
-        class="pos-receipt-dialog bg-white rounded-xl border border-gray-200 shadow-2xl w-full flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150 transition-all"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Invoice and receipt"
+        class="pos-focus pos-receipt-dialog bg-white rounded-xl border border-gray-200 w-full flex flex-col overflow-hidden transition-all"
         :class="activeTemplate === 'A4' ? 'max-w-4xl max-h-[94vh]' : 'max-w-lg max-h-[92vh]'"
       >
         <!-- Header (no-print) -->
         <div class="no-print px-4 py-2.5 border-b border-gray-200 flex items-center justify-between gap-3 bg-gray-50 flex-wrap">
           <div class="flex items-center gap-2.5 min-w-0">
-            <div class="w-7 h-7 rounded-full bg-gray-900 text-white flex items-center justify-center flex-shrink-0">
+            <div class="w-8 h-8 rounded-full bg-pay text-white flex items-center justify-center flex-shrink-0">
               <UIcon name="i-heroicons-check" class="w-4 h-4" />
             </div>
             <div class="flex flex-col min-w-0">
-              <h3 class="text-sm font-bold text-gray-900 leading-tight truncate khmer-ui">
+              <h3 class="text-base font-semibold text-gray-900 leading-tight truncate khmer-ui">
                 {{ receipt.isSample ? 'មើលគំរូបោះពុម្ព (Sample Print Preview)' : 'មើលវិក្កយបត្រ និងបង្កាន់ដៃ (Invoice & Receipt)' }}
               </h3>
-              <p class="text-[11px] text-gray-500 font-mono truncate">
+              <p class="text-xs text-gray-600 font-mono truncate">
                 លេខវិក្កយបត្រ: {{ receipt.invoice_number || 'INV-PENDING' }}
               </p>
             </div>
@@ -33,7 +36,7 @@
               <button
                 type="button"
                 class="px-2.5 py-1 rounded-md transition-colors cursor-pointer flex items-center gap-1.5"
-                :class="activeTemplate === 'RECEIPT' ? 'bg-gray-900 text-white' : 'text-gray-600 hover:text-gray-900'"
+                :class="activeTemplate === 'RECEIPT' ? 'bg-gray-900 text-white' : 'text-gray-700 hover:text-gray-900'"
                 @click="activeTemplate = 'RECEIPT'"
               >
                 <UIcon name="i-heroicons-receipt-percent" class="w-3.5 h-3.5" />
@@ -42,7 +45,7 @@
               <button
                 type="button"
                 class="px-2.5 py-1 rounded-md transition-colors cursor-pointer flex items-center gap-1.5"
-                :class="activeTemplate === 'A4' ? 'bg-gray-900 text-white' : 'text-gray-600 hover:text-gray-900'"
+                :class="activeTemplate === 'A4' ? 'bg-gray-900 text-white' : 'text-gray-700 hover:text-gray-900'"
                 @click="activeTemplate = 'A4'"
               >
                 <UIcon name="i-heroicons-document-text" class="w-3.5 h-3.5" />
@@ -53,12 +56,12 @@
             <!-- Thermal Width Switcher when in Receipt mode -->
             <div
               v-if="activeTemplate === 'RECEIPT'"
-              class="inline-flex items-center rounded-lg border border-gray-200 bg-white p-0.5 text-[10px] font-semibold"
+              class="inline-flex items-center rounded-lg border border-gray-200 bg-white p-0.5 text-xs font-semibold"
             >
               <button
                 type="button"
                 class="px-2 py-1 rounded-md transition-colors cursor-pointer"
-                :class="activePaperWidth === '80mm' ? 'bg-gray-900 text-white' : 'text-gray-500 hover:text-gray-900'"
+                :class="activePaperWidth === '80mm' ? 'bg-gray-900 text-white' : 'text-gray-700 hover:text-gray-900'"
                 @click="setPaperWidth('80mm')"
               >
                 80mm
@@ -66,7 +69,7 @@
               <button
                 type="button"
                 class="px-2 py-1 rounded-md transition-colors cursor-pointer"
-                :class="activePaperWidth === '58mm' ? 'bg-gray-900 text-white' : 'text-gray-500 hover:text-gray-900'"
+                :class="activePaperWidth === '58mm' ? 'bg-gray-900 text-white' : 'text-gray-700 hover:text-gray-900'"
                 @click="setPaperWidth('58mm')"
               >
                 58mm
@@ -75,7 +78,8 @@
 
             <button
               type="button"
-              class="w-7 h-7 flex items-center justify-center text-gray-400 hover:text-gray-900 rounded-md hover:bg-gray-100 transition-colors cursor-pointer"
+              class="w-9 h-9 flex items-center justify-center text-gray-600 hover:text-gray-900 rounded-md hover:bg-gray-100 transition-colors cursor-pointer"
+              aria-label="Close and start next sale"
               @click="$emit('newSale')"
             >
               <UIcon name="i-heroicons-x-mark" class="w-4 h-4" />
@@ -384,7 +388,7 @@
             <!-- បោះពុម្ពបង្កាន់ដៃ (Print 80mm Receipt) -->
             <button
               type="button"
-              class="px-3.5 h-9 rounded-lg border border-gray-200 bg-white text-gray-800 hover:bg-gray-100 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+              class="px-4 h-11 rounded-lg border border-gray-300 bg-white text-gray-900 hover:bg-gray-100 text-sm font-semibold flex items-center gap-2 transition-colors cursor-pointer"
               @click="handlePrintTemplate('RECEIPT')"
             >
               <UIcon name="i-heroicons-printer" class="w-4 h-4" />
@@ -394,7 +398,7 @@
             <!-- បោះពុម្ពវិក្កយបត្រ A4 (Print A4 Invoice) -->
             <button
               type="button"
-              class="px-3.5 h-9 rounded-lg border border-gray-200 bg-white text-gray-800 hover:bg-gray-100 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+              class="px-4 h-11 rounded-lg border border-gray-300 bg-white text-gray-900 hover:bg-gray-100 text-sm font-semibold flex items-center gap-2 transition-colors cursor-pointer"
               @click="handlePrintTemplate('A4')"
             >
               <UIcon name="i-heroicons-document-text" class="w-4 h-4" />
@@ -404,7 +408,7 @@
 
           <button
             type="button"
-            class="px-5 h-9 bg-gray-900 text-white rounded-lg text-xs font-bold hover:bg-gray-800 active:scale-[0.99] transition-all cursor-pointer border border-transparent shadow-xs"
+            class="px-6 h-11 bg-gray-900 text-white rounded-lg text-sm font-bold hover:bg-gray-700 transition-colors cursor-pointer"
             @click="$emit('newSale')"
           >
             {{ receipt.isSample ? 'បិទ (Close Preview)' : 'ការលក់បន្ទាប់ / Start Next Sale [Enter]' }}
@@ -431,9 +435,42 @@ import {
   toKhmerNumerals,
 } from '~/composables/useKhmerPrint'
 
+export interface PosCompletedReceipt {
+  invoice_number?: string
+  date?: string
+  rawDate?: string
+  customerName?: string
+  couponCode?: string | null
+  items: Array<{
+    variant_id?: string
+    sku?: string
+    barcode?: string
+    name: string
+    variantInfo?: string
+    quantity: number
+    price: number
+    discount?: number
+    total: number
+  }>
+  subtotal: number
+  discount: number
+  tax: number
+  grandTotal: number
+  tenderedAmount?: number | null
+  payments: Array<{
+    payment_method: string
+    amount: number
+    reference_number?: string
+  }>
+  change: number
+  paymentStatus?: string
+  saleStatus?: string
+  isSample?: boolean
+}
+
 const props = defineProps<{
   modelValue: boolean
-  receipt: any
+  receipt: PosCompletedReceipt | null
   branchName: string
   cashierName: string
   formatRiel: (amount: number) => string
@@ -470,8 +507,8 @@ const paymentStatus = computed(() =>
 const primaryPaymentMethod = computed(() => {
   const payments = props.receipt?.payments || []
   if (payments.length === 0) return 'សាច់ប្រាក់ (Cash)'
-  if (payments.length === 1) return formatKhmerPaymentMethod(payments[0].payment_method)
-  return payments.map((p: any) => formatKhmerPaymentMethod(p.payment_method)).join(' + ')
+  if (payments.length === 1 && payments[0]) return formatKhmerPaymentMethod(payments[0].payment_method)
+  return payments.map((p) => formatKhmerPaymentMethod(p.payment_method)).join(' + ')
 })
 
 const paidAmountUsd = computed(() => {
@@ -480,7 +517,7 @@ const paidAmountUsd = computed(() => {
   }
   const payments = props.receipt?.payments || []
   if (payments.length > 0) {
-    return payments.reduce((sum: number, p: any) => sum + (Number(p.amount) || 0), 0)
+    return payments.reduce((sum: number, p) => sum + (Number(p.amount) || 0), 0)
   }
   return Number(props.receipt?.grandTotal || 0)
 })

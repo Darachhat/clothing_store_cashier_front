@@ -28,8 +28,8 @@
               <span class="hidden md:inline text-xs text-slate-400 truncate">Cashier: {{ cashierName }}</span>
             </div>
             <div class="hidden lg:flex items-center gap-1.5 pl-3 ml-1 border-l border-slate-800 flex-shrink-0">
-              <img src="/images/payments/aba.svg" alt="ABA Bank" class="h-4 max-h-4 w-auto object-contain rounded-xs" />
-              <img src="/images/payments/khqr.svg" alt="KHQR" class="h-4 max-h-4 w-auto object-contain rounded-xs" />
+              <img src="/images/payments/aba.svg" alt="ABA Bank" class="h-4 max-h-4 w-auto object-contain rounded-xs">
+              <img src="/images/payments/khqr.svg" alt="KHQR" class="h-4 max-h-4 w-auto object-contain rounded-xs">
               <span class="text-[11px] text-slate-300 font-semibold">ABA PayWay KHQR</span>
             </div>
           </div>
@@ -82,7 +82,7 @@
                   src="/images/payments/khqr.svg"
                   alt="KHQR"
                   class="h-5 w-auto object-contain"
-                />
+                >
                 <span class="text-xs font-bold tracking-wide uppercase text-white">
                   KHQR Payment
                 </span>
@@ -92,7 +92,7 @@
                   src="/images/payments/aba.svg"
                   alt="ABA PayWay"
                   class="h-5 w-auto object-contain rounded-xs bg-white/10 p-0.5"
-                />
+                >
                 <span class="text-[11px] font-semibold text-white/95">
                   ABA PayWay
                 </span>
@@ -210,7 +210,7 @@
                   :src="qrImage"
                   alt="ABA PayWay KHQR Code"
                   class="w-full h-full object-contain [image-rendering:crisp-edges]"
-                />
+                >
 
                 <!-- Waiting for QR Image -->
                 <div v-else class="flex flex-col items-center justify-center gap-2 text-gray-400">
@@ -226,11 +226,11 @@
                 </p>
                 <div class="flex items-center justify-center gap-2 text-[11px] text-gray-500">
                   <div class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-gray-50 border border-gray-200">
-                    <img src="/images/payments/aba.svg" alt="ABA" class="h-3.5 w-auto object-contain rounded-2xs" />
+                    <img src="/images/payments/aba.svg" alt="ABA" class="h-3.5 w-auto object-contain rounded-2xs">
                     <span class="font-semibold text-gray-700">ABA Mobile</span>
                   </div>
                   <div class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-gray-50 border border-gray-200">
-                    <img src="/images/payments/khqr.svg" alt="KHQR" class="h-3.5 w-auto object-contain rounded-2xs" />
+                    <img src="/images/payments/khqr.svg" alt="KHQR" class="h-3.5 w-auto object-contain rounded-2xs">
                     <span class="font-semibold text-gray-700">Bakong &amp; KHQR Banks</span>
                   </div>
                   <a

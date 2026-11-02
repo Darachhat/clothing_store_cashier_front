@@ -47,7 +47,7 @@
                   type="text"
                   placeholder="ស្វែងរកឈ្មោះទំនិញ, SKU, ពណ៌, ទំហំ..."
                   class="w-full h-8 pl-8 pr-3 rounded-lg border border-gray-200 text-xs outline-none focus:border-gray-900 kh-text"
-                />
+                >
               </div>
 
               <!-- Quick Variant Results -->
@@ -119,7 +119,7 @@
                       min="1"
                       max="200"
                       class="w-11 h-6 text-center text-xs font-bold border border-gray-200 rounded bg-white"
-                    />
+                    >
                     <button
                       type="button"
                       class="w-6 h-6 rounded border border-gray-200 bg-white flex items-center justify-center text-gray-600 hover:bg-gray-100 cursor-pointer"
@@ -250,7 +250,7 @@
                       :src="getBarcodeImageUrl(item.id)"
                       :alt="item.barcode || item.sku"
                       class="kh-sticker__barcode-img"
-                    />
+                    >
                   </div>
                   <div class="kh-sticker__barcode-text">
                     {{ item.barcode || item.sku }}
@@ -263,7 +263,7 @@
                     :src="getQrImageUrl(item.id)"
                     :alt="item.sku"
                     class="kh-sticker__qr-img"
-                  />
+                  >
                   <div class="kh-sticker__barcode-text">
                     {{ item.barcode || item.sku }}
                   </div>
@@ -464,10 +464,10 @@ async function downloadStickersPdf() {
     a.click()
     URL.revokeObjectURL(url)
     toast.add({ title: 'បានទាញយក PDF ស្លាកទំនិញ (Stickers PDF Downloaded)', color: 'green' })
-  } catch (err: any) {
+  } catch (err: unknown) {
     toast.add({
       title: 'Failed to generate PDF',
-      description: err?.message || 'Please try browser printing',
+      description: (err as Error)?.message || 'Please try browser printing',
       color: 'red',
     })
   } finally {

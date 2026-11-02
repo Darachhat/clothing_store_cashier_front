@@ -1,5 +1,5 @@
-﻿<template>
-  <div class="flex-1 min-w-0 min-h-0 flex flex-col overflow-hidden bg-slate-100 text-slate-900 font-sans">
+<template>
+  <div class="pos-focus flex-1 min-w-0 min-h-0 flex flex-col overflow-hidden bg-slate-100 text-slate-900 font-sans">
     <!-- ─── Main Content Area ──────────────────────────────────────── -->
     <div class="flex-1 min-w-0 min-h-0 flex flex-col overflow-hidden">
       <!-- ─── PosHeader component (Tailwind) ──────────────────────── -->
@@ -26,7 +26,7 @@
       <!-- ─── Body: Products Catalog (Left) + Cart Sidebar (Right) ───── -->
       <div class="flex-1 min-w-0 min-h-0 flex overflow-hidden">
         <!-- ─── Product Selection Section ────────────────────────────── -->
-        <main class="flex-1 min-w-0 min-h-0 flex flex-col overflow-hidden p-2.5 gap-2 no-print">
+        <main class="flex-1 min-w-0 min-h-0 flex flex-col overflow-hidden p-3 gap-2.5 no-print" aria-label="Products">
           <!-- ─── PosProductFilterBar (Tailwind) ────────────────────── -->
           <PosProductFilterBar
             :active-category="productFilters.category"
@@ -81,6 +81,8 @@
           :format-riel="formatRiel"
           :validating-coupon="validatingCoupon"
           :processing-sale="processingSale"
+          :get-line-stock="getLineStock"
+          :last-updated-variant-id="posStore.lastUpdatedVariantId"
           @select-customer="showCustomerModal = true"
           @remove-customer="posStore.setCustomer(null)"
           @hold-cart="handleHoldCart"
@@ -109,10 +111,10 @@
     <PosCustomerModal
       v-model="showCustomerModal"
       v-model:search-query="customerSearchQuery"
+      v-model:new-customer-form="newCustomerForm"
       :search-results="customerSearchResults"
       :selected-customer-id="posStore.selectedCustomerId"
       :show-new-drawer="showNewCustomerDrawer"
-      :new-customer-form="newCustomerForm"
       @search="debouncedSearchCustomers"
       @toggle-new-drawer="showNewCustomerDrawer = !showNewCustomerDrawer"
       @create-customer="createNewCustomer"
@@ -155,6 +157,8 @@
       :aba-seconds-left="abaSecondsLeft"
       :aba-cancelling="abaCancelling"
       :is-aba-modal-active="isAbaModalActive"
+      :item-count="posStore.itemCount"
+      :customer-name="posStore.selectedCustomer?.name || null"
       @enable-split-mode="enableSplitPaymentMode"
       @disable-split-mode="isSplitPaymentMode = false"
       @add-split-row="addSplitRow"
@@ -493,14 +497,18 @@ function formatTimeAgo(isoString: string): string {
   return `${mins} mins ago`
 }
 
-function handleImgError(e: Event) {
-  const target = e.target as HTMLImageElement
-  target.style.display = 'none'
-}
-
 function getVariantStock(variantId: string): number {
   // Return 0 when stock is unknown — safer than a fake positive fallback
   return inventoryMap.value[variantId] ?? 0
+}
+
+/**
+ * Stock for a cart line, or null when the stock list does not contain the variant.
+ * Unknown ≠ zero: the cart only flags a line when stock is actually known.
+ */
+function getLineStock(variantId: string): number | null {
+  const s = inventoryMap.value[variantId]
+  return typeof s === 'number' ? s : null
 }
 
 function getProductStock(prod: any): number {
@@ -735,6 +743,12 @@ async function handleBarcodeOrSkuSearch() {
 
     if (result) {
       const stock = getVariantStock(result.id)
+      // Only block when stock is actually known to be zero; unknown stock is left to the backend check.
+      if (getLineStock(result.id) !== null && stock <= 0) {
+        playError(true)
+        toast.add({ title: 'Out of Stock', description: `Item ${result.sku} has no stock`, color: 'red' })
+        return
+      }
       posStore.addVariant(result, 1, stock)
       playBeep(posSettings.value.soundBeep)
       toast.add({
@@ -743,11 +757,30 @@ async function handleBarcodeOrSkuSearch() {
         color: 'green',
       })
       searchQuery.value = ''
+      return
+    }
+
+    // 3. Not an exact code → treat Enter as "select the product I searched for".
+    //    One match is selected straight away (variant picker if it has several variants);
+    //    several matches stay visible in the grid for the cashier to choose.
+    await applySearch(q)
+    const matches = paginatedProducts.value as any[]
+    if (matches.length === 1) {
+      const prod = matches[0]
+      const single = (prod.variants?.length || 0) === 1
+      handleProductCardClick(prod)
+      if (single) searchQuery.value = ''
+    } else if (matches.length > 1) {
+      toast.add({
+        title: `${matches.length} products match`,
+        description: `Pick the right one from the grid for "${q}"`,
+        color: 'default',
+      })
     } else {
       playError(true)
       toast.add({
         title: 'Product Not Found',
-        description: `No barcode or SKU match for "${q}"`,
+        description: `No barcode, SKU or product name matches "${q}"`,
         color: 'amber',
       })
     }
@@ -1464,6 +1497,7 @@ async function startAbaFullScreenCheckout() {
 
 async function startAbaModalCheckout(paymentOption: string = 'cards') {
   if (posStore.cart.length === 0) return
+  if (abaLoading.value) return // already creating a card checkout — ignore repeat clicks
   abaLoading.value = true
   abaError.value = null
   abaStatus.value = ''
@@ -1630,6 +1664,8 @@ watch(selectedPaymentMethod, (newMethod, oldMethod) => {
 })
 
 async function handleFinalizeSale() {
+  // Duplicate-submission guard: ignore Enter / double-click while a sale is already being created.
+  if (processingSale.value) return
   if (posStore.cart.length === 0) return
 
   // ── ABA KHQR branch ──────────────────────────────────────────────
@@ -1937,6 +1973,7 @@ function handleGlobalKeydown(e: KeyboardEvent) {
     }
   } else if (e.key === 'Escape') {
     if (showAbaFullScreen.value) handleAbaCancel()
+    else if (showClearCartConfirm.value) showClearCartConfirm.value = false
     else if (showPaymentModal.value) showPaymentModal.value = false
     else if (showCustomerModal.value) showCustomerModal.value = false
     else if (showHeldOrdersModal.value) showHeldOrdersModal.value = false

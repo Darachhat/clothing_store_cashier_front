@@ -26,9 +26,9 @@
       <div class="w-full bg-white rounded-xl border border-gray-200 overflow-hidden flex flex-col items-center text-center">
         <!-- Official Branding Header -->
         <div class="w-full py-2 px-3.5 bg-[#E1232E] text-white flex items-center justify-between">
-          <img src="/images/payments/khqr.svg" alt="KHQR" class="h-4 max-h-4 w-auto object-contain" />
+          <img src="/images/payments/khqr.svg" alt="KHQR" class="h-4 max-h-4 w-auto object-contain">
           <div class="flex items-center gap-1.5">
-            <img src="/images/payments/aba.svg" alt="ABA" class="h-4 max-h-4 w-auto object-contain rounded-2xs" />
+            <img src="/images/payments/aba.svg" alt="ABA" class="h-4 max-h-4 w-auto object-contain rounded-2xs">
             <span class="text-[10px] font-bold uppercase tracking-wider">ABA PayWay</span>
           </div>
         </div>
@@ -80,7 +80,7 @@
               :src="qrImage"
               alt="ABA KHQR Code"
               class="w-full h-full object-contain [image-rendering:crisp-edges]"
-            />
+            >
           </div>
 
           <span class="mt-2 text-[11px] text-gray-600 text-center leading-snug">

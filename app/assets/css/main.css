@@ -1587,3 +1587,73 @@ input[type="radio"] {
   font-weight: 600;
   flex-shrink: 0;
 }
+
+
+/* ══════════════════════════════════════════════════════════════════════
+   POS Design System (cashier terminal)
+   Direction: "quiet retail tool" — neutral charcoal chrome, ONE accent
+   (pay-green) reserved for the money-moving action, status colour is
+   always paired with text. All text >= 12px, secondary text >= 4.5:1.
+   ══════════════════════════════════════════════════════════════════════ */
+:root {
+  /* semantic tokens (tier 2) */
+  --pos-ink:          #111827;   /* primary text            16:1 on white */
+  --pos-ink-muted:    #4B5563;   /* secondary text          7.5:1         */
+  --pos-ink-subtle:   #6B7280;   /* meta / hints (min)      4.8:1         */
+  --pos-surface:      #FFFFFF;
+  --pos-surface-alt:  #F9FAFB;
+  --pos-canvas:       #F3F4F6;
+  --pos-line:         #E5E7EB;   /* neutral borders only (AGENTS.md)     */
+  --pos-pay:          #047857;   /* primary money action    5.5:1 w/ white */
+  --pos-pay-hover:    #065F46;
+  --pos-pay-soft:     #ECFDF5;
+  --pos-focus:        #111827;
+  --pos-warn-ink:     #92400E;
+  --pos-warn-soft:    #FFFBEB;
+  --pos-danger-ink:   #B91C1C;
+  --pos-danger-soft:  #FEF2F2;
+}
+
+/* Visible keyboard focus everywhere inside the POS (outline, not border,
+   so it never reads as a coloured card border). */
+.pos-focus :focus-visible,
+.pos-focus-scope:focus-visible {
+  outline: 2px solid var(--pos-focus);
+  outline-offset: 2px;
+}
+.pos-focus input:focus-visible,
+.pos-focus select:focus-visible {
+  outline-offset: 0;
+}
+
+/* Thin, visible scrollbar for the two controlled scroll regions
+   (product grid, cart lines). The app-wide reset hides scrollbars, which
+   removes the "there is more below" cue on mouse-driven terminals. */
+.pos-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: #CBD5E1 transparent;
+}
+.pos-scroll::-webkit-scrollbar {
+  display: block;
+  width: 8px;
+  height: 8px;
+}
+.pos-scroll::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 8px;
+}
+.pos-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* Cart-line feedback when an item was just added / changed. */
+@keyframes pos-line-flash {
+  0%   { background-color: #ECFDF5; }
+  100% { background-color: #FFFFFF; }
+}
+.pos-line-flash {
+  animation: pos-line-flash 900ms ease-out 1;
+}
+@media (prefers-reduced-motion: reduce) {
+  .pos-line-flash { animation: none; }
+}

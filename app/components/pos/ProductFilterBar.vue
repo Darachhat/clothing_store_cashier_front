@@ -1,74 +1,76 @@
 <template>
-  <div class="flex items-center justify-between gap-2 bg-white px-2.5 py-1.5 rounded-lg border border-gray-200 select-none flex-shrink-0">
-    <!-- Left: Horizontal Scrollable Category Segment Pills -->
-    <div class="flex-1 min-w-0 flex items-center gap-1 overflow-x-auto no-scrollbar">
+  <div class="flex items-center gap-3 bg-white px-3 py-2 rounded-lg border border-gray-200 select-none flex-shrink-0">
+    <!-- Category navigation -->
+    <nav
+      class="flex-1 min-w-0 flex items-center gap-1.5 overflow-x-auto pos-scroll pb-0.5"
+      aria-label="Product categories"
+    >
       <button
         type="button"
-        class="h-7 px-2.5 rounded-md text-xs font-semibold whitespace-nowrap transition-colors cursor-pointer border"
+        class="h-8 px-3 rounded-md text-sm font-semibold whitespace-nowrap transition-colors cursor-pointer border"
         :class="activeCategory === ''
           ? 'bg-gray-900 text-white border-transparent'
-          : 'bg-gray-50 hover:bg-gray-100 text-gray-600 hover:text-gray-900 border-gray-200/80'"
+          : 'bg-white hover:bg-gray-100 text-gray-700 border-gray-200'"
+        :aria-pressed="activeCategory === ''"
         @click="$emit('update:activeCategory', '')"
       >
-        All Items
+        All
       </button>
 
       <button
         v-for="cat in categories"
         :key="cat.id"
         type="button"
-        class="h-7 px-2.5 rounded-md text-xs font-semibold whitespace-nowrap transition-colors cursor-pointer border"
+        class="h-8 px-3 rounded-md text-sm font-semibold whitespace-nowrap transition-colors cursor-pointer border"
         :class="activeCategory === cat.name
           ? 'bg-gray-900 text-white border-transparent'
-          : 'bg-gray-50 hover:bg-gray-100 text-gray-600 hover:text-gray-900 border-gray-200/80'"
+          : 'bg-white hover:bg-gray-100 text-gray-700 border-gray-200'"
+        :aria-pressed="activeCategory === cat.name"
         @click="$emit('update:activeCategory', cat.name)"
       >
         {{ cat.name }}
       </button>
-    </div>
+    </nav>
 
-    <!-- Right: Integrated Brand Selector & Active Filter Indicators -->
-    <div class="flex items-center gap-2 flex-shrink-0 pl-2 border-l border-gray-200">
-      <!-- Active Search Tag -->
+    <!-- Brand filter, active search chip, result count -->
+    <div class="flex items-center gap-2 flex-shrink-0 pl-3 border-l border-gray-200">
       <div
         v-if="searchQuery"
-        class="flex items-center gap-1 h-7 px-2 bg-amber-50 border border-gray-200 rounded-md text-[11px] font-medium text-amber-900"
+        class="flex items-center gap-1 h-8 pl-2.5 pr-1 bg-gray-100 border border-gray-200 rounded-md text-sm font-medium text-gray-800"
       >
-        <span class="max-w-[90px] truncate">&ldquo;{{ searchQuery }}&rdquo;</span>
+        <span class="max-w-[120px] truncate">&ldquo;{{ searchQuery }}&rdquo;</span>
         <button
           type="button"
-          class="p-0.5 text-amber-700 hover:text-amber-950 cursor-pointer flex items-center justify-center"
+          class="w-6 h-6 flex items-center justify-center text-gray-600 hover:text-gray-900 hover:bg-gray-200 rounded cursor-pointer"
           title="Clear search"
           aria-label="Clear search"
           @click="$emit('clearSearch')"
         >
-          <UIcon name="i-heroicons-x-mark" class="w-3 h-3" />
+          <UIcon name="i-heroicons-x-mark" class="w-4 h-4" />
         </button>
       </div>
 
-      <!-- Brand Dropdown Pill -->
       <div class="relative flex items-center">
         <select
           :value="activeBrand"
           aria-label="Filter by brand"
-          class="h-7 pl-2.5 pr-6 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-md text-xs font-medium text-gray-800 outline-none cursor-pointer transition-colors appearance-none"
+          class="h-8 pl-3 pr-8 bg-white hover:bg-gray-50 border border-gray-200 rounded-md text-sm font-medium text-gray-800 cursor-pointer transition-colors appearance-none"
           @change="$emit('update:activeBrand', ($event.target as HTMLSelectElement).value)"
         >
-          <option value="">All Brands</option>
+          <option value="">All brands</option>
           <option v-for="b in brands" :key="b.id" :value="b.name">
             {{ b.name }}
           </option>
         </select>
         <UIcon
           name="i-heroicons-chevron-down"
-          class="w-3 h-3 text-gray-500 absolute right-2 pointer-events-none"
+          class="w-4 h-4 text-gray-500 absolute right-2 pointer-events-none"
         />
       </div>
 
-      <!-- Product Count Badge -->
-      <div class="hidden sm:flex items-center text-[11px] text-gray-500 font-mono font-medium whitespace-nowrap">
-        <span>{{ productCount ?? 0 }} items</span>
-      </div>
+      <span class="hidden lg:block text-sm text-gray-600 font-medium tabular-nums whitespace-nowrap" aria-live="polite">
+        {{ productCount ?? 0 }} products
+      </span>
     </div>
   </div>
 </template>

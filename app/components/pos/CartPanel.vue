@@ -1,237 +1,258 @@
 <template>
-  <aside class="w-[336px] xl:w-[360px] bg-white border-l border-gray-200 flex flex-col h-full overflow-hidden flex-shrink-0 select-none">
-    <!-- ── 1. Compact Customer & Cart Header ── -->
-    <div class="px-3 py-2 bg-white border-b border-gray-200 flex flex-col gap-1.5 flex-shrink-0">
-      <!-- Top Row: Customer Assignment -->
+  <aside
+    class="w-[360px] 2xl:w-[400px] bg-white border-l border-gray-200 flex flex-col h-full overflow-hidden flex-shrink-0 select-none"
+    aria-label="Current order"
+  >
+    <!-- 1. Order header: title, hold/clear, customer -->
+    <div class="px-3.5 pt-3 pb-2.5 border-b border-gray-200 flex flex-col gap-2.5 flex-shrink-0">
       <div class="flex items-center justify-between gap-2">
-        <div class="flex items-center gap-2 min-w-0">
-          <div class="w-7 h-7 rounded-md bg-gray-100 flex items-center justify-center text-gray-600 flex-shrink-0 border border-gray-200/80">
-            <UIcon name="i-heroicons-user" class="w-3.5 h-3.5 text-gray-700" />
+        <div class="flex items-center gap-2">
+          <h2 class="text-base font-semibold text-gray-900">Order</h2>
+          <span
+            class="min-w-[24px] h-6 px-2 rounded-full text-xs font-bold font-mono tabular-nums bg-gray-900 text-white leading-6 text-center"
+            :aria-label="`${itemCount} items`"
+          >{{ itemCount }}</span>
+        </div>
+
+        <div v-if="cart.length > 0" class="flex items-center gap-1.5">
+          <button
+            type="button"
+            class="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md text-sm font-semibold text-gray-800 bg-white hover:bg-gray-100 border border-gray-200 transition-colors cursor-pointer"
+            title="Park this order and start another (F9)"
+            @click="$emit('holdCart')"
+          >
+            <UIcon name="i-heroicons-pause-circle" class="w-4 h-4" />
+            <span>Park</span>
+            <PosKeyHint>F9</PosKeyHint>
+          </button>
+          <button
+            type="button"
+            class="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md text-sm font-semibold text-red-700 bg-white hover:bg-red-50 border border-gray-200 transition-colors cursor-pointer"
+            title="Remove all items (asks to confirm)"
+            @click="$emit('clearCart')"
+          >
+            <UIcon name="i-heroicons-trash" class="w-4 h-4" />
+            <span>Clear</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Customer -->
+      <div class="flex items-center justify-between gap-2 p-2 rounded-lg bg-gray-50 border border-gray-200">
+        <div class="flex items-center gap-2.5 min-w-0">
+          <div class="w-8 h-8 rounded-full bg-white border border-gray-200 flex items-center justify-center flex-shrink-0">
+            <UIcon name="i-heroicons-user" class="w-4 h-4 text-gray-700" />
           </div>
           <div class="flex flex-col min-w-0 leading-tight">
-            <div class="flex items-center gap-1.5 min-w-0">
-              <span class="text-xs font-bold text-gray-900 truncate">
-                {{ selectedCustomer?.name || 'Walk-in Customer' }}
-              </span>
-              <span
-                v-if="selectedCustomer?.loyalty_account"
-                class="inline-flex items-center gap-0.5 text-[10px] text-amber-800 bg-amber-50 px-1.5 py-0.5 rounded font-semibold border border-gray-200 flex-shrink-0"
-              >
-                <UIcon name="i-heroicons-sparkles" class="w-2.5 h-2.5 text-amber-600" />
-                {{ selectedCustomer.loyalty_account.tier }} &bull; {{ selectedCustomer.loyalty_account.points_balance }}p
-              </span>
-              <span v-else class="text-[10px] text-gray-400 font-medium flex-shrink-0">Guest</span>
-            </div>
+            <span class="text-sm font-semibold text-gray-900 truncate">
+              {{ selectedCustomer?.name || 'Walk-in customer' }}
+            </span>
+            <span v-if="selectedCustomer" class="text-xs text-gray-600 truncate flex items-center gap-1">
+              <template v-if="selectedCustomer.loyalty_account">
+                <UIcon name="i-heroicons-sparkles" class="w-3.5 h-3.5 text-amber-700 flex-shrink-0" />
+                {{ selectedCustomer.loyalty_account.tier }} &bull; {{ selectedCustomer.loyalty_account.points_balance }} pts
+              </template>
+              <template v-else>{{ selectedCustomer.phone || selectedCustomer.customer_code }}</template>
+            </span>
+            <span v-else class="text-xs text-gray-600">No customer attached</span>
           </div>
         </div>
 
         <div class="flex items-center gap-1 flex-shrink-0">
           <button
             type="button"
-            class="h-7 px-2.5 rounded-md text-xs font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200/80 transition-colors cursor-pointer border border-gray-200"
-            title="Select Registered Customer [F8]"
+            class="h-8 px-2.5 rounded-md text-sm font-semibold text-gray-900 bg-white hover:bg-gray-100 border border-gray-200 transition-colors cursor-pointer inline-flex items-center gap-1.5"
+            title="Choose or add a customer (F8)"
             @click="$emit('selectCustomer')"
           >
-            {{ selectedCustomer ? 'Change' : 'Assign [F8]' }}
+            <span>{{ selectedCustomer ? 'Change' : 'Add' }}</span>
+            <PosKeyHint>F8</PosKeyHint>
           </button>
           <button
             v-if="selectedCustomer"
             type="button"
-            class="w-7 h-7 flex items-center justify-center text-gray-400 hover:text-rose-600 hover:bg-gray-100 rounded-md transition-colors cursor-pointer"
-            title="Reset to Walk-in"
-            aria-label="Reset to Walk-in"
+            class="w-8 h-8 flex items-center justify-center text-gray-600 hover:text-red-700 hover:bg-white rounded-md transition-colors cursor-pointer"
+            title="Detach customer (walk-in)"
+            aria-label="Detach customer and return to walk-in"
             @click="$emit('removeCustomer')"
           >
-            <UIcon name="i-heroicons-x-mark" class="w-3.5 h-3.5" />
-          </button>
-        </div>
-      </div>
-
-      <!-- Bottom Row: Cart Count & Hold/Clear Actions -->
-      <div class="pt-1.5 border-t border-gray-100 flex items-center justify-between gap-2">
-        <div class="flex items-center gap-1.5">
-          <span class="text-[11px] font-bold text-gray-700 tracking-wider uppercase">Cart</span>
-          <span class="px-1.5 py-0.5 rounded text-[10px] font-bold font-mono bg-gray-900 text-white leading-none">
-            {{ itemCount }} pcs
-          </span>
-        </div>
-
-        <div class="flex items-center gap-1">
-          <button
-            v-if="cart.length > 0"
-            type="button"
-            class="inline-flex items-center gap-1 h-6 px-2 rounded-md text-[11px] font-semibold text-amber-900 bg-amber-50/70 hover:bg-amber-100/80 transition-colors cursor-pointer border border-gray-200"
-            title="Park / Hold Current Order [F9]"
-            @click="$emit('holdCart')"
-          >
-            <UIcon name="i-heroicons-pause-circle" class="w-3 h-3 text-amber-700" />
-            <span>Hold [F9]</span>
-          </button>
-          <button
-            v-if="cart.length > 0"
-            type="button"
-            class="h-6 px-2 rounded-md text-[11px] font-medium text-rose-700 bg-white hover:bg-rose-50 transition-colors cursor-pointer border border-gray-200"
-            title="Clear Entire Cart"
-            @click="$emit('clearCart')"
-          >
-            Clear
+            <UIcon name="i-heroicons-x-mark" class="w-4 h-4" />
           </button>
         </div>
       </div>
     </div>
 
-    <!-- ── 2. Dedicated Scrollable Cart Items Area ── -->
-    <div class="flex-1 min-h-0 overflow-y-auto no-scrollbar p-2 flex flex-col gap-1.5">
-      <!-- Empty state -->
+    <!-- 2. Scrollable cart lines -->
+    <div ref="scrollEl" class="flex-1 min-h-0 overflow-y-auto pos-scroll p-2.5">
+      <!-- Empty -->
       <div
         v-if="cart.length === 0"
-        class="flex-1 flex flex-col items-center justify-center text-center p-4 text-gray-400 my-auto"
+        class="h-full flex flex-col items-center justify-center text-center px-6 text-gray-600"
       >
-        <div class="w-11 h-11 rounded-lg bg-gray-50 flex items-center justify-center mb-2 border border-gray-200">
-          <UIcon name="i-heroicons-shopping-bag" class="w-5 h-5 text-gray-400" />
-        </div>
-        <div class="text-xs font-semibold text-gray-700 mb-0.5">Cart is empty</div>
-        <div class="text-[11px] text-gray-400 max-w-[200px] leading-snug">
-          Scan a barcode or select items from the catalog to start an order.
-        </div>
+        <UIcon name="i-heroicons-shopping-bag" class="w-10 h-10 text-gray-400 mb-3" />
+        <div class="text-base font-semibold text-gray-900 mb-1">Order is empty</div>
+        <p class="text-sm leading-snug max-w-[240px]">
+          Scan a barcode or tap a product to start. Press <PosKeyHint>F2</PosKeyHint> to jump to search.
+        </p>
       </div>
 
-      <!-- Active Cart Items -->
-      <template v-else>
+      <ul v-else class="flex flex-col gap-2" aria-label="Order lines">
         <CartItem
           v-for="item in cart"
           :key="item.variant_id"
+          :data-variant-id="item.variant_id"
           :item="item"
+          :line-stock="getLineStock(item.variant_id)"
+          :highlight="flashId === item.variant_id"
           @discount="(val) => $emit('discountItem', val)"
           @update-qty="(variantId, newQty) => $emit('updateItemQty', variantId, newQty)"
           @change-qty="(variantId, event) => $emit('changeItemQty', variantId, event)"
           @remove="(variantId) => $emit('removeItem', variantId)"
         />
-      </template>
+      </ul>
     </div>
 
-    <!-- ── 3. Pinned Checkout Footer & Order Summary ── -->
-    <div class="px-3 py-2.5 bg-white border-t border-gray-200 flex flex-col gap-2 flex-shrink-0">
-      <!-- Promo Code Input & Quick Presets -->
-      <div class="flex flex-col gap-1">
-        <div v-if="!appliedCoupon" class="flex gap-1.5">
-          <div class="relative flex-1 flex items-center">
-            <UIcon name="i-heroicons-ticket" class="w-3.5 h-3.5 text-gray-400 absolute left-2.5 pointer-events-none" />
+    <!-- 3. Pinned footer: promo, totals, pay -->
+    <div class="px-3.5 pt-2.5 pb-3 bg-white border-t border-gray-200 flex flex-col gap-2.5 flex-shrink-0">
+      <!-- Promo code (collapsed until needed to save vertical space) -->
+      <div v-if="appliedCoupon" class="flex items-center justify-between gap-2 px-3 h-9 bg-emerald-50 border border-gray-200 rounded-md text-sm">
+        <div class="flex items-center gap-2 min-w-0">
+          <UIcon name="i-heroicons-ticket" class="w-4 h-4 text-emerald-800 flex-shrink-0" />
+          <span class="font-bold text-emerald-900 uppercase font-mono truncate">{{ appliedCoupon.code }}</span>
+          <span class="text-emerald-900 font-medium font-mono tabular-nums">(&minus;${{ Number(appliedCoupon.discount_amount ?? totalDiscount).toFixed(2) }})</span>
+        </div>
+        <button
+          type="button"
+          class="w-7 h-7 flex items-center justify-center text-emerald-900 hover:bg-emerald-100 rounded cursor-pointer"
+          title="Remove promo code"
+          aria-label="Remove promo code"
+          @click="$emit('removeCoupon')"
+        >
+          <UIcon name="i-heroicons-x-mark" class="w-4 h-4" />
+        </button>
+      </div>
+
+      <template v-else>
+        <button
+          v-if="!showPromo"
+          type="button"
+          class="self-start inline-flex items-center gap-1.5 h-8 text-sm font-semibold text-gray-700 hover:text-gray-900 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+          :disabled="cart.length === 0"
+          @click="showPromo = true"
+        >
+          <UIcon name="i-heroicons-ticket" class="w-4 h-4" />
+          <span>Add promo code</span>
+        </button>
+
+        <div v-else class="flex flex-col gap-1.5">
+          <div class="flex gap-1.5">
             <input
               :value="couponCode"
               aria-label="Promo code"
-              placeholder="Promo code (e.g. SAVE10)..."
-              class="w-full h-8 bg-gray-50 border border-gray-200 rounded-md pl-7 pr-2 text-xs font-mono outline-none transition-colors focus:bg-white focus:border-gray-400"
+              placeholder="Promo code"
+              autocomplete="off"
+              class="flex-1 min-w-0 h-9 bg-white border border-gray-300 rounded-md px-3 text-sm font-mono uppercase placeholder:normal-case placeholder:font-sans placeholder-gray-500 focus:border-gray-500"
               @input="$emit('update:couponCode', ($event.target as HTMLInputElement).value)"
-              @keydown.enter="$emit('applyCoupon')"
-            />
+              @keydown.enter.prevent="$emit('applyCoupon')"
+              @keydown.esc.stop="showPromo = false"
+            >
+            <button
+              type="button"
+              class="px-3.5 h-9 bg-gray-900 text-white rounded-md text-sm font-semibold hover:bg-gray-700 disabled:bg-gray-200 disabled:text-gray-600 disabled:cursor-not-allowed transition-colors cursor-pointer whitespace-nowrap"
+              :disabled="!couponCode.trim() || validatingCoupon || cart.length === 0"
+              @click="$emit('applyCoupon')"
+            >
+              {{ validatingCoupon ? 'Checking…' : 'Apply' }}
+            </button>
+            <button
+              type="button"
+              class="w-9 h-9 flex items-center justify-center text-gray-600 hover:bg-gray-100 rounded-md cursor-pointer"
+              title="Close promo code"
+              aria-label="Close promo code field"
+              @click="showPromo = false"
+            >
+              <UIcon name="i-heroicons-x-mark" class="w-4 h-4" />
+            </button>
           </div>
-          <button
-            type="button"
-            class="px-2.5 h-8 bg-gray-900 text-white rounded-md text-xs font-semibold hover:bg-gray-800 disabled:opacity-40 transition-colors cursor-pointer border border-transparent whitespace-nowrap"
-            :disabled="!couponCode.trim() || validatingCoupon"
-            @click="$emit('applyCoupon')"
-          >
-            {{ validatingCoupon ? '...' : 'Apply' }}
-          </button>
-        </div>
-
-        <!-- Compact Quick Presets Strip (when cart has items & no coupon applied) -->
-        <div v-if="!appliedCoupon && cart.length > 0" class="flex items-center gap-1">
-          <span class="text-[10px] text-gray-400 font-medium mr-0.5">Presets:</span>
-          <button
-            v-for="preset in ['SAVE5', 'SAVE10', 'SAVE15', 'VIP20']"
-            :key="preset"
-            type="button"
-            class="px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold bg-gray-50 hover:bg-gray-100 text-gray-600 border border-gray-200/80 transition-colors cursor-pointer"
-            @click="$emit('update:couponCode', preset)"
-          >
-            {{ preset }}
-          </button>
-        </div>
-
-        <!-- Applied Coupon Banner -->
-        <div
-          v-else-if="appliedCoupon"
-          class="flex items-center justify-between px-2.5 py-1 bg-emerald-50 border border-gray-200 rounded-md text-xs"
-        >
-          <div class="flex items-center gap-1.5">
-            <UIcon name="i-heroicons-sparkles" class="w-3.5 h-3.5 text-emerald-600" />
-            <span class="font-bold text-emerald-800 uppercase tracking-wide font-mono">{{ appliedCoupon.code }}</span>
-            <span class="text-emerald-700 font-medium">(-${{ totalDiscount.toFixed(2) }})</span>
+          <div class="flex items-center gap-1.5 flex-wrap">
+            <span class="text-xs text-gray-600">Quick fill:</span>
+            <button
+              v-for="preset in ['SAVE5', 'SAVE10', 'SAVE15', 'VIP20']"
+              :key="preset"
+              type="button"
+              class="px-2 h-6 rounded text-xs font-mono font-semibold bg-gray-100 hover:bg-gray-200 text-gray-800 cursor-pointer"
+              @click="$emit('update:couponCode', preset)"
+            >
+              {{ preset }}
+            </button>
           </div>
-          <button
-            type="button"
-            class="text-emerald-700 hover:text-emerald-950 p-0.5 rounded cursor-pointer flex items-center justify-center"
-            title="Remove coupon"
-            aria-label="Remove coupon"
-            @click="$emit('removeCoupon')"
-          >
-            <UIcon name="i-heroicons-x-mark" class="w-3.5 h-3.5" />
-          </button>
+        </div>
+      </template>
+
+      <!-- Totals -->
+      <dl class="flex flex-col gap-1 text-sm">
+        <div class="flex justify-between text-gray-700">
+          <dt>Subtotal</dt>
+          <dd class="font-mono tabular-nums text-gray-900">${{ cartSubtotal.toFixed(2) }}</dd>
+        </div>
+        <div v-if="totalDiscount > 0" class="flex justify-between text-emerald-800 font-semibold">
+          <dt>Discounts</dt>
+          <dd class="font-mono tabular-nums">&minus;${{ totalDiscount.toFixed(2) }}</dd>
+        </div>
+        <div class="flex justify-between text-gray-700">
+          <dt>VAT ({{ (taxRate * 100).toFixed(0) }}%)</dt>
+          <dd class="font-mono tabular-nums text-gray-900">${{ taxAmount.toFixed(2) }}</dd>
+        </div>
+      </dl>
+
+      <!-- Final payable amount -->
+      <div class="flex items-end justify-between gap-3 px-3 py-2.5 rounded-lg bg-gray-50 border border-gray-200">
+        <div class="flex flex-col leading-tight">
+          <span class="text-sm font-semibold text-gray-900">Total due</span>
+          <span class="text-xs font-mono tabular-nums text-gray-600">&asymp; {{ formatRiel(grandTotal) }}</span>
+        </div>
+        <div class="flex items-baseline gap-0.5" aria-live="polite">
+          <span class="text-lg font-bold text-gray-600 font-mono">$</span>
+          <span class="text-[32px] leading-none font-bold font-mono tabular-nums text-gray-900 tracking-tight">{{ grandTotal.toFixed(2) }}</span>
         </div>
       </div>
 
-      <!-- Order Summary (Clear Hierarchy, No Heavy Nested Box) -->
-      <div class="pt-1.5 border-t border-gray-100 flex flex-col gap-1">
-        <div class="flex justify-between text-xs text-gray-500">
-          <span>Subtotal</span>
-          <span class="font-mono font-medium text-gray-800">${{ cartSubtotal.toFixed(2) }}</span>
-        </div>
+      <!-- Stock warning (non-blocking; backend remains the authority) -->
+      <p v-if="hasStockIssue" class="flex items-center gap-1.5 text-sm font-semibold text-red-700" role="alert">
+        <UIcon name="i-heroicons-exclamation-triangle" class="w-4 h-4 flex-shrink-0" />
+        Some lines exceed available stock.
+      </p>
 
-        <div v-if="totalDiscount > 0" class="flex justify-between text-xs text-emerald-700 font-semibold">
-          <span>Discounts</span>
-          <span class="font-mono">&minus;${{ totalDiscount.toFixed(2) }}</span>
-        </div>
-
-        <div class="flex justify-between text-xs text-gray-500">
-          <span>VAT / Tax ({{ (taxRate * 100).toFixed(0) }}%)</span>
-          <span class="font-mono font-medium text-gray-800">${{ taxAmount.toFixed(2) }}</span>
-        </div>
-
-        <div class="pt-1.5 mt-0.5 border-t border-gray-200 flex items-baseline justify-between">
-          <div class="flex items-baseline gap-1.5">
-            <span class="text-xs font-bold text-gray-900">Total Due</span>
-            <span class="text-[11px] font-mono text-gray-400">≈ {{ formatRiel(grandTotal) }}</span>
-          </div>
-          <div class="flex items-baseline gap-0.5">
-            <span class="text-xs font-bold text-gray-400 font-mono">$</span>
-            <span class="text-[22px] leading-none font-bold font-mono text-gray-900 tracking-tight">{{ grandTotal.toFixed(2) }}</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Checkout Action Buttons -->
-      <div class="flex flex-col gap-1.5">
-        <!-- Primary Proceed to Pay CTA -->
+      <!-- Actions -->
+      <div class="flex flex-col gap-2">
         <button
           type="button"
-          class="h-10 w-full bg-gray-900 hover:bg-gray-800 disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed text-white rounded-lg px-3.5 flex items-center justify-between font-bold text-xs transition-colors cursor-pointer border border-transparent"
+          class="h-12 w-full bg-pay hover:bg-pay-hover disabled:bg-gray-200 disabled:text-gray-600 disabled:cursor-not-allowed text-white rounded-lg px-4 flex items-center justify-between font-bold text-base transition-colors cursor-pointer"
           :disabled="cart.length === 0 || processingSale"
           @click="$emit('checkout')"
         >
-          <div class="flex items-center gap-2">
-            <UIcon name="i-heroicons-credit-card" class="w-4 h-4 text-white" />
-            <span class="text-sm font-bold">Proceed to Pay</span>
-          </div>
-          <div class="flex items-center gap-1.5">
-            <span class="font-mono text-sm font-bold">${{ grandTotal.toFixed(2) }}</span>
-            <kbd class="text-[10px] font-mono opacity-80 bg-white/20 px-1.5 py-0.5 rounded">F4</kbd>
-          </div>
+          <span class="flex items-center gap-2">
+            <UIcon :name="processingSale ? 'i-heroicons-arrow-path' : 'i-heroicons-credit-card'" class="w-5 h-5" :class="{ 'animate-spin': processingSale }" />
+            {{ processingSale ? 'Processing…' : 'Pay' }}
+          </span>
+          <span class="flex items-center gap-2">
+            <span class="font-mono tabular-nums">${{ grandTotal.toFixed(2) }}</span>
+            <PosKeyHint tone="inverse">F4</PosKeyHint>
+          </span>
         </button>
 
-        <!-- Secondary Fast Action: ABA KHQR Fast Pay -->
         <button
           type="button"
-          class="h-8 w-full bg-gray-50 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed text-gray-800 rounded-lg px-3 flex items-center justify-between font-semibold text-xs transition-colors cursor-pointer border border-gray-200"
+          class="h-10 w-full bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed text-gray-900 rounded-lg px-3 flex items-center justify-between font-semibold text-sm transition-colors cursor-pointer border border-gray-300"
           :disabled="cart.length === 0 || processingSale"
+          title="Skip method selection and show the KHQR code now (F7)"
           @click="$emit('quickAba')"
         >
-          <div class="flex items-center gap-1.5">
-            <UIcon name="i-heroicons-qr-code" class="w-3.5 h-3.5 text-red-600" />
-            <span>ABA KHQR Fast Pay</span>
-          </div>
-          <kbd class="text-[10px] font-mono text-gray-500 bg-white border border-gray-200 px-1.5 py-0.5 rounded">F7</kbd>
+          <span class="flex items-center gap-2">
+            <UIcon name="i-heroicons-qr-code" class="w-4 h-4" />
+            Pay by ABA KHQR
+          </span>
+          <PosKeyHint>F7</PosKeyHint>
         </button>
       </div>
     </div>
@@ -239,13 +260,15 @@
 </template>
 
 <script setup lang="ts">
+import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import CartItem from './CartItem.vue'
+import type { CartItem as CartItemType, CustomerSummary, PosCoupon } from '~/types/pos'
 
-defineProps<{
-  cart: any[]
-  selectedCustomer: any
+const props = defineProps<{
+  cart: CartItemType[]
+  selectedCustomer: CustomerSummary | null
   itemCount: number
-  appliedCoupon: any
+  appliedCoupon: PosCoupon | null
   cartSubtotal: number
   totalDiscount: number
   taxRate: number
@@ -255,6 +278,10 @@ defineProps<{
   couponCode: string
   validatingCoupon: boolean
   processingSale: boolean
+  /** On-hand stock for a variant, or null when stock data is unavailable. */
+  getLineStock: (variantId: string) => number | null
+  /** Variant id touched most recently (add / qty change) — used for feedback. */
+  lastUpdatedVariantId?: string | null
 }>()
 
 defineEmits<{
@@ -262,7 +289,7 @@ defineEmits<{
   'removeCustomer': []
   'holdCart': []
   'clearCart': []
-  'discountItem': [item: any]
+  'discountItem': [item: CartItemType]
   'updateItemQty': [variantId: string, newQty: number]
   'changeItemQty': [variantId: string, event: Event]
   'removeItem': [variantId: string]
@@ -272,4 +299,37 @@ defineEmits<{
   'checkout': []
   'quickAba': []
 }>()
+
+const scrollEl = ref<HTMLElement | null>(null)
+const showPromo = ref(false)
+const flashId = ref<string | null>(null)
+let flashTimer: ReturnType<typeof setTimeout> | null = null
+
+const hasStockIssue = computed(() =>
+  props.cart.some((i) => {
+    const s = props.getLineStock(i.variant_id)
+    return s !== null && i.quantity > Math.max(0, s)
+  }),
+)
+
+// Visual confirmation that a scan / tap / quantity change landed: flash the line and keep it in view.
+watch(
+  () => [props.lastUpdatedVariantId, props.itemCount] as const,
+  async ([id]) => {
+    if (!id || !props.cart.some((i) => i.variant_id === id)) return
+    flashId.value = null
+    await nextTick()
+    flashId.value = id
+    scrollEl.value
+      ?.querySelector<HTMLElement>(`[data-variant-id="${CSS.escape(id)}"]`)
+      ?.scrollIntoView({ block: 'nearest' })
+    if (flashTimer) clearTimeout(flashTimer)
+    flashTimer = setTimeout(() => { flashId.value = null }, 1000)
+  },
+)
+
+// Keep the promo field open while a code is being typed, close it when the cart is emptied.
+watch(() => props.cart.length, (len) => { if (len === 0) showPromo.value = false })
+
+onBeforeUnmount(() => { if (flashTimer) clearTimeout(flashTimer) })
 </script>

@@ -2,196 +2,200 @@
   <Teleport to="body">
     <div
       v-if="modelValue"
-      class="fixed inset-0 bg-slate-950/60 backdrop-blur-xs z-50 flex items-center justify-center p-3"
+      class="fixed inset-0 bg-slate-950/60 z-50 flex items-center justify-center p-3"
       @click.self="$emit('update:modelValue', false)"
     >
-      <div class="bg-white rounded-xl border border-gray-200 w-full max-w-[480px] max-h-[calc(100dvh-24px)] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150 font-sans">
-        <!-- 1. Modal Header -->
-        <div class="px-4 py-2.5 border-b border-gray-200 flex items-center justify-between gap-2 flex-shrink-0">
-          <div class="flex flex-col leading-tight">
-            <h3 class="text-sm font-bold text-gray-900">Complete Sale &amp; Payment</h3>
-            <p class="text-[11px] text-gray-400">Select payment method, split tender, or cash tender</p>
+      <div
+        ref="dialogEl"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="pos-payment-title"
+        class="pos-focus bg-white rounded-xl border border-gray-200 w-full max-w-[580px] max-h-[calc(100dvh-24px)] flex flex-col overflow-hidden font-sans"
+      >
+        <!-- 1. Header -->
+        <div class="px-5 py-3 border-b border-gray-200 flex items-center justify-between gap-3 flex-shrink-0">
+          <div class="flex flex-col leading-tight min-w-0">
+            <h3 id="pos-payment-title" class="text-base font-semibold text-gray-900">Payment</h3>
+            <p class="text-sm text-gray-600 truncate">
+              {{ itemCount ?? 0 }} item{{ itemCount === 1 ? '' : 's' }} &bull; {{ customerName || 'Walk-in customer' }}
+            </p>
           </div>
           <button
             type="button"
-            class="w-7 h-7 flex items-center justify-center text-gray-400 hover:text-gray-900 rounded-md hover:bg-gray-100 transition-colors cursor-pointer"
-            aria-label="Close payment modal"
+            class="w-9 h-9 flex items-center justify-center text-gray-600 hover:text-gray-900 rounded-md hover:bg-gray-100 transition-colors cursor-pointer"
+            aria-label="Close payment (Esc)"
+            title="Close (Esc)"
             @click="$emit('update:modelValue', false)"
           >
-            <UIcon name="i-heroicons-x-mark" class="w-4 h-4" />
+            <UIcon name="i-heroicons-x-mark" class="w-5 h-5" />
           </button>
         </div>
 
-        <!-- Scrollable Body -->
-        <div class="p-3.5 overflow-y-auto flex-1 min-h-0 flex flex-col gap-2.5">
-          <!-- 2. Total Amount Due Banner (Compact Horizontal Layout) -->
-          <div class="px-3.5 py-2.5 bg-gray-900 text-white rounded-lg flex items-center justify-between gap-3 flex-shrink-0">
+        <!-- Scrollable body -->
+        <div class="px-5 py-4 overflow-y-auto pos-scroll flex-1 min-h-0 flex flex-col gap-3.5">
+          <!-- 2. Amount due -->
+          <div class="px-4 py-3 bg-gray-900 text-white rounded-lg flex items-center justify-between gap-3 flex-shrink-0">
             <div class="flex flex-col leading-tight">
-              <span class="text-[10px] font-semibold uppercase tracking-wider text-gray-400">
-                Total Amount Due
-              </span>
-              <span class="text-xs text-gray-300 font-mono mt-0.5">
-                &approx; {{ formatRiel(grandTotal) }}
-              </span>
+              <span class="text-sm font-semibold text-gray-200">Amount due</span>
+              <span class="text-sm text-gray-300 font-mono tabular-nums">&asymp; {{ formatRiel(grandTotal) }}</span>
             </div>
-            <div class="flex items-baseline gap-0.5">
-              <span class="text-sm font-bold font-mono text-gray-400">$</span>
-              <span class="text-2xl font-bold font-mono text-white tracking-tight">
+            <div class="flex items-baseline gap-1">
+              <span class="text-xl font-bold font-mono text-gray-300">$</span>
+              <span class="text-[40px] leading-none font-bold font-mono tabular-nums text-white tracking-tight">
                 {{ grandTotal.toFixed(2) }}
               </span>
             </div>
           </div>
 
-          <!-- 3. Mode Toggle (Standard vs Split Tender) -->
-          <div class="grid grid-cols-2 p-0.5 bg-gray-100 border border-gray-200/70 rounded-lg text-xs font-semibold flex-shrink-0">
+          <!-- 3. Standard vs split -->
+          <div class="grid grid-cols-2 p-1 bg-gray-100 rounded-lg text-sm font-semibold flex-shrink-0" role="tablist" aria-label="Payment mode">
             <button
               type="button"
-              class="h-7 text-center rounded-md transition-colors cursor-pointer border border-transparent"
-              :class="!isSplitMode ? 'bg-white text-gray-900 border-gray-200/80' : 'text-gray-500 hover:text-gray-900'"
+              role="tab"
+              :aria-selected="!isSplitMode"
+              class="h-9 text-center rounded-md transition-colors cursor-pointer"
+              :class="!isSplitMode ? 'bg-white text-gray-900' : 'text-gray-700 hover:text-gray-900'"
               @click="$emit('disableSplitMode')"
             >
-              Standard Payment
+              Single payment
             </button>
             <button
               type="button"
-              class="h-7 text-center rounded-md transition-colors cursor-pointer border border-transparent"
-              :class="isSplitMode ? 'bg-white text-gray-900 border-gray-200/80' : 'text-gray-500 hover:text-gray-900'"
+              role="tab"
+              :aria-selected="isSplitMode"
+              class="h-9 text-center rounded-md transition-colors cursor-pointer"
+              :class="isSplitMode ? 'bg-white text-gray-900' : 'text-gray-700 hover:text-gray-900'"
               @click="$emit('enableSplitMode')"
             >
-              Split Tender (Multi-Method)
+              Split payment
             </button>
           </div>
 
-          <!-- ── Standard Single Payment Mode ── -->
+          <!-- ── Single payment ── -->
           <template v-if="!isSplitMode">
-            <!-- Payment Method Selector (4 Options) -->
-            <div class="grid grid-cols-2 sm:grid-cols-4 gap-1.5 flex-shrink-0">
+            <!-- Method selector -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 flex-shrink-0" role="radiogroup" aria-label="Payment method">
               <button
                 v-for="method in paymentMethods"
                 :key="method.value"
                 type="button"
-                class="flex flex-col items-center justify-center gap-0.5 py-2 px-1.5 rounded-lg border text-xs font-semibold transition-colors cursor-pointer text-center min-h-[56px]"
+                role="radio"
+                :aria-checked="selectedPaymentMethod === method.value"
+                class="flex flex-col items-center justify-center gap-1 py-2.5 px-2 rounded-lg border text-center min-h-[72px] transition-colors cursor-pointer"
                 :class="selectedPaymentMethod === method.value
-                  ? 'bg-gray-900 text-white border-transparent'
-                  : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'"
+                  ? 'bg-gray-900 text-white border-gray-900'
+                  : 'bg-white text-gray-800 border-gray-200 hover:bg-gray-50'"
                 @click="handleMethodSelect(method.value)"
               >
-                <div class="flex items-center justify-center h-4">
-                  <UIcon v-if="method.value === 'CASH'" name="i-heroicons-banknotes" class="w-4 h-4" />
+                <span class="flex items-center justify-center h-5">
+                  <UIcon v-if="method.value === 'CASH'" name="i-heroicons-banknotes" class="w-5 h-5" />
                   <img
                     v-else-if="method.value === 'ABA_KHQR'"
                     src="/images/payments/aba-khqr.svg"
-                    alt="ABA KHQR"
-                    class="w-4 h-4 object-contain"
-                  />
-                  <div v-else-if="method.value === 'CARD'" class="flex items-center gap-0.5">
-                    <img src="/images/payments/visa.svg" alt="Visa" class="w-3.5 h-3.5 object-contain" />
-                    <img src="/images/payments/mastercard.svg" alt="Mastercard" class="w-3.5 h-3.5 object-contain" />
-                  </div>
-                  <UIcon v-else-if="method.value === 'BANK_TRANSFER'" name="i-heroicons-building-library" class="w-4 h-4" />
-                  <UIcon v-else name="i-heroicons-currency-dollar" class="w-4 h-4" />
-                </div>
-                <span class="text-[11px] font-bold leading-tight">{{ method.label }}</span>
+                    alt=""
+                    class="w-5 h-5 object-contain"
+                  >
+                  <span v-else-if="method.value === 'CARD'" class="flex items-center gap-0.5">
+                    <img src="/images/payments/visa.svg" alt="" class="w-4 h-4 object-contain">
+                    <img src="/images/payments/mastercard.svg" alt="" class="w-4 h-4 object-contain">
+                  </span>
+                  <UIcon v-else-if="method.value === 'BANK_TRANSFER'" name="i-heroicons-building-library" class="w-5 h-5" />
+                  <UIcon v-else name="i-heroicons-currency-dollar" class="w-5 h-5" />
+                </span>
+                <span class="text-sm font-semibold leading-tight">{{ method.label }}</span>
                 <span
                   v-if="method.subtitle"
-                  class="text-[9px] font-normal leading-tight truncate max-w-full"
-                  :class="selectedPaymentMethod === method.value ? 'text-gray-300' : 'text-gray-400'"
+                  class="text-xs leading-tight"
+                  :class="selectedPaymentMethod === method.value ? 'text-gray-300' : 'text-gray-600'"
                 >
                   {{ method.subtitle }}
                 </span>
               </button>
             </div>
 
-            <!-- 4A. Detail Section: Cash Tender -->
-            <div v-if="selectedPaymentMethod === 'CASH'" class="flex flex-col gap-2 p-2.5 bg-gray-50 border border-gray-200 rounded-lg">
-              <!-- Quick-Tender Denominations (USD & KHR) -->
-              <div class="flex flex-col gap-1.5">
-                <div class="flex items-center gap-1 flex-wrap">
-                  <span class="text-[10px] font-bold uppercase text-gray-400 w-7 flex-shrink-0">USD</span>
+            <!-- 4A. Cash -->
+            <div v-if="selectedPaymentMethod === 'CASH'" class="flex flex-col gap-3 p-3.5 bg-gray-50 border border-gray-200 rounded-lg">
+              <div class="flex flex-col gap-2">
+                <div class="flex items-center gap-1.5 flex-wrap">
+                  <span class="text-xs font-bold uppercase text-gray-600 w-9 flex-shrink-0">USD</span>
                   <button
                     type="button"
-                    class="h-7 px-2 rounded-md text-xs font-mono font-semibold bg-white border border-gray-200 text-gray-800 hover:bg-gray-100 transition-colors cursor-pointer"
+                    class="h-9 px-3 rounded-md text-sm font-mono font-semibold tabular-nums bg-white border border-gray-300 text-gray-900 hover:bg-gray-100 transition-colors cursor-pointer"
                     @click="$emit('update:tenderAmount', Number(grandTotal.toFixed(2)))"
                   >
-                    Exact (${{ grandTotal.toFixed(2) }})
+                    Exact ${{ grandTotal.toFixed(2) }}
                   </button>
                   <button
                     v-for="amt in fastCashPresets"
                     :key="amt"
                     type="button"
-                    class="h-7 px-2 rounded-md text-xs font-mono font-semibold bg-white border border-gray-200 text-gray-800 hover:bg-gray-100 transition-colors cursor-pointer"
+                    class="h-9 px-3 rounded-md text-sm font-mono font-semibold tabular-nums bg-white border border-gray-300 text-gray-900 hover:bg-gray-100 transition-colors cursor-pointer"
                     @click="$emit('update:tenderAmount', amt)"
                   >
                     ${{ amt }}
                   </button>
                 </div>
 
-                <div class="flex items-center gap-1 flex-wrap">
-                  <span class="text-[10px] font-bold uppercase text-gray-400 w-7 flex-shrink-0">KHR</span>
+                <div class="flex items-center gap-1.5 flex-wrap">
+                  <span class="text-xs font-bold uppercase text-gray-600 w-9 flex-shrink-0">KHR</span>
                   <button
                     v-for="riel in [20000, 50000, 100000, 200000]"
                     :key="riel"
                     type="button"
-                    class="h-7 px-2 rounded-md text-[11px] font-mono font-medium bg-white border border-gray-200 text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer"
+                    class="h-9 px-3 rounded-md text-sm font-mono font-medium tabular-nums bg-white border border-gray-300 text-gray-800 hover:bg-gray-100 transition-colors cursor-pointer"
                     :title="`៛${riel.toLocaleString()} ($${(riel / 4100).toFixed(2)})`"
                     @click="$emit('update:tenderAmount', Number((riel / 4100).toFixed(2)))"
                   >
-                    ៛{{ (riel / 1000).toLocaleString() }}k (${{ (riel / 4100).toFixed(2) }})
+                    ៛{{ (riel / 1000).toLocaleString() }}k
                   </button>
                 </div>
               </div>
 
-              <!-- Amount Tendered Input & Change Summary -->
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 border-t border-gray-200/70">
-                <div class="flex flex-col gap-1">
-                  <label class="text-[11px] font-semibold text-gray-700">Amount Tendered ($)</label>
+              <div class="grid grid-cols-2 gap-3 pt-3 border-t border-gray-200">
+                <div class="flex flex-col gap-1.5">
+                  <label for="pos-tender-input" class="text-sm font-semibold text-gray-900">Cash received ($)</label>
                   <div class="relative flex items-center">
-                    <span class="absolute left-2.5 text-xs font-mono font-bold text-gray-400 pointer-events-none">$</span>
+                    <span class="absolute left-3 text-lg font-mono font-bold text-gray-600 pointer-events-none">$</span>
                     <input
+                      id="pos-tender-input"
+                      ref="tenderEl"
                       :value="formattedTenderValue"
                       type="number"
                       step="0.01"
                       min="0"
-                      aria-label="Amount Tendered in USD"
-                      class="w-full h-9 bg-white border border-gray-200 rounded-md pl-6 pr-2.5 text-sm font-mono font-bold text-gray-900 outline-none focus:border-gray-400"
+                      inputmode="decimal"
+                      class="w-full h-12 bg-white border border-gray-300 rounded-md pl-8 pr-3 text-xl font-mono tabular-nums font-bold text-gray-900 focus:border-gray-500"
                       @input="onTenderInput"
-                    />
+                      @focus="(e: FocusEvent) => (e.target as HTMLInputElement).select()"
+                      @keydown.enter.prevent="onTenderEnter"
+                    >
                   </div>
                 </div>
 
-                <div class="flex flex-col gap-1">
-                  <div class="flex items-center justify-between">
-                    <span class="text-[11px] font-semibold text-gray-700">
-                      {{ cashTenderState === 'insufficient' ? 'Balance Due' : cashTenderState === 'exact' ? 'Change Due (Exact)' : 'Change Due' }}
-                    </span>
-                    <span
-                      class="text-[10px] font-bold uppercase px-1.5 py-0.2 rounded"
-                      :class="cashTenderState === 'insufficient'
-                        ? 'bg-amber-100 text-amber-800'
-                        : 'bg-emerald-100 text-emerald-800'"
-                    >
-                      {{ cashTenderState === 'insufficient' ? 'Short' : cashTenderState === 'exact' ? 'Exact' : 'Change' }}
-                    </span>
-                  </div>
+                <div class="flex flex-col gap-1.5" aria-live="polite">
+                  <span class="text-sm font-semibold text-gray-900">
+                    {{ cashTenderState === 'insufficient' ? 'Still to pay' : 'Change to give' }}
+                  </span>
                   <div
-                    class="h-9 px-2.5 rounded-md border border-gray-200 flex items-baseline justify-between flex-wrap"
+                    class="h-12 px-3 rounded-md border border-gray-200 flex items-center justify-between gap-2"
                     :class="cashTenderState === 'insufficient'
-                      ? 'bg-amber-50/80 text-amber-900'
-                      : 'bg-emerald-50/80 text-emerald-900'"
+                      ? 'bg-amber-50 text-amber-900'
+                      : 'bg-emerald-50 text-emerald-900'"
                   >
-                    <span v-if="cashTenderState === 'insufficient'" class="text-sm font-bold font-mono text-amber-900">
-                      -${{ cashShortfall.toFixed(2) }}
+                    <span class="text-xl font-bold font-mono tabular-nums">
+                      <template v-if="cashTenderState === 'insufficient'">${{ cashShortfall.toFixed(2) }}</template>
+                      <template v-else>${{ changeDue.toFixed(2) }}</template>
                     </span>
-                    <template v-else>
-                      <span class="text-base font-bold font-mono text-emerald-900">${{ changeDue.toFixed(2) }}</span>
-                      <span class="text-[10px] font-mono text-emerald-800">({{ formatRiel(changeDue) }})</span>
-                    </template>
+                    <span class="text-xs font-mono tabular-nums text-right">
+                      <template v-if="cashTenderState === 'insufficient'">short</template>
+                      <template v-else>{{ formatRiel(changeDue) }}</template>
+                    </span>
                   </div>
                 </div>
               </div>
             </div>
 
-            <!-- 4B. Detail Section: ABA KHQR -->
+            <!-- 4B. ABA KHQR -->
             <PosAbaKhqrPanel
               v-else-if="selectedPaymentMethod === 'ABA_KHQR' && (abaQrImage || abaLoading)"
               :loading="abaLoading"
@@ -209,250 +213,243 @@
             />
             <div
               v-else-if="selectedPaymentMethod === 'ABA_KHQR'"
-              class="flex items-center justify-between gap-3 p-3 bg-gray-50 border border-gray-200 rounded-lg"
+              class="flex items-center justify-between gap-3 p-3.5 bg-gray-50 border border-gray-200 rounded-lg"
             >
-              <div class="flex items-center gap-2.5 min-w-0">
-                <div class="w-9 h-9 rounded-lg bg-white border border-gray-200 flex items-center justify-center p-1.5 flex-shrink-0">
-                  <img src="/images/payments/aba-khqr.svg" alt="ABA KHQR" class="w-full h-full object-contain" />
+              <div class="flex items-center gap-3 min-w-0">
+                <div class="w-10 h-10 rounded-lg bg-white border border-gray-200 flex items-center justify-center p-1.5 flex-shrink-0">
+                  <img src="/images/payments/aba-khqr.svg" alt="" class="w-full h-full object-contain">
                 </div>
                 <div class="flex flex-col min-w-0">
-                  <span class="text-xs font-bold text-gray-900">Full-Screen ABA KHQR Kiosk</span>
-                  <span class="text-[11px] text-gray-500 leading-snug">
-                    Displays scannable dynamic KHQR with live verification &amp; auto-receipt.
+                  <span class="text-sm font-semibold text-gray-900">ABA KHQR</span>
+                  <span class="text-sm text-gray-600 leading-snug">
+                    Shows a full-screen QR for the customer. Payment is verified automatically and the receipt opens when paid.
                   </span>
                 </div>
               </div>
-              <button
-                type="button"
-                class="h-8 px-3 rounded-lg bg-gray-900 text-white text-xs font-semibold hover:bg-gray-800 transition-colors flex items-center gap-1.5 cursor-pointer flex-shrink-0"
-                @click="$emit('selectAbaKhqr')"
-              >
-                <UIcon name="i-heroicons-arrows-pointing-out" class="w-3.5 h-3.5" />
-                <span>Open QR</span>
-              </button>
             </div>
 
-            <!-- 4C. Detail Section: Card Payment (ABA PayWay Modal & EDC) -->
+            <!-- 4C. Card -->
             <div
               v-else-if="selectedPaymentMethod === 'CARD'"
-              class="flex flex-col gap-2.5 p-3 bg-gray-50 border border-gray-200 rounded-lg"
+              class="flex flex-col gap-3 p-3.5 bg-gray-50 border border-gray-200 rounded-lg"
             >
               <div class="flex items-center justify-between gap-2">
-                <div class="flex items-center gap-2">
-                  <div class="w-8 h-8 rounded-lg bg-white border border-gray-200 flex items-center justify-center text-gray-900 flex-shrink-0">
-                    <UIcon name="i-heroicons-credit-card" class="w-4 h-4" />
+                <div class="flex items-center gap-3">
+                  <div class="w-10 h-10 rounded-lg bg-white border border-gray-200 flex items-center justify-center text-gray-900 flex-shrink-0">
+                    <UIcon name="i-heroicons-credit-card" class="w-5 h-5" />
                   </div>
                   <div class="flex flex-col">
-                    <span class="text-xs font-bold text-gray-900">Credit / Debit Card Checkout</span>
-                    <div class="flex items-center gap-1 mt-0.5">
-                      <img src="/images/payments/visa.svg" alt="Visa" class="h-3 w-3.5 object-contain" />
-                      <img src="/images/payments/mastercard.svg" alt="Mastercard" class="h-3 w-3.5 object-contain" />
-                      <img src="/images/payments/unionpay.svg" alt="UnionPay" class="h-3 w-3.5 object-contain" />
-                      <img src="/images/payments/jcb.svg" alt="JCB" class="h-3 w-3.5 object-contain" />
-                      <span class="text-[10px] text-gray-500 ml-0.5">via ABA PayWay</span>
-                    </div>
+                    <span class="text-sm font-semibold text-gray-900">Credit / debit card</span>
+                    <span class="flex items-center gap-1.5 mt-0.5">
+                      <img src="/images/payments/visa.svg" alt="Visa" class="h-4 w-5 object-contain">
+                      <img src="/images/payments/mastercard.svg" alt="Mastercard" class="h-4 w-5 object-contain">
+                      <img src="/images/payments/unionpay.svg" alt="UnionPay" class="h-4 w-5 object-contain">
+                      <img src="/images/payments/jcb.svg" alt="JCB" class="h-4 w-5 object-contain">
+                      <span class="text-xs text-gray-600 ml-0.5">via ABA PayWay</span>
+                    </span>
                   </div>
                 </div>
-                <span class="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-white border border-gray-200 text-gray-600">3D Secure</span>
+                <span class="px-2 h-6 leading-6 rounded text-xs font-semibold bg-white border border-gray-200 text-gray-700">3D Secure</span>
               </div>
 
-              <!-- Status Banner when ABA modal is active -->
+              <!-- Awaiting card modal -->
               <div
                 v-if="isAbaModalActive && abaStatus === 'PENDING'"
-                class="p-2.5 bg-white border border-gray-200 rounded-lg flex items-center justify-between"
+                class="p-3 bg-white border border-gray-200 rounded-lg flex items-center justify-between gap-2"
+                role="status"
               >
-                <div class="flex items-center gap-2">
-                  <UIcon name="i-heroicons-arrow-path" class="w-4 h-4 text-gray-700 animate-spin" />
+                <div class="flex items-center gap-2.5">
+                  <UIcon name="i-heroicons-arrow-path" class="w-5 h-5 text-gray-700 animate-spin" />
                   <div class="flex flex-col">
-                    <span class="text-xs font-bold text-gray-900">Awaiting Card Authorization</span>
-                    <span class="text-[10px] text-gray-500">Complete card entry in ABA modal</span>
+                    <span class="text-sm font-semibold text-gray-900">Waiting for card authorisation</span>
+                    <span class="text-xs text-gray-600">Finish card entry in the ABA window</span>
                   </div>
                 </div>
                 <button
                   type="button"
-                  class="h-7 px-2.5 rounded-md text-xs font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 border border-gray-200 cursor-pointer"
+                  class="h-9 px-3 rounded-md text-sm font-semibold text-gray-800 hover:bg-gray-100 border border-gray-300 cursor-pointer"
                   @click="$emit('abaCancel')"
                 >
                   Cancel
                 </button>
               </div>
 
-              <!-- Optional manual terminal reference fallback -->
-              <div class="flex flex-col gap-1">
-                <label class="text-[11px] font-semibold text-gray-600">Offline EDC Terminal Auth Code (optional):</label>
+              <div class="flex flex-col gap-1.5">
+                <label for="pos-card-ref" class="text-sm font-semibold text-gray-900">Terminal slip code <span class="font-normal text-gray-600">(optional)</span></label>
                 <input
+                  id="pos-card-ref"
                   :value="paymentReferenceNumber"
-                  class="h-8 bg-white border border-gray-200 rounded-md px-2.5 text-xs outline-none focus:border-gray-400"
-                  placeholder="Enter slip auth code, or leave blank for ABA Card Modal"
+                  class="h-10 bg-white border border-gray-300 rounded-md px-3 text-sm focus:border-gray-500 placeholder-gray-500"
+                  placeholder="Leave blank to pay in the ABA card window"
                   @input="$emit('update:paymentReferenceNumber', ($event.target as HTMLInputElement).value)"
-                />
+                >
+                <span class="text-xs text-gray-600">Enter a code only if the card was already charged on a separate EDC terminal.</span>
               </div>
             </div>
 
-            <!-- 4D. Detail Section: Bank Transfer -->
+            <!-- 4D. Bank transfer -->
             <div
               v-else-if="selectedPaymentMethod === 'BANK_TRANSFER'"
-              class="flex flex-col gap-2 p-3 bg-gray-50 border border-gray-200 rounded-lg"
+              class="flex flex-col gap-3 p-3.5 bg-gray-50 border border-gray-200 rounded-lg"
             >
-              <div class="flex items-center gap-2">
-                <div class="w-8 h-8 rounded-lg bg-white border border-gray-200 flex items-center justify-center text-gray-900 flex-shrink-0">
-                  <UIcon name="i-heroicons-building-library" class="w-4 h-4" />
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-lg bg-white border border-gray-200 flex items-center justify-center text-gray-900 flex-shrink-0">
+                  <UIcon name="i-heroicons-building-library" class="w-5 h-5" />
                 </div>
                 <div class="flex flex-col">
-                  <span class="text-xs font-bold text-gray-900">Direct Bank Transfer</span>
-                  <span class="text-[11px] text-gray-500">Record wire or mobile transfer reference number</span>
+                  <span class="text-sm font-semibold text-gray-900">Bank transfer</span>
+                  <span class="text-sm text-gray-600">Record the transfer reference from the customer</span>
                 </div>
               </div>
-              <div class="flex flex-col gap-1">
-                <label class="text-[11px] font-semibold text-gray-700">Bank Transfer / Reference No.</label>
+              <div class="flex flex-col gap-1.5">
+                <label for="pos-bank-ref" class="text-sm font-semibold text-gray-900">Reference number</label>
                 <input
+                  id="pos-bank-ref"
                   :value="paymentReferenceNumber"
-                  class="h-8 bg-white border border-gray-200 rounded-md px-2.5 text-xs outline-none focus:border-gray-400"
-                  placeholder="Enter bank transaction ID or account reference"
+                  class="h-10 bg-white border border-gray-300 rounded-md px-3 text-sm focus:border-gray-500 placeholder-gray-500"
+                  placeholder="Bank transaction ID or reference"
                   @input="$emit('update:paymentReferenceNumber', ($event.target as HTMLInputElement).value)"
-                />
+                  @keydown.enter.prevent="onTenderEnter"
+                >
               </div>
             </div>
           </template>
 
-          <!-- ── 4E. Split Tender Builder Mode ── -->
+          <!-- ── Split payment ── -->
           <template v-else>
-            <div class="flex flex-col gap-2 p-2.5 bg-gray-50 border border-gray-200 rounded-lg">
-              <div class="flex flex-col gap-1.5">
+            <div class="flex flex-col gap-2.5 p-3.5 bg-gray-50 border border-gray-200 rounded-lg">
+              <div class="flex flex-col gap-2">
                 <div
                   v-for="(split, sIdx) in splitPayments"
                   :key="sIdx"
-                  class="flex items-center gap-1.5"
+                  class="flex items-center gap-2"
                 >
                   <select
                     v-model="split.payment_method"
-                    aria-label="Split payment method"
-                    class="h-8 bg-white border border-gray-200 rounded-md px-2 text-xs font-medium text-gray-800 outline-none focus:border-gray-400"
+                    :aria-label="`Method for payment ${sIdx + 1}`"
+                    class="h-10 bg-white border border-gray-300 rounded-md px-2 text-sm font-medium text-gray-900"
                   >
                     <option value="CASH">Cash</option>
                     <option value="KHQR">ABA KHQR</option>
                     <option value="CARD">Card</option>
-                    <option value="BANK_TRANSFER">Bank Transfer</option>
+                    <option value="BANK_TRANSFER">Bank transfer</option>
                   </select>
 
                   <div class="relative w-28 flex-shrink-0 flex items-center">
-                    <span class="absolute left-2 text-xs text-gray-400 font-mono pointer-events-none">$</span>
+                    <span class="absolute left-2.5 text-sm text-gray-600 font-mono pointer-events-none">$</span>
                     <input
                       v-model.number="split.amount"
                       type="number"
                       step="0.01"
                       min="0.01"
-                      aria-label="Split payment amount"
-                      class="w-full h-8 bg-white border border-gray-200 rounded-md pl-5 pr-2 text-xs font-mono font-semibold outline-none focus:border-gray-400"
-                    />
+                      inputmode="decimal"
+                      :aria-label="`Amount for payment ${sIdx + 1}`"
+                      class="w-full h-10 bg-white border border-gray-300 rounded-md pl-6 pr-2 text-sm font-mono tabular-nums font-semibold"
+                    >
                   </div>
 
                   <input
                     v-model="split.reference_number"
-                    placeholder="Ref / Auth (opt)"
-                    aria-label="Split payment reference"
-                    class="h-8 bg-white border border-gray-200 rounded-md px-2 text-xs outline-none focus:border-gray-400 flex-1 min-w-0"
-                  />
+                    placeholder="Ref (optional)"
+                    :aria-label="`Reference for payment ${sIdx + 1}`"
+                    class="h-10 bg-white border border-gray-300 rounded-md px-2.5 text-sm flex-1 min-w-0 placeholder-gray-500"
+                  >
 
                   <button
                     type="button"
-                    class="w-7 h-8 flex items-center justify-center text-gray-400 hover:text-rose-600 disabled:opacity-30 cursor-pointer flex-shrink-0"
-                    title="Remove split entry"
-                    aria-label="Remove split entry"
+                    class="w-9 h-10 flex items-center justify-center text-gray-600 hover:text-red-700 disabled:opacity-40 disabled:hover:text-gray-600 cursor-pointer flex-shrink-0"
+                    title="Remove this payment line"
+                    aria-label="Remove this payment line"
                     :disabled="splitPayments.length <= 1"
                     @click="$emit('removeSplitRow', sIdx)"
                   >
-                    <UIcon name="i-heroicons-trash" class="w-3.5 h-3.5" />
+                    <UIcon name="i-heroicons-trash" class="w-4 h-4" />
                   </button>
                 </div>
               </div>
 
-              <div class="flex items-center justify-between pt-1.5 border-t border-gray-200 text-xs">
+              <div class="flex items-center justify-between gap-2 pt-2.5 border-t border-gray-200">
                 <button
                   type="button"
-                  class="h-7 px-2 rounded-md bg-white border border-gray-200 text-xs font-semibold text-gray-700 hover:bg-gray-100 flex items-center gap-1 cursor-pointer"
+                  class="h-9 px-3 rounded-md bg-white border border-gray-300 text-sm font-semibold text-gray-800 hover:bg-gray-100 flex items-center gap-1.5 cursor-pointer"
                   @click="$emit('addSplitRow')"
                 >
-                  <UIcon name="i-heroicons-plus" class="w-3 h-3" />
-                  <span>Add Method</span>
+                  <UIcon name="i-heroicons-plus" class="w-4 h-4" />
+                  <span>Add method</span>
                 </button>
 
-                <div class="flex items-center gap-2.5 font-mono text-xs">
-                  <span class="text-gray-500">Paid: <strong class="text-gray-800">${{ totalSplitAmount.toFixed(2) }}</strong></span>
+                <div class="flex items-center gap-3 font-mono tabular-nums text-sm" aria-live="polite">
+                  <span class="text-gray-700">Entered <strong class="text-gray-900">${{ totalSplitAmount.toFixed(2) }}</strong></span>
                   <span
-                    class="px-1.5 py-0.5 rounded font-bold"
-                    :class="remainingSplitBalance === 0
-                      ? 'bg-emerald-50 text-emerald-700'
-                      : 'bg-amber-50 text-amber-800'"
+                    class="px-2 h-7 leading-7 rounded font-bold"
+                    :class="remainingSplitBalance === 0 ? 'bg-emerald-50 text-emerald-900' : 'bg-amber-50 text-amber-900'"
                   >
-                    {{ remainingSplitBalance === 0 ? 'Balanced ($0.00)' : `Due: $${remainingSplitBalance.toFixed(2)}` }}
+                    {{ remainingSplitBalance === 0 ? 'Fully covered' : `Short $${remainingSplitBalance.toFixed(2)}` }}
                   </span>
                 </div>
               </div>
             </div>
           </template>
 
-          <!-- 5. Optional Order Memo -->
-          <div class="flex items-center gap-2 flex-shrink-0">
-            <label class="text-[11px] font-semibold text-gray-600 whitespace-nowrap">Memo:</label>
+          <!-- 5. Order memo -->
+          <div class="flex items-center gap-2.5 flex-shrink-0">
+            <label for="pos-order-memo" class="text-sm font-semibold text-gray-800 whitespace-nowrap">Note</label>
             <input
+              id="pos-order-memo"
               :value="orderNotes"
-              aria-label="Order Memo or Notes"
-              class="h-8 flex-1 bg-white border border-gray-200 rounded-md px-2.5 text-xs outline-none focus:border-gray-400"
-              placeholder="Optional order note or gift receipt instruction..."
+              class="h-10 flex-1 bg-white border border-gray-300 rounded-md px-3 text-sm placeholder-gray-500 focus:border-gray-500"
+              placeholder="Optional order note, e.g. gift receipt"
               @input="$emit('update:orderNotes', ($event.target as HTMLInputElement).value)"
-            />
+            >
           </div>
 
-          <!-- Compact Trust Strip -->
-          <div class="pt-1.5 border-t border-gray-100 flex items-center justify-between flex-wrap gap-2 flex-shrink-0">
+          <!-- Accepted payments strip -->
+          <div class="pt-2 border-t border-gray-100 flex items-center justify-between flex-wrap gap-2 flex-shrink-0">
             <PosWeAcceptPaymentStrip :show-label="true" size="sm" :show-e-wallets="false" />
-            <span class="text-[10px] text-gray-400 font-medium">Secured by ABA PayWay</span>
+            <span class="text-xs text-gray-600">Secured by ABA PayWay</span>
           </div>
         </div>
 
-        <!-- 6. Modal Footer -->
-        <div class="px-4 py-2.5 border-t border-gray-200 flex items-center gap-2 bg-gray-50 flex-shrink-0">
+        <!-- 6. Footer: one clear primary action -->
+        <div class="px-5 py-3 border-t border-gray-200 flex items-center gap-3 bg-gray-50 flex-shrink-0">
           <button
             type="button"
-            class="h-9 px-3.5 rounded-lg border border-gray-200 bg-white text-gray-700 hover:bg-gray-100 text-xs font-semibold transition-colors cursor-pointer"
+            class="h-12 px-4 rounded-lg border border-gray-300 bg-white text-gray-800 hover:bg-gray-100 text-sm font-semibold transition-colors cursor-pointer"
             @click="$emit('update:modelValue', false)"
           >
-            Cancel
+            Back <span class="text-gray-600 font-normal">(Esc)</span>
           </button>
+
           <button
             v-if="!isSplitMode && selectedPaymentMethod === 'ABA_KHQR'"
             type="button"
-            class="h-9 flex-1 bg-gray-900 text-white rounded-lg text-xs font-bold hover:bg-gray-800 disabled:opacity-40 transition-colors cursor-pointer border border-transparent flex items-center justify-center gap-1.5"
+            class="h-12 flex-1 bg-pay text-white rounded-lg text-base font-bold hover:bg-pay-hover disabled:bg-gray-200 disabled:text-gray-600 disabled:cursor-not-allowed transition-colors cursor-pointer flex items-center justify-center gap-2"
             :disabled="processingSale || isCheckoutDisabled"
             @click="$emit('selectAbaKhqr')"
           >
-            <UIcon name="i-heroicons-arrows-pointing-out" class="w-4 h-4" />
-            <span>Launch Full-Screen QR Kiosk (${{ grandTotal.toFixed(2) }})</span>
+            <UIcon :name="processingSale ? 'i-heroicons-arrow-path' : 'i-heroicons-qr-code'" class="w-5 h-5" :class="{ 'animate-spin': processingSale }" />
+            <span>{{ processingSale ? 'Creating QR…' : `Show QR · $${grandTotal.toFixed(2)}` }}</span>
           </button>
           <button
             v-else-if="!isSplitMode && selectedPaymentMethod === 'CARD' && !paymentReferenceNumber"
             type="button"
-            class="h-9 flex-1 bg-gray-900 text-white rounded-lg text-xs font-bold hover:bg-gray-800 disabled:opacity-40 transition-colors cursor-pointer border border-transparent flex items-center justify-center gap-1.5"
+            class="h-12 flex-1 bg-pay text-white rounded-lg text-base font-bold hover:bg-pay-hover disabled:bg-gray-200 disabled:text-gray-600 disabled:cursor-not-allowed transition-colors cursor-pointer flex items-center justify-center gap-2"
             :disabled="processingSale || isCheckoutDisabled || isAbaModalActive"
             @click="$emit('selectAbaCard')"
           >
-            <UIcon name="i-heroicons-credit-card" class="w-4 h-4" />
-            <span>{{ isAbaModalActive ? 'Awaiting Card Modal…' : `Pay with Card (ABA Modal) ($${grandTotal.toFixed(2)})` }}</span>
+            <UIcon name="i-heroicons-credit-card" class="w-5 h-5" />
+            <span>{{ isAbaModalActive ? 'Waiting for card…' : `Pay by card · $${grandTotal.toFixed(2)}` }}</span>
           </button>
           <button
             v-else
             type="button"
-            class="h-9 flex-1 bg-gray-900 text-white rounded-lg text-xs font-bold hover:bg-gray-800 disabled:opacity-40 transition-colors cursor-pointer border border-transparent flex items-center justify-center gap-1.5"
+            class="h-12 flex-1 bg-pay text-white rounded-lg text-base font-bold hover:bg-pay-hover disabled:bg-gray-200 disabled:text-gray-600 disabled:cursor-not-allowed transition-colors cursor-pointer flex items-center justify-center gap-2"
             :disabled="processingSale || isCheckoutDisabled"
+            :aria-busy="processingSale"
             @click="$emit('finalizeSale')"
           >
-            <template v-if="processingSale">
-              Authorizing...
-            </template>
-            <template v-else>
-              Confirm &amp; Charge ${{ grandTotal.toFixed(2) }}
-            </template>
+            <UIcon :name="processingSale ? 'i-heroicons-arrow-path' : 'i-heroicons-check'" class="w-5 h-5" :class="{ 'animate-spin': processingSale }" />
+            <span>{{ processingSale ? 'Processing payment…' : `Complete sale · $${grandTotal.toFixed(2)}` }}</span>
           </button>
         </div>
       </div>
@@ -461,7 +458,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, nextTick, ref, toRef, watch } from 'vue'
+import { useDialogFocus } from '~/composables/useDialogFocus'
 
 const props = defineProps<{
   modelValue: boolean
@@ -490,6 +488,9 @@ const props = defineProps<{
   abaSecondsLeft: number
   abaCancelling: boolean
   isAbaModalActive?: boolean
+  // Context shown in the header
+  itemCount?: number
+  customerName?: string | null
 }>()
 
 const emit = defineEmits<{
@@ -508,6 +509,24 @@ const emit = defineEmits<{
   'selectAbaKhqr': []
   'selectAbaCard': []
 }>()
+
+const dialogEl = ref<HTMLElement | null>(null)
+const tenderEl = ref<HTMLInputElement | null>(null)
+
+// Focus the cash field first (the common case) so the cashier can type the amount immediately.
+useDialogFocus(toRef(props, 'modelValue'), dialogEl, {
+  initialFocus: () => (props.selectedPaymentMethod === 'CASH' && !props.isSplitMode ? tenderEl.value : null),
+})
+
+watch(
+  () => [props.selectedPaymentMethod, props.isSplitMode] as const,
+  async ([method, split]) => {
+    if (!props.modelValue || split || method !== 'CASH') return
+    await nextTick()
+    tenderEl.value?.focus()
+    tenderEl.value?.select()
+  },
+)
 
 /**
  * Prevent long IEEE-754 floating-point numbers (e.g. 216.27900000000002)
@@ -537,6 +556,12 @@ function onTenderInput(e: Event) {
   const raw = (e.target as HTMLInputElement).value
   const parsed = parseFloat(raw)
   emit('update:tenderAmount', Number.isFinite(parsed) ? parsed : 0)
+}
+
+/** Enter in the cash / reference field completes the sale — but never twice, and never while invalid. */
+function onTenderEnter() {
+  if (props.processingSale || props.isCheckoutDisabled) return
+  emit('finalizeSale')
 }
 
 function handleMethodSelect(methodVal: string) {
