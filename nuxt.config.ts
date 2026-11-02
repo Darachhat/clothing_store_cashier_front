@@ -49,7 +49,7 @@ export default defineNuxtConfig({
     apiBaseAuth: process.env.NUXT_API_BASE_AUTH || '',
     public: {
       apiBase:     process.env.NUXT_PUBLIC_API_BASE     || '/api/proxy',
-      backendBase: process.env.NUXT_PUBLIC_BACKEND_BASE || 'https://api.kimvannak.store',
+      backendBase: process.env.NUXT_API_BASE            || 'https://api.kimvannak.store',
       appName:     process.env.NUXT_PUBLIC_APP_NAME     || 'Clothing Store — POS',
     },
   },
@@ -90,6 +90,6 @@ export default defineNuxtConfig({
     '/scanner': { redirect: '/pos/scanner' },
     '/settings': { ssr: false },
     // @ts-expect-error: 'proxy' is valid at runtime but not in the RouteRules type definition
-    '/uploads/**': { proxy: `${process.env.NUXT_API_BASE || 'http://backend:8000'}/uploads/**` },
+    '/uploads/**': { proxy: `${process.env.NUXT_API_BASE || 'https://api.kimvannak.store'}/uploads/**` },
   },
 })
