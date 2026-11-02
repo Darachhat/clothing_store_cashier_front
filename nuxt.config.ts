@@ -5,6 +5,7 @@ export default defineNuxtConfig({
 
   experimental: {
     appManifest: false,
+    emitRouteChunkError: 'automatic-immediate',
   },
 
   future: {
@@ -84,11 +85,10 @@ export default defineNuxtConfig({
   },
 
   routeRules: {
-    '/pos': { ssr: false },
-    '/pos/scanner': { ssr: false },
-    '/pos/customer-display': { ssr: false },
+    '/': { headers: { 'cache-control': 'public, max-age=0, must-revalidate' } },
+    '/pos/**': { ssr: false, headers: { 'cache-control': 'no-cache, no-store, must-revalidate' } },
     '/scanner': { redirect: '/pos/scanner' },
-    '/settings': { ssr: false },
+    '/settings/**': { ssr: false, headers: { 'cache-control': 'no-cache, no-store, must-revalidate' } },
     // @ts-expect-error: 'proxy' is valid at runtime but not in the RouteRules type definition
     '/uploads/**': { proxy: `${process.env.NUXT_API_BASE || 'https://api.kimvannak.store'}/uploads/**` },
   },
