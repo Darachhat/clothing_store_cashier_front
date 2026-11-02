@@ -1,17 +1,19 @@
 // Auth store — manages JWT tokens and current user
 import { defineStore } from 'pinia'
+import { CASHIER_API_ENDPOINTS } from '~/api/endpoints'
+import type { USER_RESPONSE_SCHEMA } from '~/types/api.generated'
 
-interface User {
-  id: string
-  username: string
-  email: string
-  full_name: string
-  roles: Array<{ name: string; permissions: Array<{ code: string }> }>
-  status: string
+export interface UserRole {
+  name: string
+  permissions?: Array<{ code: string }>
+}
+
+export interface User extends Omit<USER_RESPONSE_SCHEMA, 'roles'> {
+  roles?: UserRole[]
   branch?: { id?: string; name?: string } | null
 }
 
-interface AuthState {
+export interface AuthState {
   user: User | null
   accessToken: string | null
   refreshToken: string | null
@@ -54,7 +56,7 @@ export const useAuthStore = defineStore('auth', {
         access_token: string
         refresh_token: string
         user: User
-      }>('/api/cashier/v1/auth/login', {
+      }>(CASHIER_API_ENDPOINTS.auth.login, {
         baseURL: getApiBase(),
         method: 'POST',
         body: { username, password },
@@ -81,7 +83,7 @@ export const useAuthStore = defineStore('auth', {
         const data = await $fetch<{
           access_token: string
           refresh_token: string
-        }>('/api/cashier/v1/auth/refresh', {
+        }>(CASHIER_API_ENDPOINTS.auth.refresh, {
           baseURL: getApiBase(),
           method: 'POST',
           body: { refresh_token: currentRefresh },
@@ -107,7 +109,7 @@ export const useAuthStore = defineStore('auth', {
           : null)
       if (currentRefresh) {
         try {
-          await $fetch('/api/cashier/v1/auth/logout', {
+          await $fetch(CASHIER_API_ENDPOINTS.auth.logout, {
             baseURL: getApiBase(),
             method: 'POST',
             body: { refresh_token: currentRefresh },
@@ -142,7 +144,7 @@ export const useAuthStore = defineStore('auth', {
       if (!this.accessToken) return
 
       try {
-        const user = await $fetch<User>('/api/cashier/v1/auth/me', {
+        const user = await $fetch<User>(CASHIER_API_ENDPOINTS.auth.me, {
           baseURL: getApiBase(),
           headers: { Authorization: `Bearer ${this.accessToken}` },
         })
@@ -151,7 +153,7 @@ export const useAuthStore = defineStore('auth', {
         const ok = await this.refreshSession()
         if (ok && this.accessToken) {
           try {
-            const user = await $fetch<User>('/api/cashier/v1/auth/me', {
+            const user = await $fetch<User>(CASHIER_API_ENDPOINTS.auth.me, {
               baseURL: getApiBase(),
               headers: { Authorization: `Bearer ${this.accessToken}` },
             })

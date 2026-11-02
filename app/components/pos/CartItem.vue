@@ -11,7 +11,7 @@
       <div class="w-11 h-11 rounded-md bg-gray-100 flex items-center justify-center overflow-hidden flex-shrink-0">
         <img
           v-if="(item.variant?.image_url || item.variant?.product?.image_url) && !imgError"
-          :src="item.variant?.image_url || item.variant?.product?.image_url"
+          :src="(item.variant?.image_url || item.variant?.product?.image_url) || undefined"
           alt=""
           class="w-full h-full object-cover"
           loading="lazy"

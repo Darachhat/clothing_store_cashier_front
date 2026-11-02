@@ -1,100 +1,20 @@
-// Helper to decode JWT payload safely
-function isJwtExpired(token: string, bufferSeconds = 30): boolean {
-  try {
-    const parts = token.split('.')
-    if (parts.length < 2) return false
-    const base64 = parts[1]!.replace(/-/g, '+').replace(/_/g, '/')
-    const jsonStr = decodeURIComponent(
-      atob(base64)
-        .split('')
-        .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
-        .join('')
-    )
-    const payload = JSON.parse(jsonStr)
-    if (typeof payload.exp === 'number') {
-      return Date.now() >= (payload.exp - bufferSeconds) * 1000
-    }
-  } catch {
-    // If decoding fails, assume not expired and let backend handle
-  }
-  return false
-}
+// Backward-compatible API facade delegating to centralized client & endpoints
+import { createCashierApiClient } from '~/api/client'
+import { CASHIER_API_ENDPOINTS } from '~/api/endpoints'
 
-// Centralized Cashier API composable — wraps $fetch with auth headers, SSR-safe base URL, and token refresh
 export function useApi() {
-  const config = useRuntimeConfig()
-  const authStore = useAuthStore()
-
-  const baseURL = (import.meta.server
-    ? (config.apiBase || 'http://backend:8000')
-    : config.public.apiBase) as string
-
-  const apiFetch = $fetch.create({
-    baseURL,
-    retry: 1,
-    retryStatusCodes: [401],
-    async onRequest({ options }) {
-      if (!authStore.accessToken && typeof window !== 'undefined') {
-        authStore.restoreSession()
-      }
-      let token =
-        authStore.accessToken ||
-        (typeof window !== 'undefined'
-          ? localStorage.getItem('cashier_access_token') || localStorage.getItem('access_token')
-          : null)
-
-      if (typeof window !== 'undefined') {
-        const hasRefresh = !!(
-          authStore.$state.refreshToken ||
-          localStorage.getItem('cashier_refresh_token') ||
-          localStorage.getItem('refresh_token')
-        )
-        if (hasRefresh && (!token || isJwtExpired(token, 30))) {
-          const ok = await authStore.refreshSession()
-          if (ok && authStore.accessToken) {
-            token = authStore.accessToken
-          }
-        }
-      }
-
-      const headers = new Headers(options.headers || {})
-      if (token) {
-        headers.set('Authorization', `Bearer ${token}`)
-      }
-      // Attach system credential server-side only (credential stays private)
-      if (import.meta.server) {
-        const sysAuth = config.apiBaseAuth as string
-        if (sysAuth) headers.set('X-System-Authorization', sysAuth)
-      }
-      options.headers = headers
-    },
-    async onResponseError({ response }) {
-      if (response.status === 401) {
-        const refreshed = await authStore.refreshSession()
-        if (!refreshed) {
-          authStore.logout()
-          await navigateTo('/login')
-        }
-      }
-    },
-  })
+  const client = createCashierApiClient()
 
   return {
-    baseURL,
-    apiFetch,
-    get: <T = any>(url: string, params?: Record<string, unknown>) =>
-      apiFetch<T>(url, { params, query: params }),
-    post: <T = any>(url: string, body?: unknown) =>
-      apiFetch<T>(url, { method: 'POST', body: body as any }),
-    patch: <T = any>(url: string, body?: unknown) =>
-      apiFetch<T>(url, { method: 'PATCH', body: body as any }),
-    put: <T = any>(url: string, body?: unknown) =>
-      apiFetch<T>(url, { method: 'PUT', body: body as any }),
-    delete: <T = any>(url: string) =>
-      apiFetch<T>(url, { method: 'DELETE' }),
+    baseURL: client.baseURL,
+    apiFetch: client.fetch,
+    get: client.get,
+    post: client.post,
+    patch: client.patch,
+    put: client.put,
+    delete: client.delete,
   }
 }
-
 
 // Typed POS Domain API Helpers (targeting /api/cashier/v1/*)
 export function useProductApi() {
@@ -102,21 +22,21 @@ export function useProductApi() {
 
   return {
     listProducts: <T = any>(params?: Record<string, unknown>) =>
-      apiFetch<T>('/api/cashier/v1/products', { params, query: params }),
+      apiFetch<T>(CASHIER_API_ENDPOINTS.products.list, { params, query: params }),
     getProduct: (id: string) =>
-      apiFetch(`/api/cashier/v1/products/${id}`),
+      apiFetch(CASHIER_API_ENDPOINTS.products.detail(id)),
     getVariants: (productId: string) =>
-      apiFetch(`/api/cashier/v1/products/${productId}/variants`),
+      apiFetch(CASHIER_API_ENDPOINTS.products.variants(productId)),
     getVariantQr: (variantId: string, format: 'png' | 'svg' = 'svg') =>
-      `${useRuntimeConfig().public.apiBase}/api/cashier/v1/product-variants/${variantId}/qr?format=${format}`,
+      `${useRuntimeConfig().public.apiBase}${CASHIER_API_ENDPOINTS.productVariants.qr(variantId, format)}`,
     getVariantBarcode: (variantId: string, format: 'png' | 'svg' = 'svg', writeText = false) =>
-      `${useRuntimeConfig().public.apiBase}/api/cashier/v1/product-variants/${variantId}/barcode?format=${format}&write_text=${writeText}`,
+      `${useRuntimeConfig().public.apiBase}${CASHIER_API_ENDPOINTS.productVariants.barcode(variantId, format, writeText)}`,
     searchByQr: (ref: string) =>
-      apiFetch(`/api/cashier/v1/product-variants/by-qr/${ref}`),
+      apiFetch(CASHIER_API_ENDPOINTS.productVariants.byQr(ref)),
     searchByBarcode: (barcode: string) =>
-      apiFetch(`/api/cashier/v1/product-variants/by-barcode/${barcode}`),
+      apiFetch(CASHIER_API_ENDPOINTS.productVariants.byBarcode(barcode)),
     searchBySku: (sku: string) =>
-      apiFetch(`/api/cashier/v1/product-variants/by-sku/${sku}`),
+      apiFetch(CASHIER_API_ENDPOINTS.productVariants.bySku(sku)),
   }
 }
 
@@ -125,19 +45,19 @@ export function useSaleApi() {
 
   return {
     listSales: (params?: Record<string, unknown>) =>
-      apiFetch('/api/cashier/v1/sales', { params, query: params }),
+      apiFetch(CASHIER_API_ENDPOINTS.sales.list, { params, query: params }),
     getSale: (id: string) =>
-      apiFetch(`/api/cashier/v1/sales/${id}`),
+      apiFetch(CASHIER_API_ENDPOINTS.sales.detail(id)),
     createSale: (body: unknown) =>
-      apiFetch('/api/cashier/v1/sales', { method: 'POST', body: body as any }),
+      apiFetch(CASHIER_API_ENDPOINTS.sales.create, { method: 'POST', body: body as any }),
     completeSale: (id: string, body: unknown) =>
-      apiFetch(`/api/cashier/v1/sales/${id}/complete`, { method: 'POST', body: body as any }),
+      apiFetch(CASHIER_API_ENDPOINTS.sales.complete(id), { method: 'POST', body: body as any }),
     cancelSale: (id: string) =>
-      apiFetch(`/api/cashier/v1/sales/${id}/cancel`, { method: 'POST' }),
+      apiFetch(CASHIER_API_ENDPOINTS.sales.cancel(id), { method: 'POST' }),
     listReturns: (params?: Record<string, unknown>) =>
-      apiFetch('/api/cashier/v1/returns', { params, query: params }),
+      apiFetch(CASHIER_API_ENDPOINTS.sales.returns, { params, query: params }),
     createReturn: (body: unknown) =>
-      apiFetch('/api/cashier/v1/returns', { method: 'POST', body: body as any }),
+      apiFetch(CASHIER_API_ENDPOINTS.sales.createReturn, { method: 'POST', body: body as any }),
   }
 }
 
@@ -146,9 +66,9 @@ export function useInventoryApi() {
 
   return {
     listStocks: (params?: Record<string, unknown>) =>
-      apiFetch('/api/cashier/v1/inventory/stocks', { params, query: params }),
+      apiFetch(CASHIER_API_ENDPOINTS.inventory.stocks, { params, query: params }),
     listMovements: (params?: Record<string, unknown>) =>
-      apiFetch('/api/cashier/v1/inventory/movements', { params, query: params }),
+      apiFetch(CASHIER_API_ENDPOINTS.inventory.movements, { params, query: params }),
   }
 }
 
@@ -157,13 +77,13 @@ export function useCatalogApi() {
 
   return {
     listCategories: (params?: Record<string, unknown>) =>
-      apiFetch('/api/cashier/v1/categories', { params, query: params }),
+      apiFetch(CASHIER_API_ENDPOINTS.catalog.categories, { params, query: params }),
     listBrands: (params?: Record<string, unknown>) =>
-      apiFetch('/api/cashier/v1/brands', { params, query: params }),
+      apiFetch(CASHIER_API_ENDPOINTS.catalog.brands, { params, query: params }),
     listColors: (params?: Record<string, unknown>) =>
-      apiFetch('/api/cashier/v1/colors', { params, query: params }),
+      apiFetch(CASHIER_API_ENDPOINTS.catalog.colors, { params, query: params }),
     listSizes: (params?: Record<string, unknown>) =>
-      apiFetch('/api/cashier/v1/sizes', { params, query: params }),
+      apiFetch(CASHIER_API_ENDPOINTS.catalog.sizes, { params, query: params }),
   }
 }
 
@@ -172,13 +92,13 @@ export function useVariantApi() {
 
   return {
     listVariants: (params?: Record<string, unknown>) =>
-      apiFetch('/api/cashier/v1/product-variants', { params, query: params }),
+      apiFetch(CASHIER_API_ENDPOINTS.productVariants.list, { params, query: params }),
     getVariant: (id: string) =>
-      apiFetch(`/api/cashier/v1/product-variants/${id}`),
+      apiFetch(CASHIER_API_ENDPOINTS.productVariants.detail(id)),
     getQrUrl: (id: string, format: 'png' | 'svg' = 'svg') =>
-      `${useRuntimeConfig().public.apiBase}/api/cashier/v1/product-variants/${id}/qr?format=${format}`,
+      `${useRuntimeConfig().public.apiBase}${CASHIER_API_ENDPOINTS.productVariants.qr(id, format)}`,
     getBarcodeUrl: (id: string, format: 'png' | 'svg' = 'svg', writeText = false) =>
-      `${useRuntimeConfig().public.apiBase}/api/cashier/v1/product-variants/${id}/barcode?format=${format}&write_text=${writeText}`,
+      `${useRuntimeConfig().public.apiBase}${CASHIER_API_ENDPOINTS.productVariants.barcode(id, format, writeText)}`,
   }
 }
 
@@ -187,13 +107,13 @@ export function useCustomerApi() {
 
   return {
     listCustomers: (params?: Record<string, unknown>) =>
-      apiFetch('/api/cashier/v1/customers', { params, query: params }),
+      apiFetch(CASHIER_API_ENDPOINTS.customers.list, { params, query: params }),
     getCustomer: (id: string) =>
-      apiFetch(`/api/cashier/v1/customers/${id}`),
+      apiFetch(CASHIER_API_ENDPOINTS.customers.detail(id)),
     createCustomer: (body: unknown) =>
-      apiFetch('/api/cashier/v1/customers', { method: 'POST', body: body as any }),
+      apiFetch(CASHIER_API_ENDPOINTS.customers.create, { method: 'POST', body: body as any }),
     updateCustomer: (id: string, body: unknown) =>
-      apiFetch(`/api/cashier/v1/customers/${id}`, { method: 'PUT', body: body as any }),
+      apiFetch(CASHIER_API_ENDPOINTS.customers.update(id), { method: 'PUT', body: body as any }),
   }
 }
 
@@ -202,9 +122,9 @@ export function usePromotionApi() {
 
   return {
     listPromotions: (params?: Record<string, unknown>) =>
-      apiFetch('/api/cashier/v1/promotions', { params, query: params }),
+      apiFetch(CASHIER_API_ENDPOINTS.promotions.list, { params, query: params }),
     validateCoupon: (body: { code: string; cart_total: number }) =>
-      apiFetch('/api/cashier/v1/promotions/validate', { method: 'POST', body }),
+      apiFetch(CASHIER_API_ENDPOINTS.promotions.validate, { method: 'POST', body }),
   }
 }
 
@@ -213,7 +133,7 @@ export function useLabelApi() {
 
   return {
     generateLabels: (body: unknown) =>
-      apiFetch('/api/cashier/v1/labels/generate', { method: 'POST', body: body as any, responseType: 'blob' as any }),
+      apiFetch(CASHIER_API_ENDPOINTS.labels.generate, { method: 'POST', body: body as any, responseType: 'blob' as any }),
   }
 }
 
@@ -236,7 +156,7 @@ export function useBranchApi() {
           is_default: boolean
           status: string
         }>
-      }>>('/api/cashier/v1/branches/'),
+      }>>(CASHIER_API_ENDPOINTS.branches.list),
   }
 }
 
@@ -258,7 +178,7 @@ export function usePaymentApi() {
         apv: string | null
         expires_at: string | null
         paid_at: string | null
-      }>('/api/cashier/v1/payments/aba/khqr', {
+      }>(CASHIER_API_ENDPOINTS.payments.abaKhqr, {
         method: 'POST',
         body: { sale_id: saleId },
       }),
@@ -271,7 +191,7 @@ export function usePaymentApi() {
         tran_id: string
         amount: number
         currency: string
-      }>('/api/cashier/v1/payments/aba/purchase-form', {
+      }>(CASHIER_API_ENDPOINTS.payments.abaPurchaseForm, {
         method: 'POST',
         body: { sale_id: saleId, payment_option: paymentOption },
       }),
@@ -285,11 +205,11 @@ export function usePaymentApi() {
         apv: string | null
         expires_at: string | null
         paid_at: string | null
-      }>(`/api/cashier/v1/payments/aba/${paymentId}/status`),
+      }>(CASHIER_API_ENDPOINTS.payments.abaStatus(paymentId)),
 
     cancel: (paymentId: string) =>
       apiFetch<{ id: string; status: string }>(
-        `/api/cashier/v1/payments/aba/${paymentId}/cancel`,
+        CASHIER_API_ENDPOINTS.payments.abaCancel(paymentId),
         { method: 'POST' },
       ),
   }

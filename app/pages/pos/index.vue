@@ -287,7 +287,7 @@ const router = useRouter()
 const toast = useAppToast()
 const { playBeep, playAbaChime, playSuccess, playError } = usePosAudio()
 // ── POS Terminal Settings (auto-print, audio gates) ─────────────────
-const { settings: posSettings, loadSettings, triggerAutoPrint } = usePosSettings()
+const { settings: posSettings, loadSettings } = usePosSettings()
 
 // ── Server-side Paginated Product Composable ──────────────────────
 const posProducts = usePosProducts()
@@ -1366,8 +1366,6 @@ async function abaHandleApproved() {
     showPaymentModal.value = false
     showAbaFullScreen.value = false
     showReceiptModal.value = true
-    // Auto-print receipt on thermal printer if enabled in settings
-    triggerAutoPrint()
     loadStocks()
     toast.add({ title: 'Payment Confirmed', description: `${methodDisplay} approved`, color: 'green' })
   }, 1200)
@@ -1724,26 +1722,7 @@ async function handleFinalizeSale() {
   processingSale.value = true
 
   try {
-    // 1. Create the sale with items
-    const salePayload = {
-      branch_id: posStore.branchId || null,
-      warehouse_id: posStore.warehouseId || null,
-      customer_id: posStore.selectedCustomerId,
-      discount_amount: posStore.discountAmount, // order-level only; line discounts are sent per item
-      tax_amount: posStore.taxAmount,
-      notes: orderNotes.value.trim() || undefined,
-      promotion_id: posStore.appliedCoupon?.promotion_id || undefined,
-      items: posStore.cart.map((i) => ({
-        variant_id: i.variant_id,
-        quantity: i.quantity,
-        unit_price: i.unit_price,
-        discount_amount: i.discount_amount || 0,
-      })),
-    }
-
-    const saleRes: any = await createSale(salePayload)
-
-    // 2. Prepare payments list
+    // 1. Prepare payments list
     let paymentsPayload: any[] = []
     if (isSplitPaymentMode.value) {
       paymentsPayload = splitPayments.value.map((p) => ({
@@ -1763,7 +1742,25 @@ async function handleFinalizeSale() {
       ]
     }
 
-    await completeSale(saleRes.id, { payments: paymentsPayload })
+    // 2. Create and complete the sale in a single atomic transaction
+    const salePayload = {
+      branch_id: posStore.branchId || null,
+      warehouse_id: posStore.warehouseId || null,
+      customer_id: posStore.selectedCustomerId,
+      discount_amount: posStore.discountAmount, // order-level only; line discounts are sent per item
+      tax_amount: posStore.taxAmount,
+      notes: orderNotes.value.trim() || undefined,
+      promotion_id: posStore.appliedCoupon?.promotion_id || undefined,
+      items: posStore.cart.map((i) => ({
+        variant_id: i.variant_id,
+        quantity: i.quantity,
+        unit_price: i.unit_price,
+        discount_amount: i.discount_amount || 0,
+      })),
+      payments: paymentsPayload,
+    }
+
+    const saleRes: any = await createSale(salePayload)
 
     const completedOrderSessionId = posStore.orderSessionId
     const confirmedGrandTotal = posStore.grandTotal
@@ -1823,7 +1820,15 @@ async function handleFinalizeSale() {
       itemCount: confirmedItemCount,
     })
 
-    // 5. Play audio chime and transition without immediately wiping the customer display's 5s confirmation screen
+    // 5. Optimistically update local inventory stocks in memory immediately
+    for (const item of posStore.cart) {
+      const currentQty = inventoryMap.value[item.variant_id]
+      if (typeof currentQty === 'number') {
+        inventoryMap.value[item.variant_id] = Math.max(0, currentQty - item.quantity)
+      }
+    }
+
+    // 6. Play audio chime and transition without immediately wiping the customer display's 5s confirmation screen
     playSuccess(posSettings.value.soundSuccess)
     isAutoClearingAfterPayment = true
     try {
@@ -1835,11 +1840,9 @@ async function handleFinalizeSale() {
     paymentReferenceNumber.value = ''
     showPaymentModal.value = false
     showReceiptModal.value = true
-    // Auto-print receipt on thermal printer if enabled in settings
-    triggerAutoPrint()
 
-    // Refresh stocks in background
-    loadStocks()
+    // Refresh remote stocks detached in background
+    loadStocks().catch(() => {})
 
     toast.add({
       title: 'Sale Completed Successfully',

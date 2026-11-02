@@ -7,6 +7,7 @@
     "dev": "node ./node_modules/nuxt/bin/nuxt.mjs dev --host 0.0.0.0 --port 3002",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
+    "generate:contracts": "python ../scripts/generate_contracts.py",
     "postinstall": "nuxt prepare",
     "lint": "eslint .",
     "typecheck": "nuxt typecheck"

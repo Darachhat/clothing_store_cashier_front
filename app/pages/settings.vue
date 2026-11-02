@@ -124,25 +124,13 @@
             </div>
           </div>
 
-          <!-- Auto-Print Toggle -->
+          <!-- Print Mode Info -->
           <div class="flex items-center justify-between pt-2 border-t border-gray-100">
             <div>
-              <span class="text-xs font-semibold text-gray-800">Auto-Print Slip on Sale Completion</span>
-              <p class="text-[11px] text-gray-500">Automatically trigger the browser print dialog when payment succeeds</p>
+              <span class="text-xs font-semibold text-gray-800">Print Mode</span>
+              <p class="text-[11px] text-gray-500">Manual Print on Demand (Cashier reviews receipt and prints with 1-click or Enter; no auto-pop)</p>
             </div>
-            <button
-              type="button"
-              role="switch"
-              :aria-checked="settings.autoPrint"
-              class="relative w-10 h-6 rounded-full transition-colors duration-200 focus:outline-none cursor-pointer flex-shrink-0"
-              :class="settings.autoPrint ? 'bg-gray-900' : 'bg-gray-300'"
-              @click="settings.autoPrint = !settings.autoPrint"
-            >
-              <span
-                class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-sm transform transition-transform duration-200"
-                :class="settings.autoPrint ? 'translate-x-4' : 'translate-x-0'"
-              />
-            </button>
+            <span class="text-xs px-2.5 py-1 rounded-md bg-gray-100 text-gray-700 font-medium">Manual Print</span>
           </div>
 
           <!-- Test Print Button -->

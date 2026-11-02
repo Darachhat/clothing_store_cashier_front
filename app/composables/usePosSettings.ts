@@ -44,6 +44,7 @@ export function usePosSettings() {
         settings.value = {
           ...DEFAULTS,
           ...parsed,
+          autoPrint: false, // Enforce no auto-trigger print dialog
           terminalId: normalizeTerminalId(parsed.terminalId),
         }
       }
@@ -61,15 +62,12 @@ export function usePosSettings() {
 
   // ── Auto-print trigger ─────────────────────────────────────────────
   /**
-   * Call this immediately after showReceiptModal = true.
-   * Waits for Khmer fonts and DOM paint, then calls window.print() if autoPrint is enabled.
+   * Auto-print is disabled to prevent blocking browser print dialogs.
+   * Cashiers review the receipt on screen and print manually when desired.
    */
-  function triggerAutoPrint(delayMs = 300) {
-    if (!import.meta.client) return
-    if (!settings.value.autoPrint) return
-    setTimeout(() => {
-      printWithKhmerFonts()
-    }, delayMs)
+  function triggerAutoPrint(_delayMs = 300) {
+    // Intentionally no-op: never auto-trigger browser print dialog
+    return
   }
 
   return {
