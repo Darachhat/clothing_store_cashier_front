@@ -22,7 +22,7 @@ export interface PosTerminalSettings {
 
 const DEFAULTS: PosTerminalSettings = {
   terminalId: 'REG-01',
-  receiptStoreName: 'ហាងលក់សម្លៀកបំពាក់ ភ្នំពេញ',
+  receiptStoreName: 'គឹម វណ្ណាក់ ហាងលក់សម្លៀកបំពាក់ ',
   paperWidth: '80mm',
   receiptFooterNote: 'សូមអរគុណដែលបានគាំទ្រហាងរបស់យើង! សូមអញ្ជើញមកទិញម្តងទៀត។',
   autoPrint: false,

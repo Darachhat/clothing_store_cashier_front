@@ -4,9 +4,9 @@
  * and Template C (Modern Khmer Product Sticker 50x30mm / 40x30mm / 60x40mm).
  */
 
-export const KHMER_STORE_NAME = 'ហាងលក់សម្លៀកបំពាក់ ភ្នំពេញ'
+export const KHMER_STORE_NAME = 'គឹម វណ្ណាក់ ហាងលក់សម្លៀកបំពាក់ '
 export const ENGLISH_STORE_NAME = 'CLOTHING STORE PHNOM PENH'
-export const DEFAULT_KHMER_BRANCH = 'សាខាធំ'
+export const DEFAULT_KHMER_BRANCH = 'សាខា មេមត់'
 export const DEFAULT_KHMER_CUSTOMER = 'អតិថិជនទូទៅ'
 
 const KHMER_DIGITS = ['០', '១', '២', '៣', '៤', '៥', '៦', '៧', '៨', '៩'] as const
@@ -123,7 +123,7 @@ export function formatKhmerCustomerName(customerName?: string | null): string {
 }
 
 /**
- * Format branch name with Khmer flagship default ("សាខាធំ").
+ * Format branch name with Khmer flagship default ("សាខា មេមត់").
  */
 export function formatKhmerBranchName(branchName?: string | null): string {
   const clean = (branchName || '').trim()

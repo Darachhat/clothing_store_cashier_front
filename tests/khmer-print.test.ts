@@ -58,8 +58,8 @@ describe('Modern Khmer Invoice, Receipt & Product Sticker Suite', () => {
     assert.equal(formatKhmerCustomerName(null), 'អតិថិជនទូទៅ')
     assert.equal(formatKhmerCustomerName('Walk-in Customer'), 'អតិថិជនទូទៅ')
     assert.equal(formatKhmerCustomerName('Sokha'), 'Sokha')
-    assert.equal(formatKhmerBranchName('Main Branch'), 'សាខាធំ')
-    assert.equal(formatKhmerBranchName(null), 'សាខាធំ')
+    assert.equal(formatKhmerBranchName('Main Branch'), 'សាខា មេមត់')
+    assert.equal(formatKhmerBranchName(null), 'សាខា មេមត់')
   })
 
   it('waits for document.fonts.ready before invoking window.print()', async () => {
@@ -69,32 +69,32 @@ describe('Modern Khmer Invoice, Receipt & Product Sticker Suite', () => {
     const origDocument = (globalThis as any).document
     const origWindow = (globalThis as any).window
 
-    ;(globalThis as any).document = {
-      fonts: {
-        ready: new Promise<void>((resolve) => {
-          setTimeout(() => {
-            fontsResolved = true
-            resolve()
-          }, 10)
-        }),
-      },
-    }
-    ;(globalThis as any).window = {
-      print: () => {
-        assert.equal(fontsResolved, true)
-        printCalled = true
-      },
-      requestAnimationFrame: (cb: FrameRequestCallback) => {
-        cb(0)
-        return 1
-      },
-    }
+      ; (globalThis as any).document = {
+        fonts: {
+          ready: new Promise<void>((resolve) => {
+            setTimeout(() => {
+              fontsResolved = true
+              resolve()
+            }, 10)
+          }),
+        },
+      }
+      ; (globalThis as any).window = {
+        print: () => {
+          assert.equal(fontsResolved, true)
+          printCalled = true
+        },
+        requestAnimationFrame: (cb: FrameRequestCallback) => {
+          cb(0)
+          return 1
+        },
+      }
 
     await printWithKhmerFonts()
     assert.equal(printCalled, true)
 
-    ;(globalThis as any).document = origDocument
-    ;(globalThis as any).window = origWindow
+      ; (globalThis as any).document = origDocument
+      ; (globalThis as any).window = origWindow
   })
 
   it('verifies Template A (A4 Invoice), Template B (80mm Receipt), and Template C (Product Sticker) contain required Khmer strings and bundled fonts', () => {
@@ -107,7 +107,7 @@ describe('Modern Khmer Invoice, Receipt & Product Sticker Suite', () => {
     assert.equal(fs.existsSync(backendFontPath), true, 'Backend bundled Battambang-Regular.ttf must exist')
 
     const receiptContent = fs.readFileSync(receiptModalPath, 'utf-8')
-    assert.ok(receiptContent.includes('ហាងលក់សម្លៀកបំពាក់ ភ្នំពេញ'))
+    assert.ok(receiptContent.includes('គឹម វណ្ណាក់ ហាងលក់សម្លៀកបំពាក់ '))
     assert.ok(receiptContent.includes('វិក្កយបត្រលក់'))
     assert.ok(receiptContent.includes('បរិយាយទំនិញ'))
     assert.ok(receiptContent.includes('សរុបត្រូវបង់'))
@@ -115,7 +115,7 @@ describe('Modern Khmer Invoice, Receipt & Product Sticker Suite', () => {
     assert.ok(receiptContent.includes('បោះពុម្ពបង្កាន់ដៃ'))
 
     const stickerContent = fs.readFileSync(stickerModalPath, 'utf-8')
-    assert.ok(stickerContent.includes('ហាងលក់សម្លៀកបំពាក់ ភ្នំពេញ'))
+    assert.ok(stickerContent.includes('គឹម វណ្ណាក់ ហាងលក់សម្លៀកបំពាក់ '))
     assert.ok(stickerContent.includes('បោះពុម្ពស្លាកទំនិញ'))
     assert.ok(stickerContent.includes('THERMAL_50x30'))
     assert.ok(stickerContent.includes('THERMAL_40x30'))

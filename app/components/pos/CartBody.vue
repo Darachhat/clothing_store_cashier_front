@@ -360,3 +360,4 @@ watch(() => props.cart.length, (len) => { if (len === 0) showPromo.value = false
 
 onBeforeUnmount(() => { if (flashTimer) clearTimeout(flashTimer) })
 </script>
+

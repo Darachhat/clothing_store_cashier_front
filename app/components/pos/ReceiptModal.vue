@@ -100,7 +100,7 @@
           >
             <!-- Double Rule Top Header -->
             <div class="kh-receipt-double-rule py-2 text-center flex flex-col items-center gap-0.5">
-              <div class="kh-receipt-store-kh">ហាងលក់សម្លៀកបំពាក់ ភ្នំពេញ</div>
+              <div class="kh-receipt-store-kh">គឹម វណ្ណាក់ ហាងលក់សម្លៀកបំពាក់ </div>
               <div class="kh-receipt-store-en">{{ resolvedStoreName }}</div>
               <div class="kh-receipt-branch">{{ khmerBranchName }}</div>
             </div>
@@ -232,7 +232,7 @@
                   <UIcon name="i-heroicons-building-storefront" class="w-6 h-6 text-white" />
                 </div>
                 <div class="kh-a4-brand-text">
-                  <h1 class="kh-a4-store-kh">ហាងលក់សម្លៀកបំពាក់ ភ្នំពេញ</h1>
+                  <h1 class="kh-a4-store-kh">គឹម វណ្ណាក់ ហាងលក់សម្លៀកបំពាក់ </h1>
                   <div class="kh-a4-store-en">{{ resolvedStoreName }}</div>
                   <div class="kh-a4-store-sub">
                     {{ khmerBranchName }} &bull; រាជធានីភ្នំពេញ ប្រទេសកម្ពុជា &bull; ទូរស័ព្ទ: +855 23 888 999

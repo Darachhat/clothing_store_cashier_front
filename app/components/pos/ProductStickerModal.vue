@@ -217,7 +217,7 @@
               >
                 <!-- Store Header (Compact Khmer) -->
                 <div class="kh-sticker__store">
-                  ហាងលក់សម្លៀកបំពាក់ ភ្នំពេញ
+                  គឹម វណ្ណាក់ ហាងលក់សម្លៀកបំពាក់ 
                 </div>
 
                 <!-- Product Name (Khmer or English) -->
@@ -339,7 +339,7 @@ const showKhr = ref(false)
 const downloadingPdf = ref(false)
 
 const storeName = computed(
-  () => posSettings.value.receiptStoreName?.trim() || 'ហាងលក់សម្លៀកបំពាក់ ភ្នំពេញ',
+  () => posSettings.value.receiptStoreName?.trim() || 'គឹម វណ្ណាក់ ហាងលក់សម្លៀកបំពាក់ ',
 )
 
 const labelWidthMm = computed(() => {
