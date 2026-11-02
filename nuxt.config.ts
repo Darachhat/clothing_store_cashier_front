@@ -76,7 +76,7 @@ export default defineNuxtConfig({
   },
 
   nitro: {
-    preset: process.env.NITRO_PRESET || (process.env.CF_PAGES ? 'cloudflare_pages' : undefined),
+    preset: process.env.NITRO_PRESET || (process.env.CF_PAGES ? 'cloudflare_pages' : 'cloudflare-module'),
   },
 
   routeRules: {

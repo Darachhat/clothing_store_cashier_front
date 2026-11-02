@@ -13,6 +13,7 @@ CMD ["npm", "run", "dev"]
 # Production build
 FROM base AS builder
 COPY . .
+ENV NITRO_PRESET=node-server
 RUN npm run build
 
 # Standalone production runner
