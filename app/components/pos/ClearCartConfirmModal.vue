@@ -65,5 +65,5 @@ const dialogEl = ref<HTMLElement | null>(null)
 const keepEl = ref<HTMLElement | null>(null)
 
 // Default focus lands on the non-destructive choice.
-useDialogFocus(toRef(props, 'modelValue'), dialogEl, { initialFocus: () => keepEl.value })
+useDialogFocus(toRef(props, 'modelValue'), dialogEl as any, { initialFocus: (() => keepEl.value) as any })
 </script>

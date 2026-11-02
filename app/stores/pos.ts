@@ -2,8 +2,13 @@
 import { defineStore } from 'pinia'
 import type { ProductVariant, CartItem, HeldCart, CustomerSummary, PosCoupon } from '~/types/pos'
 
-const STORAGE_KEY = 'pos_session_v2'
+const DEFAULT_STORAGE_KEY = 'pos_session_v2'
 const MAX_CLOSED_SESSIONS = 60
+
+export function getTerminalStorageKey(terminalCode?: string | null): string {
+  const code = (terminalCode && terminalCode.trim()) ? terminalCode.trim().toUpperCase() : 'POS-01'
+  return `pos_session_${code}`
+}
 
 export function generateOrderSessionId(): string {
   const ts = Date.now().toString(36)
@@ -22,6 +27,8 @@ interface PosState {
   notes: string
   branchId: string | null
   warehouseId: string | null
+  terminalCode: string
+  terminalId: string | null
   orderSessionId: string
   stateSeq: number
   lastUpdatedVariantId: string | null
@@ -40,6 +47,8 @@ export const usePosStore = defineStore('pos', {
     notes: '',
     branchId: null,
     warehouseId: null,
+    terminalCode: 'POS-01',
+    terminalId: null,
     orderSessionId: generateOrderSessionId(),
     stateSeq: 1,
     lastUpdatedVariantId: null,
@@ -89,11 +98,26 @@ export const usePosStore = defineStore('pos', {
       this.stateSeq = (Number(this.stateSeq) || 0) + 1
     },
 
-    // ── LocalStorage Persistence ──────────────────────────────────
-    hydrateFromStorage() {
+    // ── LocalStorage Persistence (Scoped per POS Terminal) ───────
+    setTerminal(code: string, id?: string | null) {
+      const normalized = (code && code.trim()) ? code.trim().toUpperCase() : 'POS-01'
+      if (this.terminalCode !== normalized) {
+        this.persistToStorage() // save current terminal's cart before switching
+        this.terminalCode = normalized
+        this.terminalId = id || null
+        this.hydrateFromStorage(normalized) // switch to new terminal's isolated cart
+      } else if (id && this.terminalId !== id) {
+        this.terminalId = id
+        this.persistToStorage()
+      }
+    },
+
+    hydrateFromStorage(scopedTerminalCode?: string) {
       if (typeof window === 'undefined') return
+      const code = scopedTerminalCode || this.terminalCode || 'POS-01'
+      const key = getTerminalStorageKey(code)
       try {
-        const raw = localStorage.getItem(STORAGE_KEY)
+        const raw = localStorage.getItem(key) || localStorage.getItem(DEFAULT_STORAGE_KEY)
         if (!raw) return
         const data = JSON.parse(raw)
         if (Array.isArray(data.cart)) this.cart = data.cart
@@ -117,13 +141,17 @@ export const usePosStore = defineStore('pos', {
         if (typeof data.lastUpdatedVariantId === 'string' || data.lastUpdatedVariantId === null) {
           this.lastUpdatedVariantId = data.lastUpdatedVariantId
         }
+        if (typeof data.terminalId === 'string' && data.terminalId) {
+          this.terminalId = data.terminalId
+        }
       } catch { /* corrupt storage — silent ignore */ }
     },
 
     persistToStorage() {
       if (typeof window === 'undefined') return
+      const key = getTerminalStorageKey(this.terminalCode)
       try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        localStorage.setItem(key, JSON.stringify({
           cart: this.cart,
           heldCarts: this.heldCarts,
           selectedCustomer: this.selectedCustomer,
@@ -135,13 +163,19 @@ export const usePosStore = defineStore('pos', {
           stateSeq: this.stateSeq,
           lastUpdatedVariantId: this.lastUpdatedVariantId,
           closedOrderSessions: this.closedOrderSessions,
+          terminalCode: this.terminalCode,
+          terminalId: this.terminalId,
         }))
       } catch { /* quota exceeded or private mode — ignore */ }
     },
 
     clearPersistedStorage() {
       if (typeof window === 'undefined') return
-      try { localStorage.removeItem(STORAGE_KEY) } catch {}
+      const key = getTerminalStorageKey(this.terminalCode)
+      try {
+        localStorage.removeItem(key)
+        localStorage.removeItem(DEFAULT_STORAGE_KEY)
+      } catch {}
     },
 
     // ── Cart Mutations ────────────────────────────────────────────

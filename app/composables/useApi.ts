@@ -214,3 +214,16 @@ export function usePaymentApi() {
       ),
   }
 }
+
+export function useTerminalApi() {
+  const { apiFetch } = useApi()
+
+  return {
+    listTerminals: (params?: { branch_id?: string; status_code?: string }) =>
+      apiFetch<any[]>(CASHIER_API_ENDPOINTS.terminals.list, { params, query: params }),
+    getTerminal: (id: string) =>
+      apiFetch<any>(CASHIER_API_ENDPOINTS.terminals.detail(id)),
+    heartbeat: (id: string) =>
+      apiFetch<any>(CASHIER_API_ENDPOINTS.terminals.heartbeat(id), { method: 'POST' }),
+  }
+}

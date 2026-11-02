@@ -30,11 +30,17 @@
     <!-- Camera Viewfinder -->
     <div class="mobile-scanner__viewport">
       <video
+        v-if="hasNativeDetector"
         ref="videoRef"
         class="mobile-scanner__video"
         playsinline
         muted
         autoplay
+      />
+      <div
+        v-else
+        id="mobile-scanner-reader-fallback"
+        class="mobile-scanner__video"
       />
 
       <!-- Aiming Reticle / Laser -->
@@ -241,37 +247,65 @@ async function sendScan(code: string, format = 'UNKNOWN') {
   }
 }
 
+const hasNativeDetector = ref(true)
+let html5QrScanner: any = null
+
 // Camera initialization
 async function startCamera() {
   cameraError.value = null
-  try {
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      throw new Error('Camera access not supported by this browser')
+  if (typeof window === 'undefined') return
+
+  hasNativeDetector.value = typeof (window as any).BarcodeDetector !== 'undefined'
+
+  if (hasNativeDetector.value) {
+    try {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error('Camera access not supported by this browser')
+      }
+
+      stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: { ideal: 'environment' },
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+        },
+        audio: false,
+      })
+
+      if (videoRef.value) {
+        videoRef.value.srcObject = stream
+        await videoRef.value.play()
+      }
+
+      videoTrack = stream.getVideoTracks()[0] ?? null
+      const capabilities = (videoTrack as any).getCapabilities?.() || {}
+      if (capabilities.torch) {
+        hasTorch.value = true
+      }
+
+      startNativeBarcodeDetection()
+    } catch (err: any) {
+      cameraError.value = err.message || 'Permission denied or no camera found'
     }
-
-    stream = await navigator.mediaDevices.getUserMedia({
-      video: {
-        facingMode: { ideal: 'environment' },
-        width: { ideal: 1280 },
-        height: { ideal: 720 },
-      },
-      audio: false,
-    })
-
-    if (videoRef.value) {
-      videoRef.value.srcObject = stream
-      await videoRef.value.play()
+  } else {
+    // Cross-device fallback for iOS Safari and desktop Firefox
+    try {
+      const { Html5Qrcode } = await import('html5-qrcode')
+      await nextTick()
+      html5QrScanner = new Html5Qrcode('mobile-scanner-reader-fallback')
+      await html5QrScanner.start(
+        { facingMode: 'environment' },
+        { fps: 10, qrbox: { width: 250, height: 250 } },
+        (decodedText: string) => {
+          sendScan(decodedText, 'BARCODE')
+        },
+        () => {
+          // ignore scan misses
+        },
+      )
+    } catch (err: any) {
+      cameraError.value = err?.message || 'Permission denied or camera unavailable'
     }
-
-    videoTrack = stream.getVideoTracks()[0] ?? null
-    const capabilities = (videoTrack as any).getCapabilities?.() || {}
-    if (capabilities.torch) {
-      hasTorch.value = true
-    }
-
-    startBarcodeDetection()
-  } catch (err: any) {
-    cameraError.value = err.message || 'Permission denied or no camera found'
   }
 }
 
@@ -287,34 +321,29 @@ async function toggleTorch() {
   }
 }
 
-// Detection loop
-function startBarcodeDetection() {
-  if (typeof (window as any).BarcodeDetector !== 'undefined') {
-    const formats = ['ean_13', 'ean_8', 'code_128', 'code_39', 'upc_a', 'upc_e', 'qr_code']
-    const detector = new (window as any).BarcodeDetector({ formats })
+// Detection loop for native BarcodeDetector
+function startNativeBarcodeDetection() {
+  const formats = ['ean_13', 'ean_8', 'code_128', 'code_39', 'upc_a', 'upc_e', 'qr_code']
+  const detector = new (window as any).BarcodeDetector({ formats })
 
-    scanInterval = setInterval(async () => {
-      if (isProcessing || !videoRef.value || videoRef.value.readyState < 2) return
-      isProcessing = true
-      try {
-        const barcodes = await detector.detect(videoRef.value)
-        if (barcodes && barcodes.length > 0) {
-          const raw = barcodes[0].rawValue
-          const format = barcodes[0].format || 'BARCODE'
-          if (raw) {
-            sendScan(raw, format)
-          }
+  scanInterval = setInterval(async () => {
+    if (isProcessing || !videoRef.value || videoRef.value.readyState < 2) return
+    isProcessing = true
+    try {
+      const barcodes = await detector.detect(videoRef.value)
+      if (barcodes && barcodes.length > 0) {
+        const raw = barcodes[0].rawValue
+        const format = barcodes[0].format || 'BARCODE'
+        if (raw) {
+          sendScan(raw, format)
         }
-      } catch (err) {
-        // detection frame error
-      } finally {
-        isProcessing = false
       }
-    }, 200)
-  } else {
-    // Canvas fallback
-    console.info('Native BarcodeDetector not available, using video stream canvas fallback')
-  }
+    } catch (err) {
+      // detection frame error
+    } finally {
+      isProcessing = false
+    }
+  }, 200)
 }
 
 function handleManualSubmit() {
@@ -345,6 +374,16 @@ onUnmounted(() => {
   }
   if (stream) {
     stream.getTracks().forEach(t => t.stop())
+  }
+  if (html5QrScanner) {
+    try {
+      if (html5QrScanner.isScanning) {
+        html5QrScanner.stop().catch(() => {})
+      }
+      html5QrScanner.clear()
+    } catch {
+      // cleanup
+    }
   }
 })
 </script>

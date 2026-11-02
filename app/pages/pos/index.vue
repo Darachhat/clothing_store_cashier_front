@@ -17,6 +17,7 @@
         :date-str="currentDateStr"
         @search="handleBarcodeOrSkuSearch"
         @scan="showScannerModal = true"
+        @select-terminal="showTerminalSelectModal = true"
         @open-parked="showHeldOrdersModal = true"
         @open-shortcuts="showShortcutsModal = true"
         @open-stickers="openStickerModal()"
@@ -267,6 +268,84 @@
       :catalog-variants="allVariants"
       :format-riel="formatRiel"
     />
+
+    <!-- ─── Modal 11: POS Terminal / Register Station Switcher ────────── -->
+    <div
+      v-if="showTerminalSelectModal"
+      class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+      role="dialog"
+      aria-modal="true"
+    >
+      <div class="w-full max-w-md bg-white rounded-xl shadow-xl border border-gray-200 overflow-hidden">
+        <div class="px-5 py-4 border-b border-gray-200 flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <div class="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-gray-700">
+              <UIcon name="i-heroicons-computer-desktop" class="w-5 h-5" />
+            </div>
+            <div>
+              <h3 class="text-base font-semibold text-gray-900">Select POS Terminal</h3>
+              <p class="text-xs text-gray-500">Switch station register &amp; cart context</p>
+            </div>
+          </div>
+          <button
+            type="button"
+            class="text-gray-400 hover:text-gray-600 p-1 rounded-md"
+            @click="showTerminalSelectModal = false"
+          >
+            <UIcon name="i-heroicons-x-mark" class="w-5 h-5" />
+          </button>
+        </div>
+
+        <div class="p-5 space-y-2.5 max-h-[60vh] overflow-y-auto">
+          <div
+            v-for="term in activeTerminalsList"
+            :key="term.id"
+            class="p-3 rounded-lg border cursor-pointer transition-all flex items-center justify-between"
+            :class="posSettings.terminalId === term.code
+              ? 'border-gray-400 bg-gray-50'
+              : 'border-gray-200 hover:border-gray-300'"
+            @click="switchTerminal(term)"
+          >
+            <div class="flex items-center gap-3">
+              <div class="w-9 h-9 rounded-md bg-gray-100 flex items-center justify-center font-mono font-bold text-xs text-gray-700 border border-gray-200">
+                {{ term.code }}
+              </div>
+              <div>
+                <p class="text-sm font-semibold text-gray-900">{{ term.name }}</p>
+                <p class="text-xs text-gray-500 font-mono">{{ term.warehouse?.name || 'Assigned Warehouse' }}</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-2">
+              <span
+                v-if="posSettings.terminalId === term.code"
+                class="px-2 py-0.5 rounded text-xs font-semibold bg-gray-900 text-white"
+              >
+                Current
+              </span>
+              <UIcon
+                v-if="posSettings.terminalId === term.code"
+                name="i-heroicons-check-circle"
+                class="w-5 h-5 text-gray-900"
+              />
+            </div>
+          </div>
+
+          <div v-if="activeTerminalsList.length === 0" class="text-center py-6 text-sm text-gray-500">
+            No active terminals configured. Using default station {{ posSettings.terminalId }}.
+          </div>
+        </div>
+
+        <div class="px-5 py-3 border-t border-gray-200 bg-gray-50 flex justify-end">
+          <button
+            type="button"
+            class="px-4 py-2 text-xs font-medium rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-100"
+            @click="showTerminalSelectModal = false"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -316,12 +395,13 @@ const {
   dismissCheckout: dismissAbaCheckoutModal,
 } = useAbaCheckout()
 const { listBranches } = useBranchApi()
+const { listTerminals, heartbeat: sendTerminalHeartbeat } = useTerminalApi()
 const authStore = useAuthStore()
 const router = useRouter()
 const toast = useAppToast()
 const { playBeep, playAbaChime, playSuccess, playError } = usePosAudio()
 // ── POS Terminal Settings (auto-print, audio gates) ─────────────────
-const { settings: posSettings, loadSettings } = usePosSettings()
+const { settings: posSettings, loadSettings, saveSettings } = usePosSettings()
 
 // ── Server-side Paginated Product Composable ──────────────────────
 const posProducts = usePosProducts()
@@ -386,6 +466,9 @@ const showAbaFullScreen = ref(false)
 const showMobileCart = ref(false)
 const showReceiptModal = ref(false)
 const showStickerModal = ref(false)
+const showTerminalSelectModal = ref(false)
+const activeTerminalsList = ref<any[]>([])
+let terminalHeartbeatTimer: ReturnType<typeof setInterval> | null = null
 const stickerInitialVariants = ref<Array<{ variant: ProductVariant; quantity: number }>>([])
 const lastCompletedReceipt = ref<any | null>(null)
 const { isShortcutsOpen: showShortcutsModal } = useSidebar()
@@ -731,73 +814,38 @@ function applyLineDiscount() {
   }
 }
 
+// ── Unified Barcode & Hardware Scanner Integration ───────────────
+const { processBarcode } = useBarcodeLookup({
+  allVariants,
+  getVariantStock,
+  getLineStock,
+  posStore,
+  soundBeep: computed(() => posSettings.value.soundBeep),
+  toast,
+})
+
+useHardwareScanner({
+  onScan(scannedCode) {
+    handleBarcodeScanned(scannedCode)
+  },
+})
+
 // ── Actions: Barcode & Omnibar ────────────────────────────────────
 async function handleBarcodeOrSkuSearch() {
   const q = searchQuery.value.trim()
   if (!q) return
 
-  // 1. Direct search in current page's in-memory variants (fast path)
-  const directMatch = allVariants.value.find(
-    (v) =>
-      v.barcode?.toLowerCase() === q.toLowerCase() ||
-      v.sku?.toLowerCase() === q.toLowerCase() ||
-      v.qr_reference?.toLowerCase() === q.toLowerCase(),
-  )
-
-  if (directMatch) {
-    const stock = getVariantStock(directMatch.id)
-    if (stock <= 0) {
-      playError(true)
-      toast.add({ title: 'Out of Stock', description: `Item ${directMatch.sku} has no stock`, color: 'red' })
-      return
-    }
-    const res = posStore.addVariant(directMatch, 1, stock)
-    playBeep(posSettings.value.soundBeep)
-    toast.add({
-      title: 'Item Scanned',
-      description: `${directMatch.product?.name} (${directMatch.sku})`,
-      color: 'green',
-    })
-    if (res.reachedLimit) {
-      toast.add({ title: 'Stock Limit', description: `Reached warehouse stock limit of ${stock}`, color: 'amber' })
-    }
+  // 1. Try exact barcode/SKU/QR lookup via unified pipeline
+  const added = await processBarcode(q)
+  if (added) {
     searchQuery.value = ''
     return
   }
 
-  // 2. Query backend by barcode/sku/qr in parallel
+  // 2. Not an exact code → treat Enter as "select the product I searched for".
+  //    One match is selected straight away (variant picker if it has several variants);
+  //    several matches stay visible in the grid for the cashier to choose.
   try {
-    const lookups = [
-      searchByBarcode(q).catch(() => null),
-      searchBySku(q).catch(() => null),
-      searchByQr(q).catch(() => null),
-    ]
-
-    const results = await Promise.all(lookups)
-    const result: any = results.find((r) => r !== null)
-
-    if (result) {
-      const stock = getVariantStock(result.id)
-      // Only block when stock is actually known to be zero; unknown stock is left to the backend check.
-      if (getLineStock(result.id) !== null && stock <= 0) {
-        playError(true)
-        toast.add({ title: 'Out of Stock', description: `Item ${result.sku} has no stock`, color: 'red' })
-        return
-      }
-      posStore.addVariant(result, 1, stock)
-      playBeep(posSettings.value.soundBeep)
-      toast.add({
-        title: 'Item Found & Added',
-        description: `${result.product?.name || 'Product'} (${result.sku})`,
-        color: 'green',
-      })
-      searchQuery.value = ''
-      return
-    }
-
-    // 3. Not an exact code → treat Enter as "select the product I searched for".
-    //    One match is selected straight away (variant picker if it has several variants);
-    //    several matches stay visible in the grid for the cashier to choose.
     await applySearch(q)
     const matches = paginatedProducts.value as any[]
     if (matches.length === 1) {
@@ -825,18 +873,18 @@ async function handleBarcodeOrSkuSearch() {
   }
 }
 
-let lastProcessedBarcode = ''
-let lastProcessedBarcodeAt = 0
-
 async function handleBarcodeScanned(barcodeStr: string) {
   const code = barcodeStr.trim()
   if (!code) return
-  const now = Date.now()
-  if (code === lastProcessedBarcode && now - lastProcessedBarcodeAt < 600) {
+
+  // Direct addition via unified pipeline
+  const added = await processBarcode(code)
+  if (added) {
+    searchQuery.value = ''
     return
   }
-  lastProcessedBarcode = code
-  lastProcessedBarcodeAt = now
+
+  // If not matched as exact variant, place in search query for manual review
   searchQuery.value = code
   await handleBarcodeOrSkuSearch()
 }
@@ -1014,6 +1062,62 @@ function clearActiveSuccessDisplay() {
 }
 
 const activeTerminalId = computed(() => normalizeTerminalId(posSettings.value.terminalId))
+
+async function syncTerminalContext() {
+  try {
+    const list = await listTerminals({ status_code: 'ACTIVE' })
+    if (Array.isArray(list) && list.length > 0) {
+      activeTerminalsList.value = list
+      const currentCode = (posSettings.value.terminalId || 'POS-01').trim().toUpperCase()
+      const matched = list.find((t: any) => t.code.toUpperCase() === currentCode) || list[0]
+      if (matched) {
+        posSettings.value.terminalId = matched.code
+        posSettings.value.terminalDbId = matched.id
+        if (matched.warehouse_id && !posStore.warehouseId) {
+          posStore.warehouseId = matched.warehouse_id
+        }
+        if (matched.branch_id && !posStore.branchId) {
+          posStore.branchId = matched.branch_id
+        }
+        saveSettings()
+        posStore.setTerminal(matched.code, matched.id)
+      }
+    }
+  } catch (err) {
+    console.warn('[POS] Failed to sync terminal list:', err)
+  }
+}
+
+async function pingTerminalHeartbeat() {
+  if (!posSettings.value.terminalDbId) return
+  try {
+    await sendTerminalHeartbeat(posSettings.value.terminalDbId)
+  } catch {
+    // Non-blocking background heartbeat
+  }
+}
+
+function switchTerminal(term: any) {
+  if (!term) return
+  posSettings.value.terminalId = term.code
+  posSettings.value.terminalDbId = term.id
+  if (term.warehouse_id) {
+    posStore.warehouseId = term.warehouse_id
+  }
+  if (term.branch_id) {
+    posStore.branchId = term.branch_id
+  }
+  saveSettings()
+  posStore.setTerminal(term.code, term.id)
+  showTerminalSelectModal.value = false
+  broadcastCustomerDisplayState('INITIAL_LOAD')
+  pingTerminalHeartbeat()
+  toast.add({
+    title: 'POS Station Switched',
+    description: `Active register changed to ${term.code} (${term.name}).`,
+    color: 'green',
+  })
+}
 
 function getCustomerDisplayChannel(): BroadcastChannel | null {
   if (typeof BroadcastChannel === 'undefined') return null
@@ -1545,6 +1649,7 @@ async function startAbaModalCheckout(paymentOption: string = 'cards') {
       const salePayload = {
         branch_id: posStore.branchId || null,
         warehouse_id: posStore.warehouseId || null,
+        terminal_id: posSettings.value.terminalDbId || undefined,
         customer_id: posStore.selectedCustomerId,
         discount_amount: posStore.discountAmount, // order-level only; line discounts are sent per item
         tax_amount: posStore.taxAmount,
@@ -1716,6 +1821,7 @@ async function handleFinalizeSale() {
       const salePayload = {
         branch_id: posStore.branchId || null,
         warehouse_id: posStore.warehouseId || null,
+        terminal_id: posSettings.value.terminalDbId || undefined,
         customer_id: posStore.selectedCustomerId,
         discount_amount: posStore.discountAmount, // order-level only; line discounts are sent per item
         tax_amount: posStore.taxAmount,
@@ -1781,6 +1887,7 @@ async function handleFinalizeSale() {
     const salePayload = {
       branch_id: posStore.branchId || null,
       warehouse_id: posStore.warehouseId || null,
+      terminal_id: posSettings.value.terminalDbId || undefined,
       customer_id: posStore.selectedCustomerId,
       discount_amount: posStore.discountAmount, // order-level only; line discounts are sent per item
       tax_amount: posStore.taxAmount,
@@ -2052,10 +2159,16 @@ function handlePosBeforeUnload() {
 }
 
 onMounted(async () => {
-  // Restore persisted cart/held carts from previous session
-  posStore.hydrateFromStorage()
-  // Load terminal settings (auto-print, audio) from localStorage
+  // Load terminal settings (auto-print, audio, station id) from localStorage
   loadSettings()
+  // Set terminal on Pinia posStore to ensure terminal-scoped isolation
+  posStore.setTerminal(posSettings.value.terminalId, posSettings.value.terminalDbId)
+  posStore.hydrateFromStorage(posSettings.value.terminalId)
+
+  // Sync active terminals from backend, resolve terminal DB UUID and warehouse
+  await syncTerminalContext()
+  pingTerminalHeartbeat()
+  terminalHeartbeatTimer = setInterval(pingTerminalHeartbeat, 30000)
 
   // Initialize dual-screen Customer Display & Scanner BroadcastChannels
   getCustomerDisplayChannel()
@@ -2082,24 +2195,34 @@ onMounted(async () => {
   await Promise.all([loadCatalog(), loadStocks()])
   // Re-broadcast once branch metadata has loaded so branchName is populated
   broadcastCustomerDisplayState('CART_UPDATED')
+  isInitialLoadDone.value = true
   searchOmnibarRef.value?.focus()
 })
+
+const isInitialLoadDone = ref(false)
 
 /**
  * Watch the omnibar search query and forward it to the server-side search.
  * The composable handles debouncing (350ms) and page reset.
  * For short queries (< 2 chars) we clear the search.
+ * Gated by isInitialLoadDone to avoid PC mount autofocus race condition.
  */
-watch(searchQuery, (val) => {
+watch(searchQuery, (val, oldVal) => {
+  if (!isInitialLoadDone.value) return
+  if (val === oldVal) return
   const trimmed = val.trim()
   if (trimmed.length >= 2) {
     setSearch(trimmed)
-  } else if (trimmed.length === 0) {
+  } else if (trimmed.length === 0 && oldVal && oldVal.trim().length > 0) {
     applySearch('')
   }
 })
 
 onBeforeUnmount(() => {
+  if (terminalHeartbeatTimer) {
+    clearInterval(terminalHeartbeatTimer)
+    terminalHeartbeatTimer = null
+  }
   if (timerInterval) clearInterval(timerInterval)
   if (customerDisplayHeartbeatTimer) {
     clearInterval(customerDisplayHeartbeatTimer)

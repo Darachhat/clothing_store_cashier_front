@@ -14,13 +14,23 @@
     </button>
 
     <!-- LEFT: Store & Register Identity -->
-    <div class="hidden sm:flex items-center gap-2.5 flex-shrink-0">
+    <div
+      class="hidden sm:flex items-center gap-2.5 flex-shrink-0 cursor-pointer hover:bg-gray-50 p-1 rounded-md transition-colors"
+      title="Click to switch POS Station / Register"
+      role="button"
+      tabindex="0"
+      @click="$emit('selectTerminal')"
+      @keydown.enter="$emit('selectTerminal')"
+    >
       <div class="w-8 h-8 rounded-md bg-gray-900 text-white flex items-center justify-center flex-shrink-0">
         <UIcon name="i-heroicons-building-storefront" class="w-4 h-4" />
       </div>
       <div class="hidden md:flex flex-col leading-tight">
         <span class="text-sm font-semibold text-gray-900 whitespace-nowrap max-w-[180px] truncate">{{ branchName }}</span>
-        <span class="text-xs text-gray-500 whitespace-nowrap">{{ terminalId || 'REG-01' }} &bull; Register</span>
+        <span class="text-xs text-gray-500 whitespace-nowrap flex items-center gap-1">
+          <UIcon name="i-heroicons-computer-desktop" class="w-3 h-3 text-gray-400" />
+          {{ terminalId || 'POS-01' }} &bull; Register
+        </span>
       </div>
     </div>
 
@@ -197,6 +207,7 @@ defineEmits<{
   'openStickers': []
   'reprintLast': []
   'toggleCart': []
+  'selectTerminal': []
 }>()
 
 const inputEl = ref<HTMLInputElement | null>(null)

@@ -98,21 +98,22 @@ export function usePosProducts() {
     if (f.status && f.status !== 'ALL') params.status = f.status
 
     try {
-      const response = await listProducts<{
-        items: Product[]
-        pagination: {
-          page: number
-          page_size: number
-          total: number
-          total_pages: number
-          has_next: boolean
-          has_previous: boolean
-        }
-      }>(params)
+      const response = await listProducts<any>(params)
 
-      products.value = response.items || []
+      const items = Array.isArray(response)
+        ? response
+        : (response?.items || response?.data || [])
+      products.value = items
 
-      const meta = response.pagination
+      const meta = response?.pagination || response?.meta || {
+        page: pagination.value.page || 1,
+        page_size: pagination.value.pageSize || POS_PRODUCT_PAGE_SIZE,
+        total: items.length,
+        total_pages: Math.max(1, Math.ceil(items.length / (pagination.value.pageSize || POS_PRODUCT_PAGE_SIZE))),
+        has_next: false,
+        has_previous: (pagination.value.page || 1) > 1,
+      }
+
       // Guard: if page is beyond new total_pages, clamp and re-fetch
       if (meta.total_pages > 0 && meta.page > meta.total_pages) {
         pagination.value.page = meta.total_pages
@@ -120,12 +121,12 @@ export function usePosProducts() {
       }
 
       pagination.value = {
-        page: meta.page,
-        pageSize: meta.page_size,
-        total: meta.total,
-        totalPages: meta.total_pages,
-        hasNext: meta.has_next,
-        hasPrevious: meta.has_previous,
+        page: Number(meta.page) || 1,
+        pageSize: Number(meta.page_size || meta.pageSize) || POS_PRODUCT_PAGE_SIZE,
+        total: Number(meta.total) || items.length,
+        totalPages: Number(meta.total_pages || meta.totalPages) || 1,
+        hasNext: Boolean(meta.has_next ?? meta.hasNext),
+        hasPrevious: Boolean(meta.has_previous ?? meta.hasPrevious),
       }
     } catch (err: any) {
       error.value = true

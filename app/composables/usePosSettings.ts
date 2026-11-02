@@ -12,6 +12,9 @@ const STORAGE_KEY = 'pos_terminal_settings'
 
 export interface PosTerminalSettings {
   terminalId: string
+  terminalDbId?: string
+  branchId?: string
+  warehouseId?: string
   receiptStoreName: string
   paperWidth: '80mm' | '58mm'
   receiptFooterNote: string
@@ -21,7 +24,10 @@ export interface PosTerminalSettings {
 }
 
 const DEFAULTS: PosTerminalSettings = {
-  terminalId: 'REG-01',
+  terminalId: 'POS-01',
+  terminalDbId: undefined,
+  branchId: undefined,
+  warehouseId: undefined,
   receiptStoreName: 'គឹម វណ្ណាក់ ហាងលក់សម្លៀកបំពាក់ ',
   paperWidth: '80mm',
   receiptFooterNote: 'សូមអរគុណដែលបានគាំទ្រហាងរបស់យើង! សូមអញ្ជើញមកទិញម្តងទៀត។',

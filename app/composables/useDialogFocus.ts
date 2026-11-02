@@ -20,15 +20,16 @@ const FOCUSABLE = [
 
 export function useDialogFocus(
   open: Ref<boolean>,
-  container: Ref<HTMLElement | null>,
-  options: { initialFocus?: () => HTMLElement | null | undefined } = {},
+  container: Ref<any>,
+  options: { initialFocus?: () => any } = {},
 ) {
   let previouslyFocused: HTMLElement | null = null
 
   function focusables(): HTMLElement[] {
-    if (!container.value) return []
-    return Array.from(container.value.querySelectorAll<HTMLElement>(FOCUSABLE)).filter(
-      (el) => el.offsetParent !== null || el === document.activeElement,
+    const el = container.value as HTMLElement | null
+    if (!el || !el.querySelectorAll) return []
+    return Array.from(el.querySelectorAll<HTMLElement>(FOCUSABLE)).filter(
+      (item) => item.offsetParent !== null || item === document.activeElement,
     )
   }
 

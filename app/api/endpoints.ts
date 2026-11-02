@@ -56,6 +56,11 @@ export const CASHIER_API_ENDPOINTS = {
   branches: {
     list: '/api/cashier/v1/branches/',
   },
+  terminals: {
+    list: '/api/cashier/v1/terminals',
+    detail: (id: string) => `/api/cashier/v1/terminals/${id}`,
+    heartbeat: (id: string) => `/api/cashier/v1/terminals/${id}/heartbeat`,
+  },
   payments: {
     abaKhqr: '/api/cashier/v1/payments/aba/khqr',
     abaPurchaseForm: '/api/cashier/v1/payments/aba/purchase-form',
