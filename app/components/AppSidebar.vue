@@ -149,6 +149,94 @@
       </template>
     </div>
   </aside>
+
+  <!-- ─── Mobile Slide-over Drawer (< lg screens) ──────────────────── -->
+  <Teleport to="body">
+    <div
+      v-if="isMobileOpen"
+      class="fixed inset-0 z-50 lg:hidden flex"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Navigation drawer"
+    >
+      <!-- Backdrop -->
+      <div
+        class="fixed inset-0 bg-slate-950/60 backdrop-blur-xs transition-opacity"
+        @click="closeMobile"
+      />
+
+      <!-- Drawer Content -->
+      <aside
+        class="relative flex flex-col w-[260px] max-w-[85vw] h-full bg-white border-r border-gray-200 z-10 shadow-2xl overflow-hidden select-none font-sans"
+      >
+        <!-- Drawer Header -->
+        <div class="h-14 px-4 border-b border-gray-200 flex items-center justify-between gap-2 flex-shrink-0">
+          <div class="flex items-center gap-2.5 min-w-0">
+            <div class="w-8 h-8 rounded-md bg-gray-900 text-white flex items-center justify-center flex-shrink-0">
+              <UIcon name="i-heroicons-building-storefront" class="w-4 h-4" />
+            </div>
+            <div class="flex flex-col min-w-0 leading-tight">
+              <span class="text-sm font-semibold text-gray-900 truncate">{{ config.public.appName }}</span>
+              <span v-if="branchName" class="text-xs text-gray-500 truncate">{{ branchName }}</span>
+            </div>
+          </div>
+          <button
+            type="button"
+            class="w-8 h-8 rounded-md flex items-center justify-center text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-colors cursor-pointer"
+            aria-label="Close menu"
+            @click="closeMobile"
+          >
+            <UIcon name="i-heroicons-x-mark" class="w-5 h-5" />
+          </button>
+        </div>
+
+        <!-- Drawer Navigation Items -->
+        <nav class="flex-1 overflow-y-auto pos-scroll p-3 flex flex-col gap-4">
+          <div v-for="section in navSections" :key="section.title" class="flex flex-col gap-1">
+            <span class="px-2 text-xs font-bold text-gray-400 uppercase tracking-wider">{{ section.title }}</span>
+            <NuxtLink
+              v-for="item in section.items"
+              :key="item.to"
+              :to="item.to"
+              :external="item.external"
+              :target="item.target"
+              class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold transition-colors cursor-pointer"
+              :class="isActive(item.to)
+                ? 'bg-gray-900 text-white'
+                : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'"
+              @click="closeMobile"
+            >
+              <UIcon :name="item.icon" class="w-4 h-4 flex-shrink-0" />
+              <span class="truncate">{{ item.label }}</span>
+              <span v-if="item.badge" class="ml-auto px-1.5 py-0.5 text-xs font-bold rounded-full bg-gray-200 text-gray-800">{{ item.badge }}</span>
+              <span v-else-if="item.shortcut" class="ml-auto text-xs text-gray-400 font-mono">{{ item.shortcut }}</span>
+            </NuxtLink>
+          </div>
+        </nav>
+
+        <!-- Drawer Footer -->
+        <div class="p-3 border-t border-gray-200 bg-gray-50 flex flex-col gap-2 flex-shrink-0">
+          <div class="flex items-center gap-2.5 px-2 py-1 min-w-0">
+            <div class="w-8 h-8 rounded-full bg-gray-200 text-gray-800 font-bold text-xs flex items-center justify-center flex-shrink-0">
+              {{ userInitials }}
+            </div>
+            <div class="flex flex-col min-w-0 leading-tight">
+              <span class="text-sm font-semibold text-gray-900 truncate">{{ userName }}</span>
+              <span class="text-xs text-gray-500 truncate">{{ userRole }}</span>
+            </div>
+          </div>
+          <button
+            type="button"
+            class="w-full flex items-center justify-center gap-2 h-9 px-3 rounded-lg border border-gray-200 bg-white hover:bg-red-50 text-red-700 text-sm font-semibold transition-colors cursor-pointer"
+            @click="onLogout(); closeMobile()"
+          >
+            <UIcon name="i-heroicons-arrow-right-on-rectangle" class="w-4 h-4" />
+            <span>Sign Out</span>
+          </button>
+        </div>
+      </aside>
+    </div>
+  </Teleport>
 </template>
 
 <script setup lang="ts">
@@ -188,7 +276,11 @@ const config = useRuntimeConfig()
 const authStore = useAuthStore()
 const route = useRoute()
 const router = useRouter()
-const { isCollapsed: globalCollapsed, navSections, toggle: globalToggle } = useSidebar()
+const { isCollapsed: globalCollapsed, isMobileOpen, closeMobile, navSections, toggle: globalToggle } = useSidebar()
+
+watch(() => route.path, () => {
+  closeMobile()
+})
 
 // Sync with shared global state unless explicitly overridden by v-model
 const internalCollapsed = ref(
@@ -285,6 +377,12 @@ async function onLogout() {
   user-select: none;
   z-index: 20;
   height: 100%;
+}
+
+@media (max-width: 1023px) {
+  .app-sidebar {
+    display: none !important;
+  }
 }
 
 .app-sidebar--full {

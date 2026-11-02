@@ -2,21 +2,21 @@
   <!-- Pagination sits directly below the Product Grid in a unified single row -->
   <div
     v-if="totalPages > 0"
-    class="flex items-center justify-between pt-2 mt-1 border-t border-gray-200 px-1 select-none flex-shrink-0"
+    class="flex items-center justify-between pt-2 mt-1 border-t border-gray-200 px-1 select-none flex-shrink-0 gap-2"
     role="navigation" aria-label="Product pagination"
   >
     <!-- Left: Showing X–Y of Z label -->
-    <div class="text-sm text-gray-600 font-medium select-none">
+    <div class="text-xs sm:text-sm text-gray-600 font-medium select-none truncate">
       {{ showingLabel }}
     </div>
 
     <!-- Right: Page Buttons Row -->
-    <div class="flex items-center gap-1" role="navigation">
+    <div class="flex items-center gap-1 flex-shrink-0" role="navigation">
       <!-- Previous Button -->
       <button
         id="pos-pagination-prev"
         type="button"
-        class="flex items-center gap-1 h-9 px-3 rounded-md text-sm font-semibold border transition-colors duration-150 cursor-pointer select-none"
+        class="flex items-center gap-1 h-8 sm:h-9 px-2 sm:px-3 rounded-md text-xs sm:text-sm font-semibold border transition-colors duration-150 cursor-pointer select-none"
         :class="hasPrevious
           ? 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
           : 'bg-gray-50 text-gray-500 border-gray-200 cursor-not-allowed'"
@@ -33,7 +33,7 @@
         <!-- Ellipsis -->
         <span
           v-if="item.type === 'ellipsis'"
-          class="px-1 text-sm text-gray-500 select-none"
+          class="px-0.5 sm:px-1 text-xs sm:text-sm text-gray-500 select-none"
         >
           …
         </span>
@@ -42,7 +42,7 @@
           v-else
           :id="`pos-pagination-page-${item.page}`"
           type="button"
-          class="min-w-[28px] h-9 px-3 rounded-md text-sm font-semibold border transition-colors duration-150 cursor-pointer select-none"
+          class="min-w-[28px] h-8 sm:h-9 px-2 sm:px-3 rounded-md text-xs sm:text-sm font-semibold border transition-colors duration-150 cursor-pointer select-none"
           :class="item.page === currentPage
             ? 'bg-gray-900 text-white border-transparent'
             : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'"
@@ -57,7 +57,7 @@
       <button
         id="pos-pagination-next"
         type="button"
-        class="flex items-center gap-1 h-9 px-3 rounded-md text-sm font-semibold border transition-colors duration-150 cursor-pointer select-none"
+        class="flex items-center gap-1 h-8 sm:h-9 px-2 sm:px-3 rounded-md text-xs sm:text-sm font-semibold border transition-colors duration-150 cursor-pointer select-none"
         :class="hasNext
           ? 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
           : 'bg-gray-50 text-gray-500 border-gray-200 cursor-not-allowed'"

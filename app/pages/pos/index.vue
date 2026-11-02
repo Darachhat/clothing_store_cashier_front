@@ -21,12 +21,17 @@
         @open-shortcuts="showShortcutsModal = true"
         @open-stickers="openStickerModal()"
         @reprint-last="reprintLastReceipt"
+        @toggle-cart="showMobileCart = !showMobileCart"
       />
 
       <!-- ─── Body: Products Catalog (Left) + Cart Sidebar (Right) ───── -->
-      <div class="flex-1 min-w-0 min-h-0 flex overflow-hidden">
+      <div class="flex-1 min-w-0 min-h-0 flex overflow-hidden relative">
         <!-- ─── Product Selection Section ────────────────────────────── -->
-        <main class="flex-1 min-w-0 min-h-0 flex flex-col overflow-hidden p-3 gap-2.5 no-print" aria-label="Products">
+        <main
+          class="flex-1 min-w-0 min-h-0 flex flex-col overflow-hidden p-2.5 sm:p-3 gap-2.5 no-print"
+          :class="{ 'pb-20 lg:pb-2.5': posStore.itemCount > 0 }"
+          aria-label="Products"
+        >
           <!-- ─── PosProductFilterBar (Tailwind) ────────────────────── -->
           <PosProductFilterBar
             :active-category="productFilters.category"
@@ -66,8 +71,37 @@
           />
         </main>
 
+        <!-- ─── Mobile Sticky Bottom Cart Summary Pill (< lg screens) ── -->
+        <div
+          v-if="posStore.itemCount > 0"
+          class="lg:hidden fixed bottom-3 left-3 right-3 z-30 flex items-center justify-between p-2.5 bg-gray-900 text-white rounded-xl shadow-2xl border border-gray-800 select-none cursor-pointer"
+          @click="showMobileCart = true"
+        >
+          <div class="flex items-center gap-2.5 min-w-0">
+            <div class="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center flex-shrink-0">
+              <UIcon name="i-heroicons-shopping-bag" class="w-4 h-4 text-white" />
+            </div>
+            <div class="flex flex-col min-w-0 leading-tight">
+              <span class="text-xs text-gray-300 font-medium truncate">
+                {{ posStore.itemCount }} item{{ posStore.itemCount === 1 ? '' : 's' }} in order
+              </span>
+              <span class="text-sm font-bold font-mono tabular-nums text-white">
+                ${{ posStore.grandTotal.toFixed(2) }}
+              </span>
+            </div>
+          </div>
+          <button
+            type="button"
+            class="h-8 px-3 rounded-lg bg-white text-gray-900 text-xs font-bold flex items-center gap-1.5 hover:bg-gray-100 transition-colors"
+          >
+            <span>Review & Pay</span>
+            <UIcon name="i-heroicons-chevron-right" class="w-3.5 h-3.5" />
+          </button>
+        </div>
+
         <!-- ─── PosCartPanel & Checkout Sidebar (Tailwind) ───────────── -->
         <PosCartPanel
+          v-model:is-open-mobile="showMobileCart"
           v-model:coupon-code="couponCodeInput"
           :cart="posStore.cart"
           :selected-customer="posStore.selectedCustomer"
@@ -349,6 +383,7 @@ const showNewCustomerDrawer = ref(false)
 const showHeldOrdersModal = ref(false)
 const showPaymentModal = ref(false)
 const showAbaFullScreen = ref(false)
+const showMobileCart = ref(false)
 const showReceiptModal = ref(false)
 const showStickerModal = ref(false)
 const stickerInitialVariants = ref<Array<{ variant: ProductVariant; quantity: number }>>([])

@@ -47,6 +47,7 @@ export function useSidebar() {
   // while keeping navigation in the exact same left-hand position across every route.
   const isCollapsed = useState<boolean>('app_sidebar_collapsed', () => true)
   const isShortcutsOpen = useState<boolean>('app_shortcuts_modal_open', () => false)
+  const isMobileOpen = useState<boolean>('app_sidebar_mobile_open', () => false)
 
   function toggle() {
     isCollapsed.value = !isCollapsed.value
@@ -58,6 +59,18 @@ export function useSidebar() {
 
   function expand() {
     isCollapsed.value = false
+  }
+
+  function openMobile() {
+    isMobileOpen.value = true
+  }
+
+  function closeMobile() {
+    isMobileOpen.value = false
+  }
+
+  function toggleMobile() {
+    isMobileOpen.value = !isMobileOpen.value
   }
 
   function openShortcuts() {
@@ -75,10 +88,14 @@ export function useSidebar() {
   return {
     isCollapsed,
     isShortcutsOpen,
+    isMobileOpen,
     navSections: APP_NAV_SECTIONS,
     toggle,
     collapse,
     expand,
+    openMobile,
+    closeMobile,
+    toggleMobile,
     openShortcuts,
     closeShortcuts,
     toggleShortcuts,
