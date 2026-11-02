@@ -78,6 +78,9 @@ export default defineNuxtConfig({
   nitro: {
     preset: process.env.NITRO_PRESET || (process.env.CF_PAGES ? 'cloudflare_pages' : 'cloudflare-module'),
     compatibilityDate: '2024-11-01',
+    cloudflare: {
+      deployConfig: false,
+    },
   },
 
   routeRules: {
