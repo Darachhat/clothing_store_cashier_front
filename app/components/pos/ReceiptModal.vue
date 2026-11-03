@@ -11,22 +11,23 @@
         role="dialog"
         aria-modal="true"
         aria-label="Invoice and receipt"
-        class="pos-focus pos-receipt-dialog bg-white rounded-xl border border-gray-200 w-full flex flex-col overflow-hidden transition-all"
-        :class="activeTemplate === 'A4' ? 'max-w-4xl max-h-[94vh]' : 'max-w-lg max-h-[92vh]'"
+        class="pos-focus pos-receipt-dialog bg-white rounded-xl border border-gray-200 w-full flex flex-col overflow-hidden transition-all shadow-xl"
+        :class="activeTemplate === 'A4' ? 'max-w-4xl max-h-[94vh]' : 'max-w-2xl max-h-[92vh]'"
       >
         <!-- Header (no-print) -->
-        <div class="no-print px-4 py-2.5 border-b border-gray-200 flex items-center justify-between gap-3 bg-gray-50 flex-wrap">
+        <div class="no-print px-4 sm:px-5 py-2.5 border-b border-gray-200 flex items-center justify-between gap-3 bg-gray-50 flex-wrap">
           <div class="flex items-center gap-2.5 min-w-0">
             <div class="w-8 h-8 rounded-full bg-pay text-white flex items-center justify-center flex-shrink-0">
               <UIcon name="i-heroicons-check" class="w-4 h-4" />
             </div>
             <div class="flex flex-col min-w-0">
-              <h3 class="text-base font-semibold text-gray-900 leading-tight truncate khmer-ui">
+              <h3 class="text-sm sm:text-base font-semibold text-gray-900 leading-normal truncate khmer-ui">
                 {{ receipt.isSample ? 'មើលគំរូបោះពុម្ព (Sample Print Preview)' : 'មើលវិក្កយបត្រ និងបង្កាន់ដៃ (Invoice & Receipt)' }}
               </h3>
-              <p class="text-xs text-gray-600 font-mono truncate">
-                លេខវិក្កយបត្រ: {{ receipt.invoice_number || 'INV-PENDING' }}
-              </p>
+              <div class="text-xs text-gray-500 truncate khmer-ui flex items-center gap-1.5 leading-tight">
+                <span>លេខវិក្កយបត្រ:</span>
+                <span class="font-mono font-semibold text-gray-800">{{ receipt.invoice_number || 'PENDING...' }}</span>
+              </div>
             </div>
           </div>
 
@@ -36,7 +37,7 @@
               <button
                 type="button"
                 class="px-2.5 py-1 rounded-md transition-colors cursor-pointer flex items-center gap-1.5"
-                :class="activeTemplate === 'RECEIPT' ? 'bg-gray-900 text-white' : 'text-gray-700 hover:text-gray-900'"
+                :class="activeTemplate === 'RECEIPT' ? 'bg-gray-900 text-white shadow-xs' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'"
                 @click="activeTemplate = 'RECEIPT'"
               >
                 <UIcon name="i-heroicons-receipt-percent" class="w-3.5 h-3.5" />
@@ -45,7 +46,7 @@
               <button
                 type="button"
                 class="px-2.5 py-1 rounded-md transition-colors cursor-pointer flex items-center gap-1.5"
-                :class="activeTemplate === 'A4' ? 'bg-gray-900 text-white' : 'text-gray-700 hover:text-gray-900'"
+                :class="activeTemplate === 'A4' ? 'bg-gray-900 text-white shadow-xs' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'"
                 @click="activeTemplate = 'A4'"
               >
                 <UIcon name="i-heroicons-document-text" class="w-3.5 h-3.5" />
@@ -61,7 +62,7 @@
               <button
                 type="button"
                 class="px-2 py-1 rounded-md transition-colors cursor-pointer"
-                :class="activePaperWidth === '80mm' ? 'bg-gray-900 text-white' : 'text-gray-700 hover:text-gray-900'"
+                :class="activePaperWidth === '80mm' ? 'bg-gray-900 text-white shadow-xs' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'"
                 @click="setPaperWidth('80mm')"
               >
                 80mm
@@ -69,7 +70,7 @@
               <button
                 type="button"
                 class="px-2 py-1 rounded-md transition-colors cursor-pointer"
-                :class="activePaperWidth === '58mm' ? 'bg-gray-900 text-white' : 'text-gray-700 hover:text-gray-900'"
+                :class="activePaperWidth === '58mm' ? 'bg-gray-900 text-white shadow-xs' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'"
                 @click="setPaperWidth('58mm')"
               >
                 58mm
@@ -78,7 +79,7 @@
 
             <button
               type="button"
-              class="w-9 h-9 flex items-center justify-center text-gray-600 hover:text-gray-900 rounded-md hover:bg-gray-100 transition-colors cursor-pointer"
+              class="w-8 h-8 flex items-center justify-center text-gray-500 hover:text-gray-900 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
               aria-label="Close and start next sale"
               @click="$emit('newSale')"
             >
@@ -88,7 +89,10 @@
         </div>
 
         <!-- Body: Scrollable Preview Stage -->
-        <div class="pos-receipt-scroll p-5 overflow-y-auto flex-1 flex justify-center bg-gray-100/80 no-scrollbar">
+        <div
+          ref="scrollStageRef"
+          class="pos-receipt-scroll p-4 md:p-6 overflow-y-auto flex-1 flex justify-center items-start bg-slate-100/80 no-scrollbar"
+        >
           <!-- =========================================================================
                TEMPLATE B: MODERN KHMER THERMAL RECEIPT (80mm / 58mm Dedicated Layout)
                ========================================================================= -->
@@ -383,35 +387,42 @@
         </div>
 
         <!-- Footer Print Controls (no-print) -->
-        <div class="no-print px-4 py-2.5 border-t border-gray-200 flex items-center justify-between gap-2 bg-gray-50 flex-wrap khmer-ui">
+        <div class="no-print px-4 sm:px-5 py-2.5 border-t border-gray-200 flex items-center justify-between gap-3 bg-gray-50 khmer-ui flex-shrink-0 flex-wrap sm:flex-nowrap">
           <div class="flex items-center gap-2 flex-wrap">
-            <!-- បោះពុម្ពបង្កាន់ដៃ (Print 80mm Receipt) -->
+            <!-- បោះពុម្ពបង្កាន់ដៃ (Print Receipt) -->
             <button
               type="button"
-              class="px-4 h-11 rounded-lg border border-gray-300 bg-white text-gray-900 hover:bg-gray-100 text-sm font-semibold flex items-center gap-2 transition-colors cursor-pointer"
+              class="px-3.5 h-10 rounded-lg text-xs sm:text-sm font-semibold flex items-center gap-1.5 transition-colors cursor-pointer border shadow-xs"
+              :class="activeTemplate === 'RECEIPT'
+                ? 'border-gray-900 bg-gray-900 text-white hover:bg-gray-800'
+                : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-100 hover:text-gray-900'"
               @click="handlePrintTemplate('RECEIPT')"
             >
-              <UIcon name="i-heroicons-printer" class="w-4 h-4" />
-              <span>បោះពុម្ពបង្កាន់ដៃ (Print Receipt)</span>
+              <UIcon name="i-heroicons-printer" class="w-4 h-4 flex-shrink-0" />
+              <span>បោះពុម្ពបង្កាន់ដៃ (Receipt)</span>
             </button>
 
             <!-- បោះពុម្ពវិក្កយបត្រ A4 (Print A4 Invoice) -->
             <button
               type="button"
-              class="px-4 h-11 rounded-lg border border-gray-300 bg-white text-gray-900 hover:bg-gray-100 text-sm font-semibold flex items-center gap-2 transition-colors cursor-pointer"
+              class="px-3.5 h-10 rounded-lg text-xs sm:text-sm font-semibold flex items-center gap-1.5 transition-colors cursor-pointer border shadow-xs"
+              :class="activeTemplate === 'A4'
+                ? 'border-gray-900 bg-gray-900 text-white hover:bg-gray-800'
+                : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-100 hover:text-gray-900'"
               @click="handlePrintTemplate('A4')"
             >
-              <UIcon name="i-heroicons-document-text" class="w-4 h-4" />
-              <span>បោះពុម្ពវិក្កយបត្រ A4 (Print A4 Invoice)</span>
+              <UIcon name="i-heroicons-document-text" class="w-4 h-4 flex-shrink-0" />
+              <span>បោះពុម្ពវិក្កយបត្រ A4 (Invoice)</span>
             </button>
           </div>
 
           <button
             type="button"
-            class="px-6 h-11 bg-gray-900 text-white rounded-lg text-sm font-bold hover:bg-gray-700 transition-colors cursor-pointer"
+            class="px-5 h-10 bg-gray-900 text-white hover:bg-gray-800 rounded-lg text-xs sm:text-sm font-bold transition-colors cursor-pointer flex items-center gap-2 shadow-xs flex-shrink-0 ml-auto"
             @click="$emit('newSale')"
           >
-            {{ receipt.isSample ? 'បិទ (Close Preview)' : 'ការលក់បន្ទាប់ / Start Next Sale [Enter]' }}
+            <span>{{ receipt.isSample ? 'បិទ (Close Preview)' : 'ការលក់បន្ទាប់ [Enter]' }}</span>
+            <UIcon name="i-heroicons-arrow-right" class="w-4 h-4 flex-shrink-0" />
           </button>
         </div>
       </div>
@@ -420,7 +431,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, ref } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import { usePosSettings } from '~/composables/usePosSettings'
 import { normalizeTerminalId } from '~/composables/useCustomerDisplaySync'
 import {
@@ -483,6 +494,22 @@ defineEmits<{
 }>()
 
 const { settings: posSettings, saveSettings } = usePosSettings()
+
+const scrollStageRef = ref<HTMLElement | null>(null)
+
+watch(
+  () => props.modelValue,
+  (isOpen) => {
+    if (isOpen) {
+      nextTick(() => {
+        if (scrollStageRef.value) {
+          scrollStageRef.value.scrollTop = 0
+        }
+      })
+    }
+  },
+  { immediate: true },
+)
 
 const activeTemplate = ref<'RECEIPT' | 'A4'>('RECEIPT')
 const activePaperWidth = computed(() => posSettings.value.paperWidth || '80mm')
