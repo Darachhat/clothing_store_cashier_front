@@ -39,17 +39,6 @@
           <UIcon name="i-heroicons-photo" class="w-4 h-4" />
           Image File
         </button>
-
-        <button
-          type="button"
-          class="scanner-tab"
-          :class="{ 'is-active': activeTab === 'phone' }"
-          @click="activeTab = 'phone'"
-        >
-          <UIcon name="i-heroicons-device-phone-mobile" class="w-4 h-4" />
-          Wireless Phone
-          <span v-if="phoneConnected" class="scanner-tab__online-dot" />
-        </button>
       </div>
 
       <!-- Tab 1: Live Camera Scanner -->
@@ -59,7 +48,7 @@
           <div>
             <strong>Camera Unavailable:</strong> {{ cameraError }}
             <p class="mt-1 text-xs text-slate-400">
-              Check browser permissions, or switch to "Wireless Phone" or "Image File" above.
+              Check browser permissions, or switch to "Image File" above.
             </p>
           </div>
         </div>
@@ -95,7 +84,7 @@
         </div>
 
         <p class="text-xs text-center text-slate-400">
-          Point your webcam or phone camera at standard retail barcodes (EAN-13, Code 128, UPC, QR).
+          Point your webcam or camera at standard retail barcodes (EAN-13, Code 128, UPC, QR).
         </p>
       </div>
 
@@ -130,74 +119,6 @@
         <div v-if="imageDecodeMessage" class="scanner-notice scanner-notice--info">
           <UIcon name="i-heroicons-information-circle" class="w-4 h-4 flex-shrink-0" />
           <span>{{ imageDecodeMessage }}</span>
-        </div>
-      </div>
-
-      <!-- Tab 3: Phone Wireless Pairing -->
-      <div v-if="activeTab === 'phone'" class="scanner-body">
-        <div v-if="isPC && !hasLocalCamera" class="scanner-notice scanner-notice--info">
-          <UIcon name="i-heroicons-information-circle" class="w-5 h-5 flex-shrink-0" />
-          <div>
-            <strong>No local webcam detected on this PC.</strong>
-            Connect your phone as a wireless scanner companion by scanning the pairing QR below.
-          </div>
-        </div>
-
-        <div class="scanner-pairing-grid">
-          <!-- QR Code Box -->
-          <div class="scanner-qr-card">
-            <div class="scanner-qr-frame">
-              <img
-                v-if="qrCodeUrl"
-                :src="qrCodeUrl"
-                alt="Scanner pairing QR Code"
-                class="scanner-qr-img"
-              />
-              <div v-else class="scanner-qr-loading">Generating QR...</div>
-            </div>
-
-            <div class="scanner-status-indicator" :class="{ 'is-connected': phoneConnected }">
-              <span class="status-pulse-dot" />
-              <span>{{ phoneConnected ? 'Phone Connected & Active' : 'Waiting for phone connection...' }}</span>
-            </div>
-          </div>
-
-          <!-- Pairing Instructions -->
-          <div class="scanner-instructions">
-            <div class="instruction-step">
-              <span class="step-num">1</span>
-              <div>
-                <strong>Scan QR Code with your smartphone</strong>
-                <p>Open the camera app on your phone and tap the pairing link.</p>
-              </div>
-            </div>
-
-            <div class="instruction-step">
-              <span class="step-num">2</span>
-              <div>
-                <strong>Point smartphone at garment tags</strong>
-                <p>Scanned items are sent directly into your active POS order.</p>
-              </div>
-            </div>
-
-            <!-- LAN IP / Host config -->
-            <div class="scanner-link-config">
-              <label class="config-label">Companion Link:</label>
-              <div class="config-input-group">
-                <input
-                  v-model="customHost"
-                  type="text"
-                  placeholder="e.g. 192.168.1.10:3000"
-                  class="config-input font-mono"
-                  @change="updateHost"
-                />
-                <button type="button" class="btn btn--secondary btn--sm" @click="copyPairingUrl">
-                  {{ copied ? 'Copied!' : 'Copy' }}
-                </button>
-              </div>
-              <span class="config-hint font-mono text-xs">PIN: {{ sessionShortCode }}</span>
-            </div>
-          </div>
         </div>
       </div>
 
@@ -243,7 +164,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { usePosAudio } from '~/composables/usePosAudio'
 
 const props = withDefaults(
@@ -260,15 +181,9 @@ const emit = defineEmits<{
   (e: 'scanned', barcode: string): void
 }>()
 
-const config = useRuntimeConfig()
-const apiBase = config.public.apiBase || '/api/proxy'
-const backendBase = (config.public.backendBase as string) || (apiBase.startsWith('http') ? apiBase : 'http://localhost:8000')
-
 const isPC = ref(true)
 const hasLocalCamera = ref(false)
-const activeTab = ref<'camera' | 'image' | 'phone'>('camera')
-const phoneConnected = ref(false)
-const copied = ref(false)
+const activeTab = ref<'camera' | 'image'>('camera')
 
 const availableCameras = ref<Array<{ id: string; label: string }>>([])
 const selectedCameraId = ref<string>('')
@@ -280,15 +195,9 @@ const isDecodingImage = ref(false)
 const imageDecodeMessage = ref<string | null>(null)
 const fileInputRef = ref<HTMLInputElement | null>(null)
 
-const sessionId = ref('')
-const sessionShortCode = ref('')
-const customHost = ref('')
-const qrCodeUrl = ref('')
 const recentScans = ref<any[]>([])
 
 let html5QrScannerInstance: any = null
-let ws: WebSocket | null = null
-let pollInterval: any = null
 let lastHandledBarcode = ''
 let lastHandledTime = 0
 
@@ -297,53 +206,6 @@ const { playBeep } = usePosAudio()
 // Sound synthesizer for crisp cashier chime
 function playChime() {
   playBeep(true)
-}
-
-// Generate or restore persistent session token
-function initSession() {
-  let saved = ''
-  if (typeof window !== 'undefined') {
-    saved = localStorage.getItem('pos_scanner_session_id') || ''
-  }
-  if (!saved) {
-    const rand = Math.random().toString(36).substring(2, 8).toUpperCase()
-    saved = `sess_${rand}`
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('pos_scanner_session_id', saved)
-    }
-  }
-  sessionId.value = saved
-  sessionShortCode.value = saved.replace(/^sess_/, '')
-
-  if (typeof window !== 'undefined') {
-    customHost.value = window.location.host
-  }
-  updateQrUrl()
-}
-
-// Companion pairing URL
-const pairingUrl = computed(() => {
-  const host = customHost.value.trim() || (typeof window !== 'undefined' ? window.location.host : 'localhost:3002')
-  const proto = typeof window !== 'undefined' && window.location.protocol === 'https:' ? 'https:' : 'http:'
-  return `${proto}//${host}/pos/scanner?session=${sessionId.value}`
-})
-
-function updateQrUrl() {
-  qrCodeUrl.value = `${backendBase}/api/v1/scanner/qr?text=${encodeURIComponent(pairingUrl.value)}`
-}
-
-function updateHost() {
-  updateQrUrl()
-}
-
-async function copyPairingUrl() {
-  try {
-    await navigator.clipboard.writeText(pairingUrl.value)
-    copied.value = true
-    setTimeout(() => { copied.value = false }, 2000)
-  } catch {
-    // clipboard denied
-  }
 }
 
 // Handle incoming scan
@@ -492,65 +354,10 @@ async function decodeImageFile(file: File) {
     } finally {
       decoder.clear()
     }
-  } catch (err: any) {
+  } catch {
     imageDecodeMessage.value = 'Could not find a valid barcode in this image. Ensure the barcode is clear and unblurred.'
   } finally {
     isDecodingImage.value = false
-  }
-}
-
-// ── WebSocket Companion Pairing ───────────────────────────────────────
-function connectWebSocket() {
-  if (!sessionId.value) return
-  const wsProto = backendBase.startsWith('https') ? 'wss' : 'ws'
-  const wsHost = backendBase.replace(/^https?:\/\//, '')
-  const wsUrl = `${wsProto}://${wsHost}/api/v1/scanner/ws/${sessionId.value}?client_type=pc`
-
-  try {
-    ws = new WebSocket(wsUrl)
-    ws.onmessage = (event) => {
-      try {
-        const data = jsonParse(event.data)
-        if (data.type === 'peer_connected' && data.client_type === 'phone') {
-          phoneConnected.value = true
-        } else if (data.type === 'peer_disconnected' && data.client_type === 'phone') {
-          phoneConnected.value = false
-        } else if (data.type === 'barcode_scanned') {
-          onBarcodeReceived(data.barcode, 'Wireless Phone')
-        }
-      } catch {
-        // ignore
-      }
-    }
-    ws.onclose = () => {
-      if (props.modelValue && activeTab.value === 'phone') {
-        setTimeout(connectWebSocket, 3000)
-      }
-    }
-  } catch {
-    // ignore
-  }
-}
-
-function jsonParse(str: string) {
-  try { return JSON.parse(str) } catch { return {} }
-}
-
-async function pollSession() {
-  if (!sessionId.value || !props.modelValue) return
-  try {
-    const res = await fetch(`${backendBase}/api/v1/scanner/${sessionId.value}/status`)
-    if (res.ok) {
-      const data = await res.json()
-      if (data.phone_connected) {
-        phoneConnected.value = true
-      }
-      if (data.last_barcode && data.last_barcode !== lastHandledBarcode) {
-        onBarcodeReceived(data.last_barcode, 'Wireless Phone (HTTP)')
-      }
-    }
-  } catch {
-    // ignore
   }
 }
 
@@ -569,11 +376,6 @@ async function checkDeviceAndCameras() {
   } catch {
     hasLocalCamera.value = false
   }
-
-  // If on PC and no local camera is present, default to Wireless Phone tab
-  if (isPC.value && !hasLocalCamera.value) {
-    activeTab.value = 'phone'
-  }
 }
 
 function closeModal() {
@@ -588,23 +390,11 @@ function formatTime(ts: number) {
 // ── Watchers & Lifecycle ──────────────────────────────────────────────
 watch(() => props.modelValue, async (isOpen) => {
   if (isOpen) {
-    initSession()
     await checkDeviceAndCameras()
     if (activeTab.value === 'camera') {
       await startCameraScanner()
-    } else if (activeTab.value === 'phone') {
-      connectWebSocket()
-      pollInterval = setInterval(pollSession, 2000)
     }
   } else {
-    if (ws) {
-      ws.close()
-      ws = null
-    }
-    if (pollInterval) {
-      clearInterval(pollInterval)
-      pollInterval = null
-    }
     await stopCameraScanner()
   }
 })
@@ -616,20 +406,6 @@ watch(activeTab, async (tab) => {
     } else {
       await stopCameraScanner()
     }
-
-    if (tab === 'phone') {
-      connectWebSocket()
-      if (!pollInterval) pollInterval = setInterval(pollSession, 2000)
-    } else {
-      if (ws) {
-        ws.close()
-        ws = null
-      }
-      if (pollInterval) {
-        clearInterval(pollInterval)
-        pollInterval = null
-      }
-    }
   }
 })
 
@@ -638,8 +414,6 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
-  if (ws) ws.close()
-  if (pollInterval) clearInterval(pollInterval)
   stopCameraScanner()
 })
 </script>
@@ -729,13 +503,6 @@ onUnmounted(() => {
 .scanner-tab.is-active {
   color: var(--text-primary, #0f172a);
   border-bottom-color: var(--text-primary, #0f172a);
-}
-
-.scanner-tab__online-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: #10b981;
 }
 
 /* Body */
@@ -839,143 +606,6 @@ onUnmounted(() => {
 .scanner-dropzone:hover,
 .scanner-dropzone.is-dragging {
   background: var(--surface-hover, #f8fafc);
-}
-
-/* Pairing layout */
-.scanner-pairing-grid {
-  display: grid;
-  grid-template-columns: 180px 1fr;
-  gap: 16px;
-  align-items: start;
-}
-
-.scanner-qr-card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-}
-
-.scanner-qr-frame {
-  width: 170px;
-  height: 170px;
-  background: #fff;
-  border: 1px solid var(--border-subtle, #e5e7eb);
-  border-radius: 8px;
-  padding: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.scanner-qr-img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-}
-
-.scanner-qr-loading {
-  font-size: 12px;
-  color: var(--text-tertiary, #64748b);
-}
-
-.scanner-status-indicator {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 11px;
-  color: #f59e0b;
-}
-
-.scanner-status-indicator.is-connected {
-  color: #10b981;
-}
-
-.status-pulse-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: currentColor;
-  box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4);
-  animation: pulse 1.5s infinite;
-}
-
-@keyframes pulse {
-  0% { transform: scale(0.95); opacity: 0.7; }
-  50% { transform: scale(1.15); opacity: 1; }
-  100% { transform: scale(0.95); opacity: 0.7; }
-}
-
-.scanner-instructions {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.instruction-step {
-  display: flex;
-  gap: 10px;
-  align-items: flex-start;
-  font-size: 12px;
-}
-
-.instruction-step strong {
-  color: var(--text-primary, #0f172a);
-  display: block;
-}
-
-.instruction-step p {
-  color: var(--text-tertiary, #64748b);
-  margin: 2px 0 0 0;
-}
-
-.step-num {
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: var(--surface-active, #f1f5f9);
-  color: var(--text-primary, #0f172a);
-  font-weight: 700;
-  font-size: 11px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  border: 1px solid var(--border-subtle, #e5e7eb);
-}
-
-.scanner-link-config {
-  background: var(--surface, #ffffff);
-  border: 1px solid var(--border-subtle, #e5e7eb);
-  border-radius: 6px;
-  padding: 8px 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.config-label {
-  font-size: 11px;
-  color: var(--text-tertiary, #64748b);
-}
-
-.config-input-group {
-  display: flex;
-  gap: 6px;
-}
-
-.config-input {
-  flex: 1;
-  font-size: 12px;
-  border: 1px solid var(--border-subtle, #e5e7eb);
-  border-radius: 4px;
-  padding: 4px 8px;
-  background: var(--surface-hover, #f8fafc);
-  color: var(--text-primary, #0f172a);
-}
-
-.config-hint {
-  color: var(--text-tertiary, #64748b);
 }
 
 /* Recent Scans Live List */
