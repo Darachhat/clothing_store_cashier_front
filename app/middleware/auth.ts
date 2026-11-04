@@ -1,5 +1,7 @@
 // Cashier auth middleware — restores session and enforces CASHIER role
 export default defineNuxtRouteMiddleware(async (to) => {
+  if (import.meta.server) return
+
   const authStore = useAuthStore()
 
   if (process.client) {

@@ -5,7 +5,20 @@ export default defineNuxtConfig({
 
   experimental: {
     appManifest: false,
-    emitRouteChunkError: 'automatic-immediate',
+    payloadExtraction: false,
+    defaults: {
+      nuxtLink: {
+        prefetch: false,
+      },
+    },
+  },
+
+  hooks: {
+    'build:manifest': (manifest) => {
+      for (const key in manifest) {
+        manifest[key].prefetch = false
+      }
+    },
   },
 
   future: {
@@ -86,8 +99,9 @@ export default defineNuxtConfig({
 
   routeRules: {
     '/': { headers: { 'cache-control': 'public, max-age=0, must-revalidate' } },
-    '/pos/**': { ssr: false, headers: { 'cache-control': 'no-cache, no-store, must-revalidate' } },
-    '/settings/**': { ssr: false, headers: { 'cache-control': 'no-cache, no-store, must-revalidate' } },
+    '/pos/**': { headers: { 'cache-control': 'no-cache, no-store, must-revalidate' } },
+    '/settings/**': { headers: { 'cache-control': 'no-cache, no-store, must-revalidate' } },
+    '/_nuxt/**': { headers: { 'cache-control': 'public, max-age=31536000, immutable' } },
     '/uploads/**': { proxy: `${process.env.NUXT_API_BASE || 'https://api.kimvannak.store'}/uploads/**` },
   } as any,
 })
