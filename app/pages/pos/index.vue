@@ -1213,7 +1213,6 @@ let isAutoClearingAfterPayment = false
 
 function nextDisplaySeq(): number {
   displaySeqCounter = Math.max(displaySeqCounter + 1, (posStore.stateSeq || 1) + 1)
-  posStore.stateSeq = displaySeqCounter
   return displaySeqCounter
 }
 
@@ -1616,13 +1615,20 @@ function emitCustomerDisplayHeartbeat(snapshot?: CustomerDisplaySnapshot) {
   }
 }
 
+let isSyncingDisplay = false
+
 function syncCustomerDisplayCart() {
-  if (isAutoClearingAfterPayment) return
-  if (posStore.cart.length > 0 && activeSuccessDisplay.value) {
-    // Cashier started adding items for the next customer; dismiss previous payment success immediately
-    clearActiveSuccessDisplay()
+  if (isAutoClearingAfterPayment || isSyncingDisplay) return
+  isSyncingDisplay = true
+  try {
+    if (posStore.cart.length > 0 && activeSuccessDisplay.value) {
+      // Cashier started adding items for the next customer; dismiss previous payment success immediately
+      clearActiveSuccessDisplay()
+    }
+    broadcastCustomerDisplayState(posStore.cart.length > 0 ? 'CART_UPDATED' : 'MANUAL_CLEAR')
+  } finally {
+    isSyncingDisplay = false
   }
-  broadcastCustomerDisplayState(posStore.cart.length > 0 ? 'CART_UPDATED' : 'MANUAL_CLEAR')
 }
 
 function notifyCustomerDisplayKhqr(tx: any) {
@@ -2507,7 +2513,8 @@ onMounted(async () => {
   refreshCustomerDisplayPresence()
 
   // Subscribe to Pinia store mutations to guarantee customer display syncs on any mutation
-  posStore.$subscribe(() => {
+  posStore.$subscribe((mutation) => {
+    if ((mutation.events as any)?.key === 'stateSeq') return
     syncCustomerDisplayCart()
   })
 

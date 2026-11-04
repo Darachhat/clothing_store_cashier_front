@@ -57,15 +57,19 @@ export default defineEventHandler(async (event) => {
     }
   }
 
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), 15000)
+
   try {
     const upstream = await fetch(targetUrl, {
       method,
       headers: forwardHeaders,
       body,
       redirect: 'manual',
-      signal: AbortSignal.timeout ? AbortSignal.timeout(15000) : undefined,
+      signal: controller.signal,
     })
 
+    const data = await upstream.arrayBuffer()
     const resHeaders = new Headers()
     upstream.headers.forEach((value, key) => {
       const lower = key.toLowerCase()
@@ -80,11 +84,14 @@ export default defineEventHandler(async (event) => {
       resHeaders.set(key, value)
     })
 
-    return new Response(upstream.body, {
-      status: upstream.status,
-      statusText: upstream.statusText,
-      headers: resHeaders,
-    })
+    return sendWebResponse(
+      event,
+      new Response(data, {
+        status: upstream.status,
+        statusText: upstream.statusText,
+        headers: resHeaders,
+      })
+    )
   } catch (err: any) {
     const detail = `Backend proxy request failed: ${err?.message || 'Unknown error'}`
     throw createError({
@@ -93,5 +100,7 @@ export default defineEventHandler(async (event) => {
       message: detail,
       data: { detail },
     })
+  } finally {
+    clearTimeout(timeoutId)
   }
 })
