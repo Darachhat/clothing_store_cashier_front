@@ -2,7 +2,6 @@
 export default defineNuxtConfig({
   compatibilityDate: '2024-11-01',
   ssr: false,
-  spaLoadingTemplate: 'spa-loading-template.html',
   devtools: { enabled: true },
 
   experimental: {
@@ -94,6 +93,7 @@ export default defineNuxtConfig({
 
   routeRules: {
     '/': {
+      redirect: { to: '/pos', statusCode: 302 },
       headers: {
         'cache-control': 'no-cache, no-store, must-revalidate',
         'cdn-cache-control': 'no-store',
