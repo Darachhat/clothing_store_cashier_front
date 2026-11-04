@@ -40,8 +40,23 @@
             <span class="text-xs font-bold text-gray-500 font-mono">USD</span>
           </div>
           <span class="text-[11px] font-mono text-gray-500 mb-2">
-            KHR equivalent: {{ Math.round(amount * 4100).toLocaleString() }} ៛
+            KHR equivalent: {{ Math.round(amount * KHR_EXCHANGE_RATE).toLocaleString() }} ៛
           </span>
+
+          <!-- Customer Display Status Banner -->
+          <div
+            v-if="customerDisplayOnline"
+            class="w-full py-1.5 px-2.5 rounded-lg border border-gray-200 bg-white text-xs font-semibold text-gray-700 flex items-center justify-between mb-2"
+          >
+            <span class="inline-flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <UIcon name="i-heroicons-computer-desktop" class="w-3.5 h-3.5 text-gray-600" />
+              <span>Displayed on Customer Screen</span>
+            </span>
+            <span v-if="terminalLabel" class="text-[10px] font-mono font-medium text-gray-500">
+              {{ terminalLabel }}
+            </span>
+          </div>
 
           <!-- Status Row Directly Above QR -->
           <div
@@ -105,6 +120,15 @@
         </button>
         <button
           type="button"
+          class="px-2.5 h-8 rounded-lg border border-gray-200 bg-white text-gray-700 text-xs font-semibold hover:bg-gray-100 transition-colors cursor-pointer flex items-center gap-1"
+          title="Present Fullscreen on this screen"
+          @click="$emit('fullscreen')"
+        >
+          <UIcon name="i-heroicons-arrows-pointing-out" class="w-3.5 h-3.5 text-gray-600" />
+          <span>Fullscreen</span>
+        </button>
+        <button
+          type="button"
           class="px-3 h-8 rounded-lg border border-gray-200 bg-white text-gray-700 text-xs font-semibold hover:bg-gray-100 transition-colors cursor-pointer"
           title="Regenerate QR Code"
           @click="$emit('retry')"
@@ -122,7 +146,7 @@
       <div class="flex flex-col gap-0.5">
         <span class="text-xs font-bold text-gray-900">Dynamic ABA KHQR Payment</span>
         <p class="text-xs text-gray-500 max-w-[280px]">
-          Generates a scannable KHQR code for ${{ amount.toFixed(2) }} USD ({{ Math.round(amount * 4100).toLocaleString() }} ៛)
+          Generates a scannable KHQR code for ${{ amount.toFixed(2) }} USD ({{ Math.round(amount * KHR_EXCHANGE_RATE).toLocaleString() }} ៛)
         </p>
       </div>
       <button
@@ -139,6 +163,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { KHR_EXCHANGE_RATE } from '~/composables/useCustomerDisplaySync'
 
 const props = defineProps<{
   loading: boolean
@@ -150,12 +175,15 @@ const props = defineProps<{
   apv: string | null
   secondsLeft: number
   cancelling: boolean
+  customerDisplayOnline?: boolean
+  terminalLabel?: string
 }>()
 
 defineEmits<{
   retry: []
   cancel: []
   generate: []
+  fullscreen: []
 }>()
 
 function mmss(s: number): string {

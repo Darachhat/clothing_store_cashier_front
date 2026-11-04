@@ -1,125 +1,125 @@
 <template>
-  <div class="flex items-center gap-2 flex-wrap" :class="containerClass">
+  <div class="inline-flex items-center gap-2 flex-wrap justify-center" :class="containerClass">
     <span
       v-if="showLabel"
-      class="text-[11px] font-medium leading-none"
+      class="text-[11px] font-medium leading-none whitespace-nowrap"
       :class="isDark ? 'text-slate-400' : 'text-gray-500'"
     >
       {{ labelText }}
     </span>
 
-    <div class="flex items-center gap-1.5 flex-wrap">
+    <div class="inline-flex items-center gap-1.5 flex-wrap justify-center">
       <!-- ABA Bank -->
       <div
-        class="flex items-center justify-center rounded-md border bg-white p-0.5 shadow-2xs transition-transform hover:scale-105"
-        :class="badgeBorderClass"
+        class="inline-flex items-center justify-center rounded border bg-white overflow-hidden shadow-2xs transition-transform hover:scale-105"
+        :class="[badgeBorderClass, badgeSizeClassWide]"
         title="ABA Bank"
       >
         <img
           src="/images/payments/aba.svg"
           alt="ABA Bank"
           class="object-contain"
-          :class="sizeClassWide"
+          :class="imgSizeClassWide"
         >
       </div>
 
       <!-- NBC KHQR -->
       <div
-        class="flex items-center justify-center rounded-md border bg-white p-0.5 shadow-2xs transition-transform hover:scale-105"
-        :class="badgeBorderClass"
+        class="inline-flex items-center justify-center rounded border bg-white overflow-hidden shadow-2xs transition-transform hover:scale-105"
+        :class="[badgeBorderClass, badgeSizeClassWide]"
         title="KHQR (Bakong & Member Banks)"
       >
         <img
           src="/images/payments/khqr.svg"
           alt="KHQR"
           class="object-contain"
-          :class="sizeClassWide"
+          :class="imgSizeClassWide"
         >
       </div>
 
       <!-- VISA -->
       <div
-        class="flex items-center justify-center rounded-md border bg-white p-0.5 shadow-2xs transition-transform hover:scale-105"
-        :class="badgeBorderClass"
+        class="inline-flex items-center justify-center rounded border bg-white overflow-hidden shadow-2xs transition-transform hover:scale-105"
+        :class="[badgeBorderClass, badgeSizeClassSquare]"
         title="Visa"
       >
         <img
           src="/images/payments/visa.svg"
           alt="Visa"
           class="object-contain"
-          :class="sizeClassSquare"
+          :class="imgSizeClassSquare"
         >
       </div>
 
       <!-- Mastercard -->
       <div
-        class="flex items-center justify-center rounded-md border bg-white p-0.5 shadow-2xs transition-transform hover:scale-105"
-        :class="badgeBorderClass"
+        class="inline-flex items-center justify-center rounded border bg-white overflow-hidden shadow-2xs transition-transform hover:scale-105"
+        :class="[badgeBorderClass, badgeSizeClassSquare]"
         title="Mastercard"
       >
         <img
           src="/images/payments/mastercard.svg"
           alt="Mastercard"
           class="object-contain"
-          :class="sizeClassSquare"
+          :class="imgSizeClassSquare"
         >
       </div>
 
       <!-- UnionPay -->
       <div
-        class="flex items-center justify-center rounded-md border bg-white p-0.5 shadow-2xs transition-transform hover:scale-105"
-        :class="badgeBorderClass"
+        class="inline-flex items-center justify-center rounded border bg-white overflow-hidden shadow-2xs transition-transform hover:scale-105"
+        :class="[badgeBorderClass, badgeSizeClassSquare]"
         title="UnionPay"
       >
         <img
           src="/images/payments/unionpay.svg"
           alt="UnionPay"
           class="object-contain"
-          :class="sizeClassSquare"
+          :class="imgSizeClassSquare"
         >
       </div>
 
       <!-- JCB -->
       <div
-        class="flex items-center justify-center rounded-md border bg-white p-0.5 shadow-2xs transition-transform hover:scale-105"
-        :class="badgeBorderClass"
+        class="inline-flex items-center justify-center rounded border bg-white overflow-hidden shadow-2xs transition-transform hover:scale-105"
+        :class="[badgeBorderClass, badgeSizeClassSquare]"
         title="JCB"
       >
         <img
           src="/images/payments/jcb.svg"
           alt="JCB"
           class="object-contain"
-          :class="sizeClassSquare"
+          :class="imgSizeClassSquare"
         >
       </div>
 
       <!-- Alipay -->
       <div
         v-if="showEWallets"
-        class="flex items-center justify-center rounded-md border bg-white p-0.5 shadow-2xs transition-transform hover:scale-105"
-        :class="badgeBorderClass"
+        class="inline-flex items-center justify-center rounded border bg-white overflow-hidden shadow-2xs transition-transform hover:scale-105"
+        :class="[badgeBorderClass, badgeSizeClassSquare]"
         title="Alipay"
       >
         <img
           src="/images/payments/alipay.svg"
           alt="Alipay"
           class="object-contain"
-          :class="sizeClassSquare"
+          :class="imgSizeClassSquare"
         >
       </div>
 
       <!-- WeChat -->
       <div
         v-if="showEWallets"
-        class="flex items-center justify-center rounded-md border bg-white p-0.5 shadow-2xs transition-transform hover:scale-105"
-        :class="badgeBorderClass"
+        class="inline-flex items-center justify-center rounded border bg-white overflow-hidden shadow-2xs transition-transform hover:scale-105"
+        :class="[badgeBorderClass, badgeSizeClassSquare]"
         title="WeChat Pay"
       >
         <img
           src="/images/payments/wechat.svg"
           alt="WeChat Pay"
           class="object-contain"
-          :class="sizeClassSquare"
+          :class="imgSizeClassSquare"
         >
       </div>
     </div>
@@ -134,6 +134,7 @@ const props = withDefaults(
     showLabel?: boolean
     labelText?: string
     variant?: 'light' | 'dark'
+    theme?: 'light' | 'dark'
     size?: 'sm' | 'md'
     showEWallets?: boolean
   }>(),
@@ -141,12 +142,13 @@ const props = withDefaults(
     showLabel: true,
     labelText: 'We accept:',
     variant: 'light',
+    theme: undefined,
     size: 'sm',
     showEWallets: true,
   }
 )
 
-const isDark = computed(() => props.variant === 'dark')
+const isDark = computed(() => props.variant === 'dark' || props.theme === 'dark')
 
 const badgeBorderClass = computed(() =>
   isDark.value ? 'border-slate-800' : 'border-gray-200/90'
@@ -154,11 +156,19 @@ const badgeBorderClass = computed(() =>
 
 const containerClass = computed(() => (isDark.value ? 'text-white' : 'text-gray-900'))
 
-const sizeClassSquare = computed(() =>
-  props.size === 'md' ? 'h-6 w-6' : 'h-4.5 w-4.5'
+const badgeSizeClassSquare = computed(() =>
+  props.size === 'md' ? 'h-6 w-6 p-0.5' : 'h-5 w-5 p-0.5'
 )
 
-const sizeClassWide = computed(() =>
-  props.size === 'md' ? 'h-6 w-10' : 'h-4.5 w-7.5'
+const badgeSizeClassWide = computed(() =>
+  props.size === 'md' ? 'h-6 w-10 p-0.5' : 'h-5 w-8 p-0.5'
+)
+
+const imgSizeClassSquare = computed(() =>
+  props.size === 'md' ? 'h-5 w-5' : 'h-4 w-4'
+)
+
+const imgSizeClassWide = computed(() =>
+  props.size === 'md' ? 'h-5 w-9' : 'h-4 w-7'
 )
 </script>

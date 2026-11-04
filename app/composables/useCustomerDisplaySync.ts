@@ -532,9 +532,12 @@ export function applyIncomingSnapshot(
     }
   }
 
-  // Merge closed sessions reported by the authoritative POS terminal
+  // Merge closed sessions reported by the authoritative POS terminal.
+  // Never let an active incoming cart self-poison its own orderSessionId.
   for (const closedId of incoming.closedOrderSessions) {
-    if (closedId) ctx.closedOrderSessions.add(closedId)
+    if (closedId && (closedId !== incoming.orderSessionId || incoming.state === 'IDLE')) {
+      ctx.closedOrderSessions.add(closedId)
+    }
   }
 
   // If the cashier explicitly resumed a held order, reopen its orderSessionId
@@ -1091,7 +1094,8 @@ export function loadInitialDisplaySnapshotFromStorage(
 
   let rawSession: any = null
   try {
-    const pRaw = localStorage.getItem(POS_SESSION_STORAGE_KEY)
+    const scopedKey = `pos_session_${resolvedTerminalId}`
+    const pRaw = localStorage.getItem(scopedKey) || localStorage.getItem(POS_SESSION_STORAGE_KEY)
     if (pRaw) rawSession = JSON.parse(pRaw)
   } catch { /* ignore */ }
 
@@ -1112,12 +1116,9 @@ export function loadInitialDisplaySnapshotFromStorage(
     }
   } catch { /* ignore */ }
 
-  const settingsTerminalId = normalizeTerminalId(rawSettings?.terminalId || 'POS-01')
-  const sessionMatchesTerminal = settingsTerminalId === resolvedTerminalId
-
-  // Build snapshot from pos_session_v2 if it belongs to this terminal
+  // Build snapshot from rawSession for this terminal
   const sessionSnapshot = buildSnapshotFromRawPosStorage(
-    sessionMatchesTerminal ? rawSession : null,
+    rawSession,
     rawSettings,
     resolvedTerminalId,
   )

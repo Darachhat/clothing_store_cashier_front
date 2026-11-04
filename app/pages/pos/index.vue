@@ -174,6 +174,7 @@
     <PosPaymentModal
       v-model="showPaymentModal"
       v-model:selected-payment-method="selectedPaymentMethod"
+      v-model:selected-aba-option="selectedAbaOption"
       v-model:tender-amount="tenderAmount"
       v-model:payment-reference-number="paymentReferenceNumber"
       v-model:order-notes="orderNotes"
@@ -188,14 +189,6 @@
       :remaining-split-balance="remainingSplitBalance"
       :processing-sale="processingSale"
       :is-checkout-disabled="isCheckoutDisabled"
-      :aba-loading="abaLoading"
-      :aba-error="abaError"
-      :aba-status="abaStatus"
-      :aba-qr-image="abaQrImage"
-      :aba-qr-string="abaQrString"
-      :aba-apv="abaApv"
-      :aba-seconds-left="abaSecondsLeft"
-      :aba-cancelling="abaCancelling"
       :is-aba-modal-active="isAbaModalActive"
       :item-count="posStore.itemCount"
       :customer-name="posStore.selectedCustomer?.name || null"
@@ -206,35 +199,8 @@
       @add-split-row="addSplitRow"
       @remove-split-row="removeSplitRow"
       @finalize-sale="handleFinalizeSale"
-      @aba-retry="handleAbaRetry"
+      @start-aba-checkout="startAbaModalCheckout"
       @aba-cancel="handleAbaCancel"
-      @select-aba-khqr="startAbaFullScreenCheckout"
-      @select-aba-card="startAbaModalCheckout('cards')"
-    />
-
-    <!-- ─── Modal 4B: Dedicated Full-Screen ABA KHQR Overlay (Option B - Single Screen Takeover) ── -->
-    <PosAbaKhqrFullScreenOverlay
-      v-model="showAbaFullScreen"
-      :loading="abaLoading"
-      :verifying="abaVerifying"
-      :error="abaError"
-      :status="abaStatus"
-      :qr-image="abaQrImage"
-      :qr-string="abaQrString"
-      :checkout-url="abaCheckoutUrl"
-      :amount="Number(posStore.grandTotal) || 0"
-      :apv="abaApv"
-      :tran-id="abaTranId"
-      :seconds-left="abaSecondsLeft"
-      :cancelling="abaCancelling"
-      :store-name="posSettings.receiptStoreName || 'Clothing Store Phnom Penh'"
-      :branch-name="activeBranchName"
-      :cashier-name="cashierName"
-      :cart-items-count="Number(posStore.itemCount) || 0"
-      :format-riel="formatRiel"
-      @retry="handleAbaRetry"
-      @cancel="handleAbaCancel"
-      @verify="verifyAbaPaymentNow"
     />
 
     <!-- ─── Modal 5: Post-Sale Receipt & Thermal Print View (Tailwind) ─ -->
@@ -668,15 +634,16 @@ const newCustomerForm = ref({ name: '', phone: '', email: '' })
 const couponCodeInput = ref('')
 const validatingCoupon = ref(false)
 
-// Payment & Checkout
-export type PosPaymentMethod = 'CASH' | 'ABA_KHQR' | 'CARD' | 'BANK_TRANSFER'
+// Payment & Checkout (Exactly 2 methods: Cash & ABA Payment)
+export type PosPaymentMethod = 'CASH' | 'ABA_PAYWAY' | 'ABA_KHQR' | 'CARD'
+export type AbaPaymentOption = 'bakong' | 'abapay' | 'cards' | 'alipay' | 'wechat' | 'google_pay'
 
 const selectedPaymentMethod = ref<PosPaymentMethod>('CASH')
+const selectedAbaOption = ref<AbaPaymentOption>('bakong')
+
 const paymentMethods = [
-  { value: 'CASH', label: 'Cash', subtitle: 'USD & Khmer Riel', icon: 'i-heroicons-banknotes' },
-  { value: 'ABA_KHQR', label: 'ABA KHQR', subtitle: 'Bakong & All Banks', icon: 'i-heroicons-qr-code' },
-  { value: 'CARD', label: 'Credit Card', subtitle: 'Visa, Mastercard, JCB', icon: 'i-heroicons-credit-card' },
-  { value: 'BANK_TRANSFER', label: 'Bank Transfer', subtitle: 'Direct Wire Ref', icon: 'i-heroicons-building-library' },
+  { value: 'CASH', label: 'Cash', subtitle: 'USD & Khmer Riel cash drawer', icon: 'i-heroicons-banknotes' },
+  { value: 'ABA_PAYWAY', label: 'ABA Payment', subtitle: 'Cards, ABA PAY, KHQR, Alipay, WeChat', icon: 'i-heroicons-building-library' },
 ]
 const tenderAmount = ref<number>(0)
 const paymentReferenceNumber = ref('')
@@ -754,9 +721,8 @@ const isCheckoutDisabled = computed(() => {
   if (selectedPaymentMethod.value === 'CASH') {
     return Number(tenderAmount.value.toFixed(2)) < due
   }
-  // ABA KHQR: disable the button once QR is shown / processing
-  if (selectedPaymentMethod.value === 'ABA_KHQR') {
-    return abaStatus.value === 'PENDING' || abaStatus.value === 'APPROVED'
+  if (selectedPaymentMethod.value === 'ABA_PAYWAY' || selectedPaymentMethod.value === 'ABA_KHQR' || selectedPaymentMethod.value === 'CARD') {
+    return isAbaModalActive.value || abaLoading.value
   }
   return false
 })
@@ -1984,24 +1950,33 @@ async function handleAbaCancel() {
   }
 }
 
-async function startAbaFullScreenCheckout() {
+async function startAbaKhqrCheckout(forceFullscreen: boolean = false) {
   if (posStore.cart.length === 0) return
-  showPaymentModal.value = false
-  showAbaFullScreen.value = true
-  selectedPaymentMethod.value = 'ABA_KHQR'
-  await handleFinalizeSale()
+  selectedPaymentMethod.value = 'ABA_PAYWAY'
+  await startAbaModalCheckout(selectedAbaOption.value || 'bakong')
 }
 
-async function startAbaModalCheckout(paymentOption: string = 'cards') {
+async function startAbaFullScreenCheckout() {
+  await startAbaModalCheckout(selectedAbaOption.value || 'bakong')
+}
+
+function handleExpandAbaFullscreen() {
+  // Built-in PayWay modal handles its own presentation
+}
+
+async function startAbaModalCheckout(paymentOption?: string) {
   if (posStore.cart.length === 0) return
-  if (abaLoading.value) return // already creating a card checkout — ignore repeat clicks
+  if (abaLoading.value) return // already creating checkout — ignore repeat clicks
+  const option = (paymentOption || selectedAbaOption.value || 'bakong') as AbaPaymentOption
+  selectedAbaOption.value = option
+  selectedPaymentMethod.value = 'ABA_PAYWAY'
+
   abaLoading.value = true
   abaError.value = null
   abaStatus.value = ''
   abaStopPolling()
 
   try {
-    selectedPaymentMethod.value = 'CARD'
 
     // 1. Create or re-use DRAFT sale
     let saleId = abaCurrentSaleId.value
@@ -2167,57 +2142,9 @@ async function handleFinalizeSale() {
   if (processingSale.value) return
   if (posStore.cart.length === 0) return
 
-  // ── ABA KHQR branch ──────────────────────────────────────────────
-  if (selectedPaymentMethod.value === 'ABA_KHQR') {
-    processingSale.value = true
-    try {
-      // Re-use the existing DRAFT sale (e.g. after EXPIRED/DECLINED) instead of
-      // creating a duplicate draft on every re-charge.
-      if (abaCurrentSaleId.value) {
-        await abaStartKhqr(abaCurrentSaleId.value)
-        return
-      }
-
-      // Create the DRAFT sale first
-      const salePayload = {
-        branch_id: posStore.branchId || null,
-        warehouse_id: posStore.warehouseId || null,
-        terminal_id: posSettings.value.terminalDbId || undefined,
-        shift_id: activeShift.value?.id || undefined,
-        customer_id: posStore.selectedCustomerId,
-        discount_amount: posStore.discountAmount + posStore.redeemedPointsDiscount, // order-level discount + redeemed loyalty points
-        tax_amount: posStore.taxAmount,
-        notes: orderNotes.value.trim() || undefined,
-        promotion_id: posStore.appliedCoupon?.promotion_id || undefined,
-        items: posStore.cart.map((i) => ({
-          variant_id: i.variant_id,
-          quantity: i.quantity,
-          unit_price: i.unit_price,
-          discount_amount: i.discount_amount || 0,
-        })),
-      }
-      const saleRes: any = await createSale(salePayload)
-      abaCurrentSaleId.value = saleRes.id
-
-      // Generate QR (starts polling internally)
-      await abaStartKhqr(saleRes.id)
-    } catch (err: any) {
-      playError(true)
-      broadcastCustomerDisplayState('KHQR_FAILED')
-      toast.add({
-        title: 'Checkout Failed',
-        description: err?.data?.detail || 'Error creating sale',
-        color: 'red',
-      })
-    } finally {
-      processingSale.value = false
-    }
-    return
-  }
-
-  // ── ABA Card Modal branch (when no manual offline EDC authorization entered) ──
-  if (selectedPaymentMethod.value === 'CARD' && !paymentReferenceNumber.value.trim()) {
-    await startAbaModalCheckout('cards')
+  // ── ABA Payment (Official PayWay Checkout Modal) ────────────────
+  if (selectedPaymentMethod.value === 'ABA_PAYWAY' || selectedPaymentMethod.value === 'ABA_KHQR' || selectedPaymentMethod.value === 'CARD') {
+    await startAbaModalCheckout(selectedAbaOption.value || 'bakong')
     return
   }
 
@@ -2554,13 +2481,7 @@ onMounted(async () => {
   posStore.setTerminal(posSettings.value.terminalId, posSettings.value.terminalDbId)
   posStore.hydrateFromStorage(posSettings.value.terminalId)
 
-  // Sync active terminals from backend, resolve terminal DB UUID and warehouse
-  await syncTerminalContext()
-  pingTerminalHeartbeat()
-  terminalHeartbeatTimer = setInterval(pingTerminalHeartbeat, 30000)
-  await checkActiveShift()
-
-  // Initialize dual-screen Customer Display & Scanner BroadcastChannels
+  // Initialize dual-screen Customer Display BroadcastChannel IMMEDIATELY on mount
   getCustomerDisplayChannel()
   broadcastCustomerDisplayState('INITIAL_LOAD')
   customerDisplayHeartbeatTimer = setInterval(() => {
@@ -2568,6 +2489,17 @@ onMounted(async () => {
     refreshCustomerDisplayPresence()
   }, HEARTBEAT_INTERVAL_MS)
   refreshCustomerDisplayPresence()
+
+  // Subscribe to Pinia store mutations to guarantee customer display syncs on any mutation
+  posStore.$subscribe(() => {
+    syncCustomerDisplayCart()
+  })
+
+  // Sync active terminals from backend, resolve terminal DB UUID and warehouse
+  await syncTerminalContext()
+  pingTerminalHeartbeat()
+  terminalHeartbeatTimer = setInterval(pingTerminalHeartbeat, 30000)
+  await checkActiveShift()
   window.addEventListener('beforeunload', handlePosBeforeUnload)
 
   if (typeof BroadcastChannel !== 'undefined') {

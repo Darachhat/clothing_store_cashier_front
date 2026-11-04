@@ -305,12 +305,12 @@
           type="button"
           class="h-10 w-full bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed text-gray-900 rounded-lg px-3 flex items-center justify-between font-semibold text-sm transition-colors cursor-pointer border border-gray-300"
           :disabled="cart.length === 0 || processingSale"
-          title="Skip method selection and show the KHQR code now (F7)"
+          title="Open ABA PayWay checkout (F7)"
           @click="$emit('quickAba')"
         >
           <span class="flex items-center gap-2">
             <UIcon name="i-heroicons-qr-code" class="w-4 h-4" />
-            Pay by ABA KHQR
+            Pay with ABA
           </span>
           <PosKeyHint class="hidden sm:inline-flex">F7</PosKeyHint>
         </button>

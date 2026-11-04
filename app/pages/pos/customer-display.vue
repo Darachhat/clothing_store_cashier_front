@@ -87,8 +87,8 @@
         </div>
 
         <!-- Bottom Payment Methods Strip -->
-        <div class="w-full max-w-xl pt-3 border-t border-slate-800/80">
-          <WeAcceptPaymentStrip theme="dark" />
+        <div class="w-full max-w-xl pt-3 border-t border-slate-800/80 flex items-center justify-center">
+          <WeAcceptPaymentStrip variant="dark" size="sm" />
         </div>
       </div>
 
@@ -382,7 +382,7 @@
                       <span>Reference</span>
                       <span class="font-mono text-slate-300">{{ khqrData.tranId }}</span>
                     </div>
-                    <WeAcceptPaymentStrip theme="dark" />
+                    <WeAcceptPaymentStrip variant="dark" size="sm" />
                   </div>
                 </div>
               </div>
@@ -529,7 +529,7 @@
               </div>
             </div>
 
-            <WeAcceptPaymentStrip theme="dark" />
+            <WeAcceptPaymentStrip variant="dark" size="sm" />
           </div>
         </aside>
       </div>
@@ -996,7 +996,11 @@ function handleStorageEvent(event: StorageEvent) {
     } catch {
       // Ignore
     }
-  } else if (event.key === POS_SESSION_STORAGE_KEY) {
+  } else if (
+    event.key === POS_SESSION_STORAGE_KEY ||
+    event.key === `pos_session_${activeTerminalId.value}` ||
+    (event.key && event.key.startsWith('pos_session_'))
+  ) {
     hydrateFromLocalStorageFallback()
   }
 }

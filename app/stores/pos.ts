@@ -184,8 +184,9 @@ export const usePosStore = defineStore('pos', {
 
     // ── Cart Mutations ────────────────────────────────────────────
     addVariant(variant: ProductVariant, quantity: number = 1, maxStock?: number): { success: boolean; item?: CartItem; reachedLimit?: boolean } {
-      if (!this.orderSessionId) {
+      if (!this.orderSessionId || this.closedOrderSessions.includes(this.orderSessionId)) {
         this.orderSessionId = generateOrderSessionId()
+        this.closedOrderSessions = this.closedOrderSessions.filter((id) => id !== this.orderSessionId)
       }
       const existing = this.cart.find((i) => i.variant_id === variant.id)
       const unitPrice = Number(variant.selling_price)
@@ -329,6 +330,7 @@ export const usePosStore = defineStore('pos', {
       this.notes = ''
       this.lastUpdatedVariantId = null
       this.orderSessionId = generateOrderSessionId()
+      this.closedOrderSessions = this.closedOrderSessions.filter((id) => id !== this.orderSessionId)
       this.bumpSequence()
       this.persistToStorage()
     },
