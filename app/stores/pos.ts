@@ -22,6 +22,8 @@ interface PosState {
   selectedCustomerId: string | null
   selectedCustomer: CustomerSummary | null
   discountAmount: number
+  redeemedLoyaltyPoints: number
+  redeemedPointsDiscount: number
   appliedCoupon: PosCoupon | null
   taxRate: number
   notes: string
@@ -42,6 +44,8 @@ export const usePosStore = defineStore('pos', {
     selectedCustomerId: null,
     selectedCustomer: null,
     discountAmount: 0,
+    redeemedLoyaltyPoints: 0,
+    redeemedPointsDiscount: 0,
     appliedCoupon: null,
     taxRate: 0.05,
     notes: '',
@@ -63,15 +67,15 @@ export const usePosStore = defineStore('pos', {
       state.cart.reduce((sum, item) => sum + (item.discount_amount || 0), 0),
 
     totalDiscount: (state): number =>
-      state.discountAmount + state.cart.reduce((sum, item) => sum + (item.discount_amount || 0), 0),
+      state.discountAmount + state.redeemedPointsDiscount + state.cart.reduce((sum, item) => sum + (item.discount_amount || 0), 0),
 
     taxAmount: (state): number => {
-      const taxable = Math.max(0, state.cart.reduce((sum, item) => sum + item.unit_price * item.quantity - (item.discount_amount || 0), 0) - state.discountAmount)
+      const taxable = Math.max(0, state.cart.reduce((sum, item) => sum + item.unit_price * item.quantity - (item.discount_amount || 0), 0) - state.discountAmount - state.redeemedPointsDiscount)
       return taxable * state.taxRate
     },
 
     grandTotal: (state): number => {
-      const taxable = Math.max(0, state.cart.reduce((sum, item) => sum + item.unit_price * item.quantity - (item.discount_amount || 0), 0) - state.discountAmount)
+      const taxable = Math.max(0, state.cart.reduce((sum, item) => sum + item.unit_price * item.quantity - (item.discount_amount || 0), 0) - state.discountAmount - state.redeemedPointsDiscount)
       return taxable + (taxable * state.taxRate)
     },
 
@@ -275,6 +279,24 @@ export const usePosStore = defineStore('pos', {
     setCustomer(customer: CustomerSummary | null) {
       this.selectedCustomer = customer
       this.selectedCustomerId = customer ? customer.id : null
+      if (!customer) {
+        this.redeemedLoyaltyPoints = 0
+        this.redeemedPointsDiscount = 0
+      }
+      this.bumpSequence()
+      this.persistToStorage()
+    },
+
+    applyLoyaltyRedemption(points: number, discountAmount: number) {
+      this.redeemedLoyaltyPoints = points
+      this.redeemedPointsDiscount = discountAmount
+      this.bumpSequence()
+      this.persistToStorage()
+    },
+
+    removeLoyaltyRedemption() {
+      this.redeemedLoyaltyPoints = 0
+      this.redeemedPointsDiscount = 0
       this.bumpSequence()
       this.persistToStorage()
     },
@@ -301,6 +323,8 @@ export const usePosStore = defineStore('pos', {
       this.selectedCustomerId = null
       this.selectedCustomer = null
       this.discountAmount = 0
+      this.redeemedLoyaltyPoints = 0
+      this.redeemedPointsDiscount = 0
       this.appliedCoupon = null
       this.notes = ''
       this.lastUpdatedVariantId = null

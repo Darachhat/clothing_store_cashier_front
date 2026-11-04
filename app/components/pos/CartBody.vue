@@ -61,46 +61,83 @@
       </div>
 
       <!-- Customer -->
-      <div class="flex items-center justify-between gap-2 p-2 rounded-lg bg-gray-50 border border-gray-200">
-        <div class="flex items-center gap-2.5 min-w-0">
-          <div class="w-8 h-8 rounded-full bg-white border border-gray-200 flex items-center justify-center flex-shrink-0">
-            <UIcon name="i-heroicons-user" class="w-4 h-4 text-gray-700" />
+      <div class="flex flex-col gap-2 p-2 rounded-lg bg-gray-50 border border-gray-200">
+        <div class="flex items-center justify-between gap-2">
+          <div class="flex items-center gap-2.5 min-w-0">
+            <div class="w-8 h-8 rounded-full bg-white border border-gray-200 flex items-center justify-center flex-shrink-0">
+              <UIcon name="i-heroicons-user" class="w-4 h-4 text-gray-700" />
+            </div>
+            <div class="flex flex-col min-w-0 leading-tight">
+              <span class="text-sm font-semibold text-gray-900 truncate">
+                {{ selectedCustomer?.name || 'Walk-in customer' }}
+              </span>
+              <span v-if="selectedCustomer" class="text-xs text-gray-600 truncate flex items-center gap-1">
+                <template v-if="selectedCustomer.loyalty_account">
+                  <UIcon name="i-heroicons-sparkles" class="w-3.5 h-3.5 text-amber-700 flex-shrink-0" />
+                  {{ selectedCustomer.loyalty_account.tier }} &bull; {{ selectedCustomer.loyalty_account.points_balance }} pts
+                </template>
+                <template v-else>{{ selectedCustomer.phone || selectedCustomer.customer_code }}</template>
+              </span>
+              <span v-else class="text-xs text-gray-600">No customer attached</span>
+            </div>
           </div>
-          <div class="flex flex-col min-w-0 leading-tight">
-            <span class="text-sm font-semibold text-gray-900 truncate">
-              {{ selectedCustomer?.name || 'Walk-in customer' }}
-            </span>
-            <span v-if="selectedCustomer" class="text-xs text-gray-600 truncate flex items-center gap-1">
-              <template v-if="selectedCustomer.loyalty_account">
-                <UIcon name="i-heroicons-sparkles" class="w-3.5 h-3.5 text-amber-700 flex-shrink-0" />
-                {{ selectedCustomer.loyalty_account.tier }} &bull; {{ selectedCustomer.loyalty_account.points_balance }} pts
-              </template>
-              <template v-else>{{ selectedCustomer.phone || selectedCustomer.customer_code }}</template>
-            </span>
-            <span v-else class="text-xs text-gray-600">No customer attached</span>
+
+          <div class="flex items-center gap-1 flex-shrink-0">
+            <button
+              type="button"
+              class="h-8 px-2.5 rounded-md text-sm font-semibold text-gray-900 bg-white hover:bg-gray-100 border border-gray-200 transition-colors cursor-pointer inline-flex items-center gap-1.5"
+              title="Choose or add a customer (F8)"
+              @click="$emit('selectCustomer')"
+            >
+              <span>{{ selectedCustomer ? 'Change' : 'Add' }}</span>
+              <PosKeyHint class="hidden sm:inline-flex">F8</PosKeyHint>
+            </button>
+            <button
+              v-if="selectedCustomer"
+              type="button"
+              class="w-8 h-8 flex items-center justify-center text-gray-600 hover:text-red-700 hover:bg-white rounded-md transition-colors cursor-pointer"
+              title="Detach customer (walk-in)"
+              aria-label="Detach customer and return to walk-in"
+              @click="$emit('removeCustomer')"
+            >
+              <UIcon name="i-heroicons-x-mark" class="w-4 h-4" />
+            </button>
           </div>
         </div>
 
-        <div class="flex items-center gap-1 flex-shrink-0">
+        <!-- Loyalty Points Redemption Banner -->
+        <div
+          v-if="selectedCustomer?.loyalty_account && selectedCustomer.loyalty_account.points_balance >= 100"
+          class="pt-1.5 border-t border-gray-200/60 flex items-center justify-between text-xs"
+        >
+          <div class="flex items-center gap-1 text-gray-700 font-medium">
+            <UIcon name="i-heroicons-sparkles" class="w-3.5 h-3.5 text-amber-600" />
+            <span>{{ selectedCustomer.loyalty_account.points_balance }} pts available</span>
+          </div>
+
           <button
+            v-if="posStore.redeemedLoyaltyPoints === 0"
             type="button"
-            class="h-8 px-2.5 rounded-md text-sm font-semibold text-gray-900 bg-white hover:bg-gray-100 border border-gray-200 transition-colors cursor-pointer inline-flex items-center gap-1.5"
-            title="Choose or add a customer (F8)"
-            @click="$emit('selectCustomer')"
+            class="px-2 py-0.5 rounded bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200/60 font-semibold cursor-pointer transition-colors flex items-center gap-1 text-[11px]"
+            title="Redeem available points for discount"
+            @click="redeemMaxLoyaltyPoints"
           >
-            <span>{{ selectedCustomer ? 'Change' : 'Add' }}</span>
-            <PosKeyHint class="hidden sm:inline-flex">F8</PosKeyHint>
+            <span>Redeem ${{ maxRedeemableDollars.toFixed(2) }}</span>
           </button>
-          <button
-            v-if="selectedCustomer"
-            type="button"
-            class="w-8 h-8 flex items-center justify-center text-gray-600 hover:text-red-700 hover:bg-white rounded-md transition-colors cursor-pointer"
-            title="Detach customer (walk-in)"
-            aria-label="Detach customer and return to walk-in"
-            @click="$emit('removeCustomer')"
+          <div
+            v-else
+            class="flex items-center gap-1.5 bg-emerald-50 text-emerald-800 border border-emerald-200/80 px-2 py-0.5 rounded font-semibold text-[11px]"
           >
-            <UIcon name="i-heroicons-x-mark" class="w-4 h-4" />
-          </button>
+            <span>&minus;${{ posStore.redeemedPointsDiscount.toFixed(2) }} ({{ posStore.redeemedLoyaltyPoints }} pts)</span>
+            <button
+              type="button"
+              class="text-emerald-700 hover:text-emerald-900 cursor-pointer p-0.5"
+              title="Remove points discount"
+              @click="posStore.removeLoyaltyRedemption()"
+            >
+              <UIcon name="i-heroicons-x-mark" class="w-3 h-3" />
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -286,6 +323,7 @@
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import CartItem from './CartItem.vue'
 import type { CartItem as CartItemType, CustomerSummary, PosCoupon } from '~/types/pos'
+import { usePosStore } from '~/stores/pos'
 
 const props = withDefaults(
   defineProps<{
@@ -333,6 +371,23 @@ const scrollEl = ref<HTMLElement | null>(null)
 const showPromo = ref(false)
 const flashId = ref<string | null>(null)
 let flashTimer: ReturnType<typeof setTimeout> | null = null
+
+const posStore = usePosStore()
+
+const maxRedeemableDollars = computed(() => {
+  if (!props.selectedCustomer?.loyalty_account?.points_balance) return 0
+  const points = props.selectedCustomer.loyalty_account.points_balance
+  // Each 100 points = $1.00 credit, up to the total cart value
+  const dollarEquivalent = Math.floor(points / 100) * 1.0
+  return Math.min(dollarEquivalent, Math.max(0, Math.floor(props.cartSubtotal)))
+})
+
+function redeemMaxLoyaltyPoints() {
+  const dollarVal = maxRedeemableDollars.value
+  if (dollarVal <= 0) return
+  const pointsUsed = Math.round(dollarVal * 100)
+  posStore.applyLoyaltyRedemption(pointsUsed, dollarVal)
+}
 
 const hasStockIssue = computed(() =>
   props.cart.some((i) => {

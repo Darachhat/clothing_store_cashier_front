@@ -104,9 +104,12 @@
           >
             <!-- Double Rule Top Header -->
             <div class="kh-receipt-double-rule py-2 text-center flex flex-col items-center gap-0.5">
-              <div class="kh-receipt-store-kh">គឹម វណ្ណាក់ ហាងលក់សម្លៀកបំពាក់ </div>
-              <div class="kh-receipt-store-en">{{ resolvedStoreName }}</div>
+              <div class="kh-receipt-store-kh">{{ resolvedStoreName }}</div>
+              <div v-if="receiptTemplate?.tagline" class="text-[10px] text-gray-600 font-normal leading-tight">{{ receiptTemplate.tagline }}</div>
               <div class="kh-receipt-branch">{{ khmerBranchName }}</div>
+              <div v-if="receiptTemplate?.address" class="text-[9.5px] text-gray-500 font-normal leading-tight mt-0.5">{{ receiptTemplate.address }}</div>
+              <div v-if="receiptTemplate?.phone" class="text-[9.5px] text-gray-500 font-mono">Tel: {{ receiptTemplate.phone }}</div>
+              <div v-if="receiptTemplate?.tax_id" class="text-[9px] text-gray-500 font-mono">VAT TIN: {{ receiptTemplate.tax_id }}</div>
             </div>
 
             <!-- Receipt Metadata -->
@@ -152,6 +155,10 @@
                     </template>
                   </span>
                   <strong class="font-bold text-gray-900">${{ Number(item.total).toFixed(2) }}</strong>
+                </div>
+                <!-- Line 3: Optional SKU/Barcode -->
+                <div v-if="receiptTemplate?.show_item_sku !== false && (item.sku || item.barcode)" class="pl-3 text-[9.5px] text-gray-500 font-mono">
+                  SKU: {{ item.sku || item.barcode }}
                 </div>
               </div>
             </div>
@@ -216,8 +223,9 @@
             <!-- Khmer Thank You Footer -->
             <div class="pt-2 border-t border-dashed border-gray-300 text-center flex flex-col items-center gap-1">
               <p class="text-xs font-bold text-gray-900">សូមអរគុណ!</p>
-              <p class="text-[11px] font-medium text-gray-700">សូមអញ្ជើញមកទិញម្តងទៀត។</p>
-              <p class="text-[9.5px] text-gray-500 mt-0.5 leading-snug">{{ resolvedFooterNote }}</p>
+              <p class="text-[11px] font-medium text-gray-700 leading-tight">{{ resolvedFooterNote }}</p>
+              <p v-if="receiptTemplate?.return_policy" class="text-[9.5px] text-gray-500 mt-0.5 leading-snug">{{ receiptTemplate.return_policy }}</p>
+              <p v-if="receiptTemplate?.wifi_info" class="text-[9.5px] font-mono text-gray-600 mt-0.5">{{ receiptTemplate.wifi_info }}</p>
             </div>
           </div>
 
@@ -513,9 +521,12 @@ watch(
 
 const activeTemplate = ref<'RECEIPT' | 'A4'>('RECEIPT')
 const activePaperWidth = computed(() => posSettings.value.paperWidth || '80mm')
-const resolvedStoreName = computed(() => posSettings.value.receiptStoreName?.trim() || ENGLISH_STORE_NAME)
+const receiptTemplate = computed(() => posSettings.value.receiptTemplate)
+const resolvedStoreName = computed(
+  () => receiptTemplate.value?.store_name?.trim() || posSettings.value.receiptStoreName?.trim() || ENGLISH_STORE_NAME,
+)
 const resolvedFooterNote = computed(
-  () => posSettings.value.receiptFooterNote?.trim() || 'Items can be exchanged within 7 days with valid receipt.',
+  () => receiptTemplate.value?.footer_message?.trim() || posSettings.value.receiptFooterNote?.trim() || 'Items can be exchanged within 7 days with valid receipt.',
 )
 const resolvedTerminalId = computed(() => normalizeTerminalId(posSettings.value.terminalId))
 

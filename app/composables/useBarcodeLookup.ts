@@ -1,6 +1,7 @@
 import type { Ref } from 'vue'
 import type { ProductVariant } from '~/types/index'
 import { usePosAudio } from './usePosAudio'
+import { usePosOfflineCatalog } from './usePosOfflineCatalog'
 
 export interface BarcodeLookupContext {
   allVariants: Ref<ProductVariant[]>
@@ -15,14 +16,47 @@ export interface BarcodeLookupContext {
  * useBarcodeLookup
  *
  * Unified product lookup pipeline for hardware scanners, camera scanning,
- * image decoding, and manual barcode entry.
+ * image decoding, and manual barcode entry with offline resilient caching.
  */
 export function useBarcodeLookup(ctx: BarcodeLookupContext) {
   const { searchByBarcode, searchBySku, searchByQr } = useProductApi()
   const { playBeep, playError } = usePosAudio()
+  const offlineCatalog = usePosOfflineCatalog()
 
   let lastProcessedCode = ''
   let lastProcessedAt = 0
+
+  /**
+   * Helper to handle successful variant addition to cart with audio & toast.
+   */
+  function handleVariantMatch(variant: ProductVariant, sourceLabel = 'Item Scanned'): boolean {
+    const stock = ctx.getVariantStock(variant.id)
+    if (ctx.getLineStock(variant.id) !== null && stock <= 0) {
+      playError(true)
+      ctx.toast?.add({
+        title: 'Out of Stock',
+        description: `Item ${variant.sku} has no stock`,
+        color: 'red',
+      })
+      return false
+    }
+
+    const res = ctx.posStore.addVariant(variant, 1, stock)
+    playBeep(ctx.soundBeep?.value ?? true)
+    ctx.toast?.add({
+      title: sourceLabel,
+      description: `${(variant as any).product?.name || 'Product'} (${variant.sku})`,
+      color: 'green',
+    })
+    if (res?.reachedLimit) {
+      ctx.toast?.add({
+        title: 'Stock Limit',
+        description: `Reached warehouse stock limit of ${stock}`,
+        color: 'amber',
+      })
+    }
+    return true
+  }
 
   /**
    * Process a scanned or typed barcode/SKU/QR string.
@@ -43,43 +77,29 @@ export function useBarcodeLookup(ctx: BarcodeLookupContext) {
     lastProcessedCode = code
     lastProcessedAt = now
 
-    // 1. Direct search in current in-memory variants (fast path)
+    // 1. Direct search in current in-memory variants (fast path for active page)
     const directMatch = ctx.allVariants.value.find(
       (v) =>
         v.barcode?.toLowerCase() === code.toLowerCase() ||
         v.sku?.toLowerCase() === code.toLowerCase() ||
-        v.qr_reference?.toLowerCase() === code.toLowerCase(),
+        (v as any).qr_reference?.toLowerCase() === code.toLowerCase(),
     )
 
     if (directMatch) {
-      const stock = ctx.getVariantStock(directMatch.id)
-      if (stock <= 0) {
-        playError(true)
-        ctx.toast?.add({
-          title: 'Out of Stock',
-          description: `Item ${directMatch.sku} has no stock`,
-          color: 'red',
-        })
-        return false
-      }
-      const res = ctx.posStore.addVariant(directMatch, 1, stock)
-      playBeep(ctx.soundBeep?.value ?? true)
-      ctx.toast?.add({
-        title: 'Item Scanned',
-        description: `${directMatch.product?.name || 'Product'} (${directMatch.sku})`,
-        color: 'green',
-      })
-      if (res?.reachedLimit) {
-        ctx.toast?.add({
-          title: 'Stock Limit',
-          description: `Reached warehouse stock limit of ${stock}`,
-          color: 'amber',
-        })
-      }
-      return true
+      return handleVariantMatch(directMatch, 'Item Scanned')
     }
 
-    // 2. Query backend by barcode/sku/qr in parallel
+    // 2. Offline Resilient Search (IndexedDB / memory catalog cache)
+    try {
+      const offlineMatch = await offlineCatalog.findVariantByCode(code)
+      if (offlineMatch) {
+        return handleVariantMatch(offlineMatch, 'Item Scanned (Offline Cache)')
+      }
+    } catch {
+      // Continue to API search if offline check threw
+    }
+
+    // 3. Query backend by barcode/sku/qr in parallel (when connected)
     try {
       const lookups = [
         searchByBarcode(code).catch(() => null),
@@ -91,31 +111,9 @@ export function useBarcodeLookup(ctx: BarcodeLookupContext) {
       const result: any = results.find((r) => r !== null)
 
       if (result) {
-        const stock = ctx.getVariantStock(result.id)
-        if (ctx.getLineStock(result.id) !== null && stock <= 0) {
-          playError(true)
-          ctx.toast?.add({
-            title: 'Out of Stock',
-            description: `Item ${result.sku} has no stock`,
-            color: 'red',
-          })
-          return false
-        }
-        const res = ctx.posStore.addVariant(result, 1, stock)
-        playBeep(ctx.soundBeep?.value ?? true)
-        ctx.toast?.add({
-          title: 'Item Found & Added',
-          description: `${result.product?.name || 'Product'} (${result.sku})`,
-          color: 'green',
-        })
-        if (res?.reachedLimit) {
-          ctx.toast?.add({
-            title: 'Stock Limit',
-            description: `Reached warehouse stock limit of ${stock}`,
-            color: 'amber',
-          })
-        }
-        return true
+        // Save into offline cache for future instant offline lookups
+        offlineCatalog.saveVariants([result]).catch(() => {})
+        return handleVariantMatch(result, 'Item Found & Added')
       }
 
       return false

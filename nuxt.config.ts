@@ -82,13 +82,12 @@ export default defineNuxtConfig({
     cloudflare: {
       deployConfig: false,
     },
-  },
+  } as any,
 
   routeRules: {
     '/': { headers: { 'cache-control': 'public, max-age=0, must-revalidate' } },
     '/pos/**': { ssr: false, headers: { 'cache-control': 'no-cache, no-store, must-revalidate' } },
     '/settings/**': { ssr: false, headers: { 'cache-control': 'no-cache, no-store, must-revalidate' } },
-    // @ts-expect-error: 'proxy' is valid at runtime but not in the RouteRules type definition
     '/uploads/**': { proxy: `${process.env.NUXT_API_BASE || 'https://api.kimvannak.store'}/uploads/**` },
-  },
+  } as any,
 })

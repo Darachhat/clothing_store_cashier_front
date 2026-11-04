@@ -45,6 +45,7 @@ export const CASHIER_API_ENDPOINTS = {
     detail: (id: string) => `/api/cashier/v1/customers/${id}`,
     create: '/api/cashier/v1/customers',
     update: (id: string) => `/api/cashier/v1/customers/${id}`,
+    adjustPoints: (id: string) => `/api/cashier/v1/customers/${id}/loyalty/adjust`,
   },
   promotions: {
     list: '/api/cashier/v1/promotions',
@@ -61,11 +62,23 @@ export const CASHIER_API_ENDPOINTS = {
     detail: (id: string) => `/api/cashier/v1/terminals/${id}`,
     heartbeat: (id: string) => `/api/cashier/v1/terminals/${id}/heartbeat`,
   },
+  shifts: {
+    active: '/api/cashier/v1/shifts/active',
+    open: '/api/cashier/v1/shifts/open',
+    summary: (id: string) => `/api/cashier/v1/shifts/${id}/summary`,
+    close: (id: string) => `/api/cashier/v1/shifts/${id}/close`,
+    list: '/api/cashier/v1/shifts',
+    detail: (id: string) => `/api/cashier/v1/shifts/${id}`,
+  },
   payments: {
     abaKhqr: '/api/cashier/v1/payments/aba/khqr',
     abaPurchaseForm: '/api/cashier/v1/payments/aba/purchase-form',
     abaStatus: (id: string) => `/api/cashier/v1/payments/aba/${id}/status`,
     abaCancel: (id: string) => `/api/cashier/v1/payments/aba/${id}/cancel`,
+  },
+  settings: {
+    category: (cat: string) => `/api/cashier/v1/settings/${cat}`,
+    store: '/api/cashier/v1/settings/store',
   },
 } as const
 

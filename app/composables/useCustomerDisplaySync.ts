@@ -50,6 +50,35 @@ export function getHeartbeatStorageKey(terminalId?: string | null): string {
   return `${CUSTOMER_DISPLAY_HEARTBEAT_KEY}_${normalizeTerminalId(terminalId)}`
 }
 
+/** Presence beacon written by the Customer Display page so the POS can tell it is open. */
+export const CUSTOMER_DISPLAY_PRESENCE_KEY = 'pos_customer_display_presence_v1'
+
+export function getDisplayPresenceStorageKey(terminalId?: string | null): string {
+  return `${CUSTOMER_DISPLAY_PRESENCE_KEY}_${normalizeTerminalId(terminalId)}`
+}
+
+/** True when a presence beacon (JSON `{ timestamp }` or raw ms) is recent enough. */
+export function isDisplayPresenceFresh(
+  raw: string | null | undefined,
+  now: number = Date.now(),
+  thresholdMs: number = HEARTBEAT_STALE_THRESHOLD_MS,
+): boolean {
+  if (!raw) return false
+  let ts = Number.NaN
+  try {
+    const parsed = JSON.parse(raw)
+    ts = typeof parsed === 'number' ? parsed : Number(parsed?.timestamp)
+  } catch {
+    return false
+  }
+  return Number.isFinite(ts) && now - ts >= -1000 && now - ts <= thresholdMs
+}
+
+/** URL for the Customer Display bound to a terminal. */
+export function buildCustomerDisplayUrl(terminalId?: string | null): string {
+  return `/pos/customer-display?terminal=${encodeURIComponent(normalizeTerminalId(terminalId))}`
+}
+
 export type CustomerDisplayScreenState =
   | 'IDLE'
   | 'CART_ACTIVE'

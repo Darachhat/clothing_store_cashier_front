@@ -114,6 +114,8 @@ export function useCustomerApi() {
       apiFetch(CASHIER_API_ENDPOINTS.customers.create, { method: 'POST', body: body as any }),
     updateCustomer: (id: string, body: unknown) =>
       apiFetch(CASHIER_API_ENDPOINTS.customers.update(id), { method: 'PUT', body: body as any }),
+    adjustPoints: (id: string, body: { points: number; note?: string }) =>
+      apiFetch(CASHIER_API_ENDPOINTS.customers.adjustPoints(id), { method: 'POST', body: body as any }),
   }
 }
 
@@ -225,5 +227,85 @@ export function useTerminalApi() {
       apiFetch<any>(CASHIER_API_ENDPOINTS.terminals.detail(id)),
     heartbeat: (id: string) =>
       apiFetch<any>(CASHIER_API_ENDPOINTS.terminals.heartbeat(id), { method: 'POST' }),
+  }
+}
+
+export interface ShiftSummary {
+  shift_id: string
+  terminal_id: string
+  terminal_code?: string
+  branch_id: string
+  branch_name?: string
+  cashier_id: string
+  cashier_name?: string
+  opened_at: string
+  closed_at?: string | null
+  status_code: string
+  opening_float_usd: number
+  opening_float_khr: number
+  total_sales_count: number
+  total_sales_amount: number
+  cash_sales_amount: number
+  cash_payments_count: number
+  aba_sales_amount: number
+  aba_payments_count: number
+  card_sales_amount: number
+  card_payments_count: number
+  bank_sales_amount: number
+  expected_cash_usd: number
+  expected_cash_khr: number
+  closing_cash_usd?: number | null
+  closing_cash_khr?: number | null
+  discrepancy_usd?: number | null
+  discrepancy_khr?: number | null
+  notes?: string | null
+}
+
+export function useShiftApi() {
+  const { apiFetch } = useApi()
+
+  return {
+    getActiveShift: (terminalId?: string) =>
+      apiFetch<any>(CASHIER_API_ENDPOINTS.shifts.active, {
+        params: terminalId ? { terminal_id: terminalId } : undefined,
+        query: terminalId ? { terminal_id: terminalId } : undefined,
+      }),
+    openShift: (payload: {
+      terminal_id: string
+      opening_float_usd?: number
+      opening_float_khr?: number
+      notes?: string
+    }) =>
+      apiFetch<any>(CASHIER_API_ENDPOINTS.shifts.open, {
+        method: 'POST',
+        body: payload,
+      }),
+    getShiftSummary: (shiftId: string) =>
+      apiFetch<ShiftSummary>(CASHIER_API_ENDPOINTS.shifts.summary(shiftId)),
+    closeShift: (
+      shiftId: string,
+      payload: {
+        closing_cash_usd: number
+        closing_cash_khr: number
+        notes?: string
+      },
+    ) =>
+      apiFetch<ShiftSummary>(CASHIER_API_ENDPOINTS.shifts.close(shiftId), {
+        method: 'POST',
+        body: payload,
+      }),
+    listShifts: (params?: { terminal_id?: string; cashier_id?: string; status_code?: string; limit?: number }) =>
+      apiFetch<any[]>(CASHIER_API_ENDPOINTS.shifts.list, { params, query: params }),
+  }
+}
+
+export function useSystemSettingsApi() {
+  const { apiFetch } = useApi()
+
+  return {
+    getCategorySettings: (category: string) =>
+      apiFetch<Record<string, any>>(CASHIER_API_ENDPOINTS.settings.category(category)),
+    getStoreSettings: () =>
+      apiFetch<Record<string, any>>(CASHIER_API_ENDPOINTS.settings.store),
   }
 }

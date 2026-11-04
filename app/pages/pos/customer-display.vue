@@ -644,6 +644,8 @@ import {
   formatUsd,
   formatCountdownMmSs,
   getHeartbeatStorageKey,
+  getDisplayPresenceStorageKey,
+  HEARTBEAT_INTERVAL_MS,
   getSnapshotStorageKey,
   normalizeTerminalId,
   toKhrAmount,
@@ -1074,9 +1076,35 @@ onMounted(() => {
 
   updateClockAndTimers()
   clockAndLifecycleTimer = setInterval(updateClockAndTimers, 1000)
+
+  // 4. Presence beacon so the POS can show "Customer Display online"
+  writeDisplayPresence()
+  presenceTimer = setInterval(writeDisplayPresence, HEARTBEAT_INTERVAL_MS)
+  window.addEventListener('beforeunload', clearDisplayPresence)
 })
 
+let presenceTimer: ReturnType<typeof setInterval> | null = null
+
+function writeDisplayPresence() {
+  try {
+    localStorage.setItem(
+      getDisplayPresenceStorageKey(activeTerminalId.value),
+      JSON.stringify({ terminalId: activeTerminalId.value, timestamp: Date.now() }),
+    )
+  } catch { /* storage unavailable */ }
+}
+
+function clearDisplayPresence() {
+  try {
+    localStorage.removeItem(getDisplayPresenceStorageKey(activeTerminalId.value))
+  } catch { /* ignore */ }
+}
+
 onBeforeUnmount(() => {
+  if (presenceTimer) clearInterval(presenceTimer)
+  presenceTimer = null
+  clearDisplayPresence()
+  window.removeEventListener('beforeunload', clearDisplayPresence)
   if (clockAndLifecycleTimer) clearInterval(clockAndLifecycleTimer)
   if (highlightTimeout) clearTimeout(highlightTimeout)
   clearPaymentSuccessTimer()

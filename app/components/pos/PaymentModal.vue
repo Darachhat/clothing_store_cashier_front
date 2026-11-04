@@ -15,7 +15,7 @@
         <!-- 1. Header -->
         <div class="px-5 py-3 border-b border-gray-200 flex items-center justify-between gap-3 flex-shrink-0">
           <div class="flex flex-col leading-tight min-w-0">
-            <h3 id="pos-payment-title" class="text-base font-semibold text-gray-900">Payment</h3>
+            <h3 id="pos-payment-title" class="text-base font-semibold text-gray-900">Complete Payment</h3>
             <p class="text-sm text-gray-600 truncate">
               {{ itemCount ?? 0 }} item{{ itemCount === 1 ? '' : 's' }} &bull; {{ customerName || 'Walk-in customer' }}
             </p>
@@ -34,17 +34,17 @@
         <!-- Scrollable body -->
         <div class="px-5 py-4 overflow-y-auto pos-scroll flex-1 min-h-0 flex flex-col gap-3.5">
           <!-- 2. Amount due -->
-          <div class="px-4 py-3 bg-gray-900 text-white rounded-lg flex items-center justify-between gap-3 flex-shrink-0">
-            <div class="flex flex-col leading-tight">
-              <span class="text-sm font-semibold text-gray-200">Amount due</span>
-              <span class="text-sm text-gray-300 font-mono tabular-nums">&asymp; {{ formatRiel(grandTotal) }}</span>
+          <div
+            class="px-5 py-4 bg-gray-50 border border-gray-200 rounded-xl flex flex-col items-center text-center gap-1 flex-shrink-0"
+            aria-live="polite"
+          >
+            <span class="text-xs font-semibold uppercase tracking-wider text-gray-600">Amount Due</span>
+            <div class="flex items-baseline gap-1 text-gray-900">
+              <span class="text-2xl font-semibold font-mono text-gray-500">$</span>
+              <span class="text-5xl leading-none font-bold font-mono tabular-nums tracking-tight">{{ grandTotal.toFixed(2) }}</span>
+              <span class="text-xs font-semibold text-gray-500 ml-1">USD</span>
             </div>
-            <div class="flex items-baseline gap-1">
-              <span class="text-xl font-bold font-mono text-gray-300">$</span>
-              <span class="text-[40px] leading-none font-bold font-mono tabular-nums text-white tracking-tight">
-                {{ grandTotal.toFixed(2) }}
-              </span>
-            </div>
+            <span class="text-sm text-gray-600 font-mono tabular-nums">&asymp; {{ formatRiel(grandTotal) }}</span>
           </div>
 
           <!-- 3. Standard vs split -->
@@ -74,14 +74,15 @@
           <!-- ── Single payment ── -->
           <template v-if="!isSplitMode">
             <!-- Method selector -->
-            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 flex-shrink-0" role="radiogroup" aria-label="Payment method">
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 flex-shrink-0" role="radiogroup" aria-label="Payment method" @keydown="onMethodKeydown">
               <button
                 v-for="method in paymentMethods"
                 :key="method.value"
                 type="button"
                 role="radio"
                 :aria-checked="selectedPaymentMethod === method.value"
-                class="flex flex-col items-center justify-center gap-1 py-2.5 px-2 rounded-lg border text-center min-h-[72px] transition-colors cursor-pointer"
+                :tabindex="selectedPaymentMethod === method.value ? 0 : -1"
+                class="flex flex-col items-center justify-center gap-1 py-2.5 px-2 rounded-lg border text-center min-h-[84px] transition-colors cursor-pointer"
                 :class="selectedPaymentMethod === method.value
                   ? 'bg-gray-900 text-white border-gray-900'
                   : 'bg-white text-gray-800 border-gray-200 hover:bg-gray-50'"
@@ -104,11 +105,11 @@
                 </span>
                 <span class="text-sm font-semibold leading-tight">{{ method.label }}</span>
                 <span
-                  v-if="method.subtitle"
-                  class="text-xs leading-tight"
+                  v-if="methodDescriptions[method.value] || method.subtitle"
+                  class="text-[11px] leading-tight"
                   :class="selectedPaymentMethod === method.value ? 'text-gray-300' : 'text-gray-600'"
                 >
-                  {{ method.subtitle }}
+                  {{ methodDescriptions[method.value] || method.subtitle }}
                 </span>
               </button>
             </div>
@@ -143,8 +144,8 @@
                     :key="riel"
                     type="button"
                     class="h-9 px-3 rounded-md text-sm font-mono font-medium tabular-nums bg-white border border-gray-300 text-gray-800 hover:bg-gray-100 transition-colors cursor-pointer"
-                    :title="`៛${riel.toLocaleString()} ($${(riel / 4100).toFixed(2)})`"
-                    @click="$emit('update:tenderAmount', Number((riel / 4100).toFixed(2)))"
+                    :title="`៛${riel.toLocaleString()} ($${(riel / KHR_EXCHANGE_RATE).toFixed(2)})`"
+                    @click="$emit('update:tenderAmount', Number((riel / KHR_EXCHANGE_RATE).toFixed(2)))"
                   >
                     ៛{{ (riel / 1000).toLocaleString() }}k
                   </button>
@@ -222,7 +223,17 @@
                 <div class="flex flex-col min-w-0">
                   <span class="text-sm font-semibold text-gray-900">ABA KHQR</span>
                   <span class="text-sm text-gray-600 leading-snug">
-                    Shows a full-screen QR for the customer. Payment is verified automatically and the receipt opens when paid.
+                    Shows the QR to the customer (and on the Customer Display if open). Payment is verified automatically and the receipt opens when paid.
+                  </span>
+                  <span
+                    class="mt-1.5 inline-flex items-center gap-1.5 self-start px-2 h-6 rounded-md bg-white border border-gray-200 text-xs font-semibold text-gray-700"
+                    role="status"
+                  >
+                    <span class="w-2 h-2 rounded-full" :class="customerDisplayOnline ? 'bg-gray-900' : 'bg-gray-300'" />
+                    <UIcon name="i-heroicons-computer-desktop" class="w-3.5 h-3.5" />
+                    {{ customerDisplayOnline
+                      ? `Customer Display online${terminalLabel ? ` · ${terminalLabel}` : ''}`
+                      : 'Customer Display not connected' }}
                   </span>
                 </div>
               </div>
@@ -322,12 +333,12 @@
                 <div
                   v-for="(split, sIdx) in splitPayments"
                   :key="sIdx"
-                  class="flex items-center gap-2"
+                  class="flex flex-wrap items-center gap-2 p-2 bg-white border border-gray-200 rounded-lg"
                 >
                   <select
                     v-model="split.payment_method"
                     :aria-label="`Method for payment ${sIdx + 1}`"
-                    class="h-10 bg-white border border-gray-300 rounded-md px-2 text-sm font-medium text-gray-900"
+                    class="h-10 bg-white border border-gray-300 rounded-md px-2 text-sm font-medium text-gray-900 flex-1 min-w-[120px]"
                   >
                     <option value="CASH">Cash</option>
                     <option value="KHQR">ABA KHQR</option>
@@ -348,12 +359,15 @@
                     >
                   </div>
 
-                  <input
-                    v-model="split.reference_number"
-                    placeholder="Ref (optional)"
-                    :aria-label="`Reference for payment ${sIdx + 1}`"
-                    class="h-10 bg-white border border-gray-300 rounded-md px-2.5 text-sm flex-1 min-w-0 placeholder-gray-500"
+                  <button
+                    type="button"
+                    class="h-10 px-2.5 rounded-md border border-gray-300 bg-white text-xs font-semibold text-gray-800 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer flex-shrink-0"
+                    title="Set this line to the remaining balance"
+                    :disabled="remainingSplitBalance <= 0"
+                    @click="fillSplitRemaining(split)"
                   >
+                    Fill rest
+                  </button>
 
                   <button
                     type="button"
@@ -365,6 +379,14 @@
                   >
                     <UIcon name="i-heroicons-trash" class="w-4 h-4" />
                   </button>
+
+                  <input
+                    v-if="split.payment_method !== 'CASH'"
+                    v-model="split.reference_number"
+                    placeholder="Reference (optional)"
+                    :aria-label="`Reference for payment ${sIdx + 1}`"
+                    class="h-10 bg-white border border-gray-300 rounded-md px-2.5 text-sm w-full placeholder-gray-500"
+                  >
                 </div>
               </div>
 
@@ -428,7 +450,7 @@
             @click="$emit('selectAbaKhqr')"
           >
             <UIcon :name="processingSale ? 'i-heroicons-arrow-path' : 'i-heroicons-qr-code'" class="w-5 h-5" :class="{ 'animate-spin': processingSale }" />
-            <span>{{ processingSale ? 'Creating QR…' : `Show QR · $${grandTotal.toFixed(2)}` }}</span>
+            <span>{{ processingSale ? 'Creating QR…' : `Generate QR · $${grandTotal.toFixed(2)}` }}</span>
           </button>
           <button
             v-else-if="!isSplitMode && selectedPaymentMethod === 'CARD' && !paymentReferenceNumber"
@@ -460,6 +482,15 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, toRef, watch } from 'vue'
 import { useDialogFocus } from '~/composables/useDialogFocus'
+import { KHR_EXCHANGE_RATE } from '~/composables/useCustomerDisplaySync'
+
+/** Short helper text shown under each payment method card. */
+const methodDescriptions: Record<string, string> = {
+  CASH: 'USD & Khmer Riel',
+  ABA_KHQR: 'Bakong & supported banks',
+  CARD: 'Visa, Mastercard, JCB',
+  BANK_TRANSFER: 'Direct wire reference',
+}
 
 const props = defineProps<{
   modelValue: boolean
@@ -491,6 +522,9 @@ const props = defineProps<{
   // Context shown in the header
   itemCount?: number
   customerName?: string | null
+  // Customer Display presence (ABA KHQR helper chip)
+  customerDisplayOnline?: boolean
+  terminalLabel?: string
 }>()
 
 const emit = defineEmits<{
@@ -566,5 +600,30 @@ function onTenderEnter() {
 
 function handleMethodSelect(methodVal: string) {
   emit('update:selectedPaymentMethod', methodVal)
+}
+
+/** Adds the unpaid balance to this split line (same object the v-model edits). */
+function fillSplitRemaining(split: { amount: number }) {
+  const remaining = Number(props.remainingSplitBalance) || 0
+  if (remaining <= 0) return
+  split.amount = Number(((Number(split.amount) || 0) + remaining).toFixed(2))
+}
+
+/** Arrow keys move selection through the method cards (radiogroup pattern). */
+function onMethodKeydown(e: KeyboardEvent) {
+  const keys = ['ArrowRight', 'ArrowDown', 'ArrowLeft', 'ArrowUp']
+  if (!keys.includes(e.key)) return
+  const list = props.paymentMethods
+  if (!list.length) return
+  e.preventDefault()
+  const idx = Math.max(0, list.findIndex(m => m.value === props.selectedPaymentMethod))
+  const step = e.key === 'ArrowRight' || e.key === 'ArrowDown' ? 1 : -1
+  const next = list[(idx + step + list.length) % list.length]
+  if (!next) return
+  handleMethodSelect(next.value)
+  nextTick(() => {
+    const el = (e.currentTarget as HTMLElement | null)?.querySelector<HTMLElement>('[aria-checked="true"]')
+    el?.focus()
+  })
 }
 </script>

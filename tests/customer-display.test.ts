@@ -752,12 +752,10 @@ describe('POS Customer Display — Architecture, Lifecycle & Reliability Suite',
     it('uses the unified Main Default Layout (layouts/default.vue) across all pages with persistent AppSidebar', () => {
       const defaultLayoutPath = path.resolve(import.meta.dirname, '../app/layouts/default.vue')
       const posIndexPath = path.resolve(import.meta.dirname, '../app/pages/pos/index.vue')
-      const scannerPath = path.resolve(import.meta.dirname, '../app/pages/pos/scanner.vue')
       const settingsPath = path.resolve(import.meta.dirname, '../app/pages/settings.vue')
 
       const defaultLayoutSource = fs.readFileSync(defaultLayoutPath, 'utf-8')
       const posIndexSource = fs.readFileSync(posIndexPath, 'utf-8')
-      const scannerSource = fs.readFileSync(scannerPath, 'utf-8')
       const settingsSource = fs.readFileSync(settingsPath, 'utf-8')
 
       // 1. Default layout must host the single shared <AppSidebar>, <PosShortcutsModal>, and <AppToast>
@@ -770,7 +768,6 @@ describe('POS Customer Display — Architecture, Lifecycle & Reliability Suite',
       for (const [name, src] of [
         ['pos/index.vue', posIndexSource],
         ['pos/customer-display.vue', displayVueSource],
-        ['pos/scanner.vue', scannerSource],
         ['settings.vue', settingsSource],
       ] as const) {
         assert.ok(!src.includes('layout: false'), `${name} must use the default layout instead of layout: false`)

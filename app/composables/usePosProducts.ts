@@ -12,6 +12,7 @@
  */
 
 import type { Product } from '~/types/index'
+import { usePosOfflineCatalog } from './usePosOfflineCatalog'
 
 // ── Constants ────────────────────────────────────────────────────────
 /** Default number of products per page in the POS grid (6 cols × 4 rows). */
@@ -45,6 +46,7 @@ export interface PosProductFilters {
 // ── Composable ───────────────────────────────────────────────────────
 export function usePosProducts() {
   const { listProducts } = useProductApi()
+  const offlineCatalog = usePosOfflineCatalog()
 
   // ── Reactive State ──────────────────────────────────────────────
   const products = ref<Product[]>([])
@@ -104,6 +106,11 @@ export function usePosProducts() {
         ? response
         : (response?.items || response?.data || [])
       products.value = items
+
+      // Sync active page products into offline local cache in background
+      if (items.length > 0) {
+        offlineCatalog.syncProducts(items).catch(() => {})
+      }
 
       const meta = response?.pagination || response?.meta || {
         page: pagination.value.page || 1,
@@ -271,5 +278,7 @@ export function usePosProducts() {
     setSearch,
     applySearch,
     resetFilters,
+    // Offline Cache
+    offlineCatalog,
   }
 }

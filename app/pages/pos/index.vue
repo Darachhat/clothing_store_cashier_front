@@ -13,6 +13,8 @@
         :cart-count="posStore.cart.length"
         :held-count="posStore.heldCarts.length"
         :has-last-receipt="Boolean(lastCompletedReceipt)"
+        :shift-active="Boolean(activeShift)"
+        :customer-display-online="customerDisplayOnline"
         :time-str="currentTimeStr"
         :date-str="currentDateStr"
         @search="handleBarcodeOrSkuSearch"
@@ -21,8 +23,11 @@
         @open-parked="showHeldOrdersModal = true"
         @open-shortcuts="showShortcutsModal = true"
         @open-stickers="openStickerModal()"
+        @open-history="showShiftOrdersModal = true"
+        @open-shift-modal="handleOpenShiftModalClick"
         @reprint-last="reprintLastReceipt"
         @toggle-cart="showMobileCart = !showMobileCart"
+        @open-customer-display="openCustomerDisplayWindow"
       />
 
       <!-- ─── Body: Products Catalog (Left) + Cart Sidebar (Right) ───── -->
@@ -194,6 +199,8 @@
       :is-aba-modal-active="isAbaModalActive"
       :item-count="posStore.itemCount"
       :customer-name="posStore.selectedCustomer?.name || null"
+      :customer-display-online="customerDisplayOnline"
+      :terminal-label="activeTerminalId"
       @enable-split-mode="enableSplitPaymentMode"
       @disable-split-mode="isSplitPaymentMode = false"
       @add-split-row="addSplitRow"
@@ -269,6 +276,44 @@
       :format-riel="formatRiel"
     />
 
+    <!-- ─── Modal 10B: Shift Sales & Order History ──────────────────── -->
+    <PosShiftOrdersModal
+      v-model="showShiftOrdersModal"
+      :active-terminal-code="activeTerminalId"
+      :format-riel="formatRiel"
+      @view-receipt="viewOrderReceipt"
+      @reprint-receipt="reprintOrderReceipt"
+    />
+
+    <!-- ─── Modal 10C: Cashier Shift Open Modal ────────────────────── -->
+    <PosShiftOpenModal
+      :is-open="showShiftOpenModal"
+      :terminal-code="activeTerminalId"
+      :loading="openingShift"
+      :error-message="shiftOpenError"
+      :allow-dismiss="Boolean(activeShift)"
+      @close="showShiftOpenModal = false"
+      @open-shift="handleOpenShift"
+    />
+
+    <!-- ─── Modal 10D: Cashier Shift Close & Reconciliation Modal ─── -->
+    <PosShiftCloseModal
+      :is-open="showShiftCloseModal"
+      :summary="activeShiftSummary"
+      :loading="closingShift"
+      :error-message="shiftCloseError"
+      @close="showShiftCloseModal = false"
+      @confirm-close="handleCloseShift"
+    />
+
+    <!-- ─── Modal 10E: End of Shift Z-Report Receipt Slip ──────────── -->
+    <PosShiftZReportModal
+      :is-open="showShiftZReportModal"
+      :summary="shiftZReportData"
+      :store-name="activeBranchName"
+      @close="showShiftZReportModal = false"
+    />
+
     <!-- ─── Modal 11: POS Terminal / Register Station Switcher ────────── -->
     <div
       v-if="showTerminalSelectModal"
@@ -293,6 +338,35 @@
             @click="showTerminalSelectModal = false"
           >
             <UIcon name="i-heroicons-x-mark" class="w-5 h-5" />
+          </button>
+        </div>
+
+        <!-- Station Enrollment & Device Lock Banner (Task 1.4) -->
+        <div class="px-5 py-3 bg-gray-50 border-b border-gray-200 flex items-center justify-between text-xs">
+          <div class="flex items-center gap-2">
+            <UIcon
+              :name="posSettings.deviceLockEnabled ? 'i-heroicons-lock-closed' : 'i-heroicons-lock-open'"
+              class="w-4 h-4"
+              :class="posSettings.deviceLockEnabled ? 'text-amber-600' : 'text-gray-400'"
+            />
+            <div>
+              <span class="font-semibold text-gray-800">
+                {{ posSettings.deviceLockEnabled ? `Station Enrolled: ${posSettings.enrolledTerminalId}` : 'Workstation Unlocked' }}
+              </span>
+              <p class="text-[11px] text-gray-500">
+                {{ posSettings.deviceLockEnabled ? 'Switching registers requires Manager PIN' : 'Cashiers can switch registers freely' }}
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            class="px-2.5 py-1 rounded border text-[11px] font-semibold transition-colors"
+            :class="posSettings.deviceLockEnabled
+              ? 'border-gray-300 bg-white text-gray-700 hover:bg-gray-100'
+              : 'border-gray-300 bg-gray-900 text-white hover:bg-gray-800'"
+            @click="handleToggleEnrollmentLock"
+          >
+            {{ posSettings.deviceLockEnabled ? 'Unlock Device' : 'Lock to Station' }}
           </button>
         </div>
 
@@ -346,6 +420,81 @@
         </div>
       </div>
     </div>
+
+    <!-- ─── Modal 12: Manager PIN Authorization (Task 1.4) ─────────────── -->
+    <div
+      v-if="showPinModal"
+      class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+      role="dialog"
+      aria-modal="true"
+    >
+      <div class="w-full max-w-sm bg-white rounded-xl shadow-2xl border border-gray-200 overflow-hidden">
+        <div class="px-5 py-4 border-b border-gray-200 flex items-center justify-between bg-gray-50">
+          <div class="flex items-center gap-2">
+            <div class="w-8 h-8 rounded-lg bg-gray-200 flex items-center justify-center text-gray-700">
+              <UIcon name="i-heroicons-shield-check" class="w-5 h-5" />
+            </div>
+            <div>
+              <h3 class="text-base font-semibold text-gray-900">Manager Authorization</h3>
+              <p class="text-xs text-gray-500">Restricted POS action</p>
+            </div>
+          </div>
+          <button
+            type="button"
+            class="text-gray-400 hover:text-gray-600 p-1 rounded-md"
+            @click="showPinModal = false"
+          >
+            <UIcon name="i-heroicons-x-mark" class="w-5 h-5" />
+          </button>
+        </div>
+
+        <form class="p-5 space-y-4" @submit.prevent="submitManagerPin">
+          <p class="text-xs text-gray-600">
+            <template v-if="pinActionType === 'SWITCH_TERMINAL'">
+              This station is enrolled to register <span class="font-bold text-gray-900 font-mono">{{ posSettings.enrolledTerminalId }}</span>.
+              Enter Manager PIN to switch to <span class="font-bold text-gray-900 font-mono">{{ pendingSwitchTerminal?.code }}</span>:
+            </template>
+            <template v-else>
+              Enter Manager PIN to unlock device registration on this workstation:
+            </template>
+          </p>
+
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-1">Manager PIN</label>
+            <input
+              v-model="managerPinInput"
+              type="password"
+              maxlength="10"
+              autofocus
+              required
+              placeholder="••••"
+              class="w-full text-center tracking-widest text-lg font-mono rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:border-gray-500"
+            />
+            <p v-if="pinErrorMessage" class="text-xs text-red-600 mt-1 font-medium">
+              {{ pinErrorMessage }}
+            </p>
+          </div>
+
+          <div class="flex justify-end gap-2 pt-2 border-t border-gray-200">
+            <button
+              type="button"
+              class="px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50"
+              @click="showPinModal = false"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              class="px-4 py-1.5 text-xs font-bold rounded-lg bg-gray-900 text-white hover:bg-gray-800"
+            >
+              Authorize
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -361,6 +510,9 @@ import {
   KHR_EXCHANGE_RATE,
   PAYMENT_SUCCESS_DURATION_MS,
   getHeartbeatStorageKey,
+  getDisplayPresenceStorageKey,
+  isDisplayPresenceFresh,
+  buildCustomerDisplayUrl,
   mapCartItemToDisplayItem,
   normalizeTerminalId,
   roundCurrency,
@@ -383,8 +535,8 @@ const posStore = usePosStore()
 const { apiFetch } = useApi()
 const { listCategories, listBrands } = useCatalogApi()
 const { listStocks } = useInventoryApi()
-const { listCustomers, createCustomer } = useCustomerApi()
-const { searchByBarcode, searchBySku, searchByQr } = useProductApi()
+const { listCustomers, createCustomer, adjustPoints } = useCustomerApi()
+const { listProducts, searchByBarcode, searchBySku, searchByQr } = useProductApi()
 const { validateCoupon } = usePromotionApi()
 const { createSale, completeSale, cancelSale, getSale } = useSaleApi()
 const { createKhqr, createPurchaseForm, getStatus: getPaymentStatus, cancel: cancelPayment } = usePaymentApi()
@@ -396,12 +548,34 @@ const {
 } = useAbaCheckout()
 const { listBranches } = useBranchApi()
 const { listTerminals, heartbeat: sendTerminalHeartbeat } = useTerminalApi()
+const { getActiveShift, openShift, getShiftSummary, closeShift } = useShiftApi()
+
+// ── Cashier Shift & Drawer Float State ─────────────────────────────
+const activeShift = ref<any | null>(null)
+const activeShiftSummary = ref<any | null>(null)
+const shiftZReportData = ref<any | null>(null)
+const loadingShift = ref(false)
+const openingShift = ref(false)
+const closingShift = ref(false)
+const shiftOpenError = ref<string | null>(null)
+const shiftCloseError = ref<string | null>(null)
+const showShiftOpenModal = ref(false)
+const showShiftCloseModal = ref(false)
+const showShiftZReportModal = ref(false)
 const authStore = useAuthStore()
 const router = useRouter()
 const toast = useAppToast()
 const { playBeep, playAbaChime, playSuccess, playError } = usePosAudio()
-// ── POS Terminal Settings (auto-print, audio gates) ─────────────────
-const { settings: posSettings, loadSettings, saveSettings } = usePosSettings()
+// ── POS Terminal Settings (auto-print, audio gates, station enrollment) ─
+const {
+  settings: posSettings,
+  loadSettings,
+  saveSettings,
+  fetchRemoteSettings,
+  verifyManagerPin,
+  enrollDevice,
+  unlockDevice,
+} = usePosSettings()
 
 // ── Server-side Paginated Product Composable ──────────────────────
 const posProducts = usePosProducts()
@@ -425,6 +599,7 @@ const {
   setSearch,
   applySearch,
   resetFilters,
+  offlineCatalog,
 } = posProducts
 
 // ── State ─────────────────────────────────────────────────────────
@@ -466,7 +641,13 @@ const showAbaFullScreen = ref(false)
 const showMobileCart = ref(false)
 const showReceiptModal = ref(false)
 const showStickerModal = ref(false)
+const showShiftOrdersModal = ref(false)
 const showTerminalSelectModal = ref(false)
+const showPinModal = ref(false)
+const managerPinInput = ref('')
+const pendingSwitchTerminal = ref<any | null>(null)
+const pinActionType = ref<'SWITCH_TERMINAL' | 'TOGGLE_LOCK'>('SWITCH_TERMINAL')
+const pinErrorMessage = ref('')
 const activeTerminalsList = ref<any[]>([])
 let terminalHeartbeatTimer: ReturnType<typeof setInterval> | null = null
 const stickerInitialVariants = ref<Array<{ variant: ProductVariant; quantity: number }>>([])
@@ -603,7 +784,7 @@ const groupedProducts = computed(() => {
 
 // ── Helpers ───────────────────────────────────────────────────────
 function formatRiel(usd: number): string {
-  const riel = Math.round(usd * 4100)
+  const riel = Math.round(usd * KHR_EXCHANGE_RATE)
   return `${riel.toLocaleString()} ៛`
 }
 
@@ -1041,6 +1222,25 @@ function removeSplitRow(index: number) {
 // ── Customer Facing Display BroadcastChannel & Snapshot Sync ──────
 let customerDisplayChannel: BroadcastChannel | null = null
 let customerDisplayHeartbeatTimer: ReturnType<typeof setInterval> | null = null
+const customerDisplayOnline = ref(false)
+
+function refreshCustomerDisplayPresence() {
+  if (typeof localStorage === 'undefined') return
+  try {
+    customerDisplayOnline.value = isDisplayPresenceFresh(
+      localStorage.getItem(getDisplayPresenceStorageKey(activeTerminalId.value)),
+    )
+  } catch {
+    customerDisplayOnline.value = false
+  }
+}
+
+/** Opens (or focuses) the Customer Display bound to this register. */
+function openCustomerDisplayWindow() {
+  const win = window.open(buildCustomerDisplayUrl(activeTerminalId.value), 'pos-customer-display')
+  win?.focus?.()
+  setTimeout(refreshCustomerDisplayPresence, 1500)
+}
 let displaySeqCounter = 1
 const abaExpiresAtIso = ref<string | null>(null)
 const activeSuccessDisplay = ref<CustomerDisplaySuccessData | null>(null)
@@ -1099,6 +1299,18 @@ async function pingTerminalHeartbeat() {
 
 function switchTerminal(term: any) {
   if (!term) return
+  if (posSettings.value.deviceLockEnabled && posSettings.value.terminalId !== term.code) {
+    pendingSwitchTerminal.value = term
+    pinActionType.value = 'SWITCH_TERMINAL'
+    pinErrorMessage.value = ''
+    managerPinInput.value = ''
+    showPinModal.value = true
+    return
+  }
+  executeSwitchTerminal(term)
+}
+
+function executeSwitchTerminal(term: any) {
   posSettings.value.terminalId = term.code
   posSettings.value.terminalDbId = term.id
   if (term.warehouse_id) {
@@ -1112,11 +1324,150 @@ function switchTerminal(term: any) {
   showTerminalSelectModal.value = false
   broadcastCustomerDisplayState('INITIAL_LOAD')
   pingTerminalHeartbeat()
+  checkActiveShift()
   toast.add({
     title: 'POS Station Switched',
     description: `Active register changed to ${term.code} (${term.name}).`,
     color: 'green',
   })
+}
+
+function handleToggleEnrollmentLock() {
+  if (posSettings.value.deviceLockEnabled) {
+    pinActionType.value = 'TOGGLE_LOCK'
+    pinErrorMessage.value = ''
+    managerPinInput.value = ''
+    showPinModal.value = true
+  } else {
+    enrollDevice(posSettings.value.terminalId)
+    toast.add({
+      title: 'Workstation Enrolled',
+      description: `Physical register locked to ${posSettings.value.terminalId}.`,
+      color: 'green',
+    })
+  }
+}
+
+function submitManagerPin() {
+  if (!verifyManagerPin(managerPinInput.value)) {
+    pinErrorMessage.value = 'Incorrect Manager PIN. Access denied.'
+    playError(true)
+    return
+  }
+
+  showPinModal.value = false
+  if (pinActionType.value === 'SWITCH_TERMINAL' && pendingSwitchTerminal.value) {
+    if (posSettings.value.deviceLockEnabled) {
+      enrollDevice(pendingSwitchTerminal.value.code)
+    }
+    executeSwitchTerminal(pendingSwitchTerminal.value)
+    pendingSwitchTerminal.value = null
+  } else if (pinActionType.value === 'TOGGLE_LOCK') {
+    unlockDevice(managerPinInput.value)
+    toast.add({
+      title: 'Station Unlocked',
+      description: 'Device registration lock removed. Registers can now be switched freely.',
+      color: 'default',
+    })
+  }
+}
+
+// ── Cashier Shift Actions & Drawer Reconciliation ───────────────────
+async function checkActiveShift() {
+  try {
+    loadingShift.value = true
+    const terminalDbId = posSettings.value.terminalDbId || undefined
+    const res = await getActiveShift(terminalDbId)
+    if (res && res.id) {
+      activeShift.value = res
+      showShiftOpenModal.value = false
+    } else {
+      activeShift.value = null
+      showShiftOpenModal.value = true
+    }
+  } catch (err: any) {
+    activeShift.value = null
+    showShiftOpenModal.value = true
+  } finally {
+    loadingShift.value = false
+  }
+}
+
+async function handleOpenShiftModalClick() {
+  if (activeShift.value) {
+    try {
+      loadingShift.value = true
+      activeShiftSummary.value = await getShiftSummary(activeShift.value.id)
+      showShiftCloseModal.value = true
+    } catch (err: any) {
+      toast.add({
+        title: 'Shift Details',
+        description: err?.data?.detail || 'Failed to load shift summary',
+        color: 'red',
+      })
+    } finally {
+      loadingShift.value = false
+    }
+  } else {
+    showShiftOpenModal.value = true
+  }
+}
+
+async function handleOpenShift(payload: { openingFloatUsd: number; openingFloatKhr: number; notes: string }) {
+  if (!posSettings.value.terminalDbId) {
+    await syncTerminalContext()
+  }
+  if (!posSettings.value.terminalDbId) {
+    shiftOpenError.value = 'No valid POS Terminal ID found. Please verify register station selection.'
+    return
+  }
+  try {
+    openingShift.value = true
+    shiftOpenError.value = null
+    const res = await openShift({
+      terminal_id: posSettings.value.terminalDbId,
+      opening_float_usd: payload.openingFloatUsd,
+      opening_float_khr: payload.openingFloatKhr,
+      notes: payload.notes,
+    })
+    activeShift.value = res
+    showShiftOpenModal.value = false
+    toast.add({
+      title: 'Shift Opened',
+      description: `Shift active on ${activeTerminalId.value}. Float: $${payload.openingFloatUsd.toFixed(2)}.`,
+      color: 'green',
+    })
+  } catch (err: any) {
+    shiftOpenError.value = err?.data?.detail || err?.message || 'Failed to open shift'
+  } finally {
+    openingShift.value = false
+  }
+}
+
+async function handleCloseShift(payload: { closingCashUsd: number; closingCashKhr: number; notes: string }) {
+  if (!activeShift.value) return
+  try {
+    closingShift.value = true
+    shiftCloseError.value = null
+    const summary = await closeShift(activeShift.value.id, {
+      closing_cash_usd: payload.closingCashUsd,
+      closing_cash_khr: payload.closingCashKhr,
+      notes: payload.notes,
+    })
+    shiftZReportData.value = summary
+    activeShift.value = null
+    showShiftCloseModal.value = false
+    showShiftZReportModal.value = true
+    toast.add({
+      title: 'Shift Closed & Settled',
+      description: `Drawer discrepancy: ${Number(summary.discrepancy_usd || 0) >= 0 ? '+' : ''}$${Number(summary.discrepancy_usd || 0).toFixed(2)}.`,
+      color: 'green',
+    })
+  } catch (err: any) {
+    shiftCloseError.value = err?.data?.detail || err?.message || 'Failed to close shift'
+  } finally {
+    closingShift.value = false
+  }
 }
 
 function getCustomerDisplayChannel(): BroadcastChannel | null {
@@ -1650,8 +2001,9 @@ async function startAbaModalCheckout(paymentOption: string = 'cards') {
         branch_id: posStore.branchId || null,
         warehouse_id: posStore.warehouseId || null,
         terminal_id: posSettings.value.terminalDbId || undefined,
+        shift_id: activeShift.value?.id || undefined,
         customer_id: posStore.selectedCustomerId,
-        discount_amount: posStore.discountAmount, // order-level only; line discounts are sent per item
+        discount_amount: posStore.discountAmount + posStore.redeemedPointsDiscount, // order-level discount + redeemed loyalty points
         tax_amount: posStore.taxAmount,
         notes: orderNotes.value.trim() || undefined,
         promotion_id: posStore.appliedCoupon?.promotion_id || undefined,
@@ -1822,8 +2174,9 @@ async function handleFinalizeSale() {
         branch_id: posStore.branchId || null,
         warehouse_id: posStore.warehouseId || null,
         terminal_id: posSettings.value.terminalDbId || undefined,
+        shift_id: activeShift.value?.id || undefined,
         customer_id: posStore.selectedCustomerId,
-        discount_amount: posStore.discountAmount, // order-level only; line discounts are sent per item
+        discount_amount: posStore.discountAmount + posStore.redeemedPointsDiscount, // order-level discount + redeemed loyalty points
         tax_amount: posStore.taxAmount,
         notes: orderNotes.value.trim() || undefined,
         promotion_id: posStore.appliedCoupon?.promotion_id || undefined,
@@ -1888,8 +2241,9 @@ async function handleFinalizeSale() {
       branch_id: posStore.branchId || null,
       warehouse_id: posStore.warehouseId || null,
       terminal_id: posSettings.value.terminalDbId || undefined,
+      shift_id: activeShift.value?.id || undefined,
       customer_id: posStore.selectedCustomerId,
-      discount_amount: posStore.discountAmount, // order-level only; line discounts are sent per item
+      discount_amount: posStore.discountAmount + posStore.redeemedPointsDiscount, // order-level discount + redeemed loyalty points
       tax_amount: posStore.taxAmount,
       notes: orderNotes.value.trim() || undefined,
       promotion_id: posStore.appliedCoupon?.promotion_id || undefined,
@@ -1970,6 +2324,14 @@ async function handleFinalizeSale() {
       }
     }
 
+    // 5B. Adjust customer loyalty points if redeemed
+    if (posStore.redeemedLoyaltyPoints > 0 && posStore.selectedCustomerId) {
+      adjustPoints(posStore.selectedCustomerId, {
+        points: -posStore.redeemedLoyaltyPoints,
+        note: `Redeemed on ${saleRes.invoice_number}`,
+      }).catch((e: any) => console.warn('Loyalty points adjustment background error:', e))
+    }
+
     // 6. Play audio chime and transition without immediately wiping the customer display's 5s confirmation screen
     playSuccess(posSettings.value.soundSuccess)
     isAutoClearingAfterPayment = true
@@ -2012,6 +2374,19 @@ function reprintLastReceipt() {
   if (!lastCompletedReceipt.value) return
   completedReceipt.value = lastCompletedReceipt.value
   showReceiptModal.value = true
+}
+
+function viewOrderReceipt(order: any) {
+  completedReceipt.value = order
+  showReceiptModal.value = true
+}
+
+function reprintOrderReceipt(order: any) {
+  completedReceipt.value = order
+  showReceiptModal.value = true
+  nextTick(() => {
+    handlePrintReceipt()
+  })
 }
 
 function openStickerModal() {
@@ -2072,6 +2447,11 @@ async function loadCatalog() {
 
   // Server-side product fetch handled by posProducts composable
   await fetchProducts()
+  // Background prefetch for full offline barcode scanning resilience
+  offlineCatalog?.prefetchFullCatalog(listProducts).catch(() => {})
+  // Synchronize remote receipt template and store settings in background
+  const settingsApi = useSystemSettingsApi()
+  fetchRemoteSettings(settingsApi).catch(() => {})
 }
 
 async function loadStocks() {
@@ -2169,13 +2549,16 @@ onMounted(async () => {
   await syncTerminalContext()
   pingTerminalHeartbeat()
   terminalHeartbeatTimer = setInterval(pingTerminalHeartbeat, 30000)
+  await checkActiveShift()
 
   // Initialize dual-screen Customer Display & Scanner BroadcastChannels
   getCustomerDisplayChannel()
   broadcastCustomerDisplayState('INITIAL_LOAD')
   customerDisplayHeartbeatTimer = setInterval(() => {
     emitCustomerDisplayHeartbeat()
+    refreshCustomerDisplayPresence()
   }, HEARTBEAT_INTERVAL_MS)
+  refreshCustomerDisplayPresence()
   window.addEventListener('beforeunload', handlePosBeforeUnload)
 
   if (typeof BroadcastChannel !== 'undefined') {

@@ -133,6 +133,48 @@
         <span class="hidden lg:inline">Last receipt</span>
       </button>
 
+      <!-- Shift Orders History -->
+      <button
+        type="button"
+        class="hidden sm:flex h-9 px-2.5 sm:px-3 rounded-lg border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 items-center gap-2 text-sm font-semibold transition-colors cursor-pointer"
+        title="View shift sales history"
+        @click="$emit('openHistory')"
+      >
+        <UIcon name="i-heroicons-clock" class="w-4 h-4" />
+        <span class="hidden 2xl:inline">History</span>
+      </button>
+
+      <!-- Customer Display (opens the customer-facing screen for this register) -->
+      <button
+        type="button"
+        class="hidden md:flex h-9 px-2.5 sm:px-3 rounded-lg border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 items-center gap-1.5 text-sm font-semibold transition-colors cursor-pointer"
+        :title="customerDisplayOnline ? 'Customer Display is online — click to focus' : 'Open Customer Display window'"
+        aria-label="Open Customer Display"
+        @click="$emit('openCustomerDisplay')"
+      >
+        <span
+          class="w-2 h-2 rounded-full flex-shrink-0"
+          :class="customerDisplayOnline ? 'bg-gray-900' : 'bg-gray-300'"
+        />
+        <UIcon name="i-heroicons-computer-desktop" class="w-4 h-4" />
+        <span class="hidden 2xl:inline">Display</span>
+      </button>
+
+      <!-- Cashier Shift / Register Drawer -->
+      <button
+        type="button"
+        class="hidden sm:flex h-9 px-2.5 sm:px-3 rounded-lg border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 items-center gap-1.5 text-sm font-semibold transition-colors cursor-pointer"
+        :title="shiftActive ? 'Active shift open — click to reconcile & close' : 'No active shift — click to open register'"
+        @click="$emit('openShiftModal')"
+      >
+        <span
+          class="w-2 h-2 rounded-full flex-shrink-0"
+          :class="shiftActive ? 'bg-gray-900' : 'bg-gray-400'"
+        />
+        <UIcon name="i-heroicons-banknotes" class="w-4 h-4 text-gray-600" />
+        <span class="hidden 2xl:inline">{{ shiftActive ? 'Shift' : 'Open Shift' }}</span>
+      </button>
+
       <!-- Stickers (hidden on small mobile) -->
       <button
         type="button"
@@ -193,6 +235,8 @@ defineProps<{
   cartCount: number
   heldCount: number
   hasLastReceipt?: boolean
+  shiftActive?: boolean
+  customerDisplayOnline?: boolean
   timeStr: string
   dateStr: string
   modelValue: string
@@ -206,8 +250,11 @@ defineEmits<{
   'openShortcuts': []
   'openStickers': []
   'reprintLast': []
+  'openHistory': []
+  'openShiftModal': []
   'toggleCart': []
   'selectTerminal': []
+  'openCustomerDisplay': []
 }>()
 
 const inputEl = ref<HTMLInputElement | null>(null)
