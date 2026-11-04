@@ -780,8 +780,8 @@ describe('POS Customer Display — Architecture, Lifecycle & Reliability Suite',
   describe('Multi-Register Terminal Identifier & Cross-Talk Isolation', () => {
     it('normalizes terminal IDs and generates scoped storage keys', () => {
       assert.equal(normalizeTerminalId(' reg-02 '), 'REG-02')
-      assert.equal(normalizeTerminalId(''), 'REG-01')
-      assert.equal(normalizeTerminalId(null), 'REG-01')
+      assert.equal(normalizeTerminalId(''), 'POS-01')
+      assert.equal(normalizeTerminalId(null), 'POS-01')
       assert.equal(getSnapshotStorageKey('reg-02'), 'pos_customer_display_snapshot_v1_REG-02')
       assert.equal(getHeartbeatStorageKey('reg-02'), 'pos_customer_display_heartbeat_v1_REG-02')
     })
@@ -790,11 +790,11 @@ describe('POS Customer Display — Architecture, Lifecycle & Reliability Suite',
       const ctx = createDisplayReceiverContext(undefined, 'REG-02')
       const now = Date.now()
 
-      // Event from REG-01 arriving at a display bound to REG-02 -> MUST BE REJECTED
+      // Event from POS-01 arriving at a display bound to REG-02 -> MUST BE REJECTED
       const reg01Snap = createEmptyDisplaySnapshot({
         seq: 1,
         timestamp: now,
-        terminalId: 'REG-01',
+        terminalId: 'POS-01',
         orderSessionId: 'ord_reg1',
         state: 'CART_ACTIVE',
         items: [

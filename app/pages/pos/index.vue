@@ -1415,6 +1415,11 @@ async function handleOpenShift(payload: { openingFloatUsd: number; openingFloatK
   if (!posSettings.value.terminalDbId) {
     await syncTerminalContext()
   }
+  if (!posSettings.value.terminalDbId && activeTerminalsList.value.length > 0) {
+    posSettings.value.terminalId = activeTerminalsList.value[0].code
+    posSettings.value.terminalDbId = activeTerminalsList.value[0].id
+    saveSettings()
+  }
   if (!posSettings.value.terminalDbId) {
     shiftOpenError.value = 'No valid POS Terminal ID found. Please verify register station selection.'
     return

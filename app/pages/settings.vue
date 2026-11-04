@@ -61,7 +61,7 @@
                 v-model="settings.terminalId"
                 type="text"
                 class="h-9 px-3 rounded-xl border border-gray-200 bg-white text-xs font-mono uppercase outline-none focus:border-gray-900 transition-colors"
-                placeholder="REG-01"
+                placeholder="POS-01"
               />
             </div>
 

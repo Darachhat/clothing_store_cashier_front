@@ -39,7 +39,7 @@ export function normalizeTerminalId(value?: string | null): string {
     .trim()
     .toUpperCase()
     .replace(/[^A-Z0-9_-]/g, '')
-  return cleaned || 'REG-01'
+  return cleaned || 'POS-01'
 }
 
 export function getSnapshotStorageKey(terminalId?: string | null): string {
@@ -308,7 +308,7 @@ export function createEmptyDisplaySnapshot(overrides?: Partial<CustomerDisplaySn
     version: 1,
     seq: 0,
     timestamp: 0,
-    terminalId: 'REG-01',
+    terminalId: 'POS-01',
     orderSessionId: 'ord_initial',
     reason: 'INITIAL_LOAD',
     storeName: 'Clothing Store Phnom Penh',
@@ -347,7 +347,7 @@ export function createEmptyDisplaySnapshot(overrides?: Partial<CustomerDisplaySn
 export function buildSnapshotFromRawPosStorage(
   rawSession: any,
   rawSettings?: any,
-  terminalId: string = 'REG-01',
+  terminalId: string = 'POS-01',
 ): CustomerDisplaySnapshot {
   const storeName =
     rawSettings?.receiptStoreName ||
@@ -511,7 +511,7 @@ export function applyIncomingSnapshot(
   const current = ctx.snapshot
   const incoming: CustomerDisplaySnapshot = {
     ...incomingRaw,
-    terminalId: normalizeTerminalId(incomingRaw.terminalId || current.terminalId || 'REG-01'),
+    terminalId: normalizeTerminalId(incomingRaw.terminalId || current.terminalId || 'POS-01'),
     items: Array.isArray(incomingRaw.items) ? incomingRaw.items.map((i) => ({ ...i })) : [],
     khqr: incomingRaw.khqr ? { ...incomingRaw.khqr } : null,
     success: incomingRaw.success ? { ...incomingRaw.success } : null,
@@ -850,7 +850,7 @@ export function normalizeMessageToSnapshot(
   const timestamp = typeof msg.timestamp === 'number' ? msg.timestamp : (typeof payload.timestamp === 'number' ? payload.timestamp : nowMs)
   const orderSessionId =
     msg.orderSessionId || payload.orderSessionId || current.orderSessionId || 'ord_legacy'
-  const terminalId = msg.terminalId || payload.terminalId || current.terminalId || 'REG-01'
+  const terminalId = msg.terminalId || payload.terminalId || current.terminalId || 'POS-01'
 
   if (msg.type === 'SYNC_CART') {
     const rawItems: any[] = Array.isArray(payload.items) ? payload.items : []
@@ -1087,7 +1087,7 @@ export function loadInitialDisplaySnapshotFromStorage(
     if (sRaw) rawSettings = JSON.parse(sRaw)
   } catch { /* ignore */ }
 
-  const resolvedTerminalId = normalizeTerminalId(terminalId || rawSettings?.terminalId || 'REG-01')
+  const resolvedTerminalId = normalizeTerminalId(terminalId || rawSettings?.terminalId || 'POS-01')
 
   let rawSession: any = null
   try {
@@ -1112,7 +1112,7 @@ export function loadInitialDisplaySnapshotFromStorage(
     }
   } catch { /* ignore */ }
 
-  const settingsTerminalId = normalizeTerminalId(rawSettings?.terminalId || 'REG-01')
+  const settingsTerminalId = normalizeTerminalId(rawSettings?.terminalId || 'POS-01')
   const sessionMatchesTerminal = settingsTerminalId === resolvedTerminalId
 
   // Build snapshot from pos_session_v2 if it belongs to this terminal

@@ -19,7 +19,6 @@ export const APP_NAV_SECTIONS: NavSection[] = [
     title: 'Register',
     items: [
       { label: 'Point of Sale', to: '/pos', icon: 'i-heroicons-computer-desktop', railPrimary: true, shortcut: 'F1' },
-      { label: 'Barcode Scanner', to: '/pos/scanner', icon: 'i-heroicons-qr-code', railPrimary: true, shortcut: 'F2' },
     ],
   },
   {

@@ -666,7 +666,7 @@ const activeTerminalId = computed(() => {
   const queryTerm = Array.isArray(route.query.terminal)
     ? route.query.terminal[0]
     : route.query.terminal
-  return normalizeTerminalId(queryTerm || posSettings.value.terminalId || 'REG-01')
+  return normalizeTerminalId(queryTerm || posSettings.value.terminalId || 'POS-01')
 })
 
 // ── Authoritative Display Snapshot & Receiver State Machine ─────────
