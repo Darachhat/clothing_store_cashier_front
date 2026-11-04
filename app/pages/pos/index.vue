@@ -1606,14 +1606,20 @@ function broadcastCustomerDisplayState(
   emitCustomerDisplayHeartbeat(snapshot)
   const ch = getCustomerDisplayChannel()
   if (ch) {
-    ch.postMessage({
-      type: 'SYNC_SNAPSHOT',
-      terminalId: snapshot.terminalId,
-      seq: snapshot.seq,
-      timestamp: snapshot.timestamp,
-      orderSessionId: snapshot.orderSessionId,
-      snapshot,
-    })
+    try {
+      // JSON clone protects against reactive Proxies or non-clonable getters
+      const cleanSnapshot = JSON.parse(JSON.stringify(snapshot))
+      ch.postMessage({
+        type: 'SYNC_SNAPSHOT',
+        terminalId: cleanSnapshot.terminalId,
+        seq: cleanSnapshot.seq,
+        timestamp: cleanSnapshot.timestamp,
+        orderSessionId: cleanSnapshot.orderSessionId,
+        snapshot: cleanSnapshot,
+      })
+    } catch (err) {
+      console.warn('[CustomerDisplay] Failed to post snapshot over BroadcastChannel:', err)
+    }
   }
   return snapshot
 }
