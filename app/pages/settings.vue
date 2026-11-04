@@ -223,6 +223,30 @@
           </div>
         </div>
 
+        <!-- Section: Cashier Account & Session -->
+        <div class="bg-white rounded-2xl border border-gray-200/80 p-5 shadow-xs flex flex-col gap-4">
+          <div class="flex items-center justify-between flex-wrap gap-3">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-xl bg-gray-900 text-white font-bold text-sm flex items-center justify-center flex-shrink-0">
+                {{ userInitials }}
+              </div>
+              <div class="flex flex-col">
+                <h2 class="text-sm font-bold text-gray-900">{{ userName }}</h2>
+                <p class="text-xs text-gray-500">{{ userRole }} &bull; {{ userEmail || 'Active session' }}</p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              class="px-4 py-2 rounded-xl border border-gray-200 bg-white hover:bg-gray-100 text-gray-900 text-xs font-semibold transition-colors flex items-center gap-2 cursor-pointer shadow-xs"
+              @click="handleLogout"
+            >
+              <UIcon name="i-heroicons-arrow-right-on-rectangle" class="w-4 h-4 text-gray-500" />
+              <span>Sign Out</span>
+            </button>
+          </div>
+        </div>
+
         <!-- Save Button -->
         <div class="flex justify-end gap-3 pb-8">
           <button
@@ -252,13 +276,38 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+import { useAuthStore } from '~/stores/auth'
 import { usePosSettings } from '~/composables/usePosSettings'
 import { usePosAudio } from '~/composables/usePosAudio'
 import { CUSTOMER_DISPLAY_CHANNEL, normalizeTerminalId } from '~/composables/useCustomerDisplaySync'
 
 const toast = useAppToast()
+const authStore = useAuthStore()
 const { settings, loadSettings, saveSettings } = usePosSettings()
 const { playBeep, playAbaChime } = usePosAudio()
+
+const userName = computed(() => {
+  const u = authStore.currentUser
+  if (!u) return 'Cashier'
+  return `${u.first_name || ''} ${u.last_name || ''}`.trim() || u.username || 'Cashier'
+})
+
+const userInitials = computed(() => {
+  const name = userName.value
+  const parts = name.split(/\s+/).filter(Boolean)
+  if (parts.length >= 2) {
+    return `${parts[0][0]}${parts[1][0]}`.toUpperCase()
+  }
+  return name.slice(0, 2).toUpperCase() || 'CA'
+})
+
+const userEmail = computed(() => authStore.currentUser?.email || '')
+const userRole = computed(() => authStore.currentUser?.roles?.[0]?.name || 'Cashier')
+
+async function handleLogout() {
+  await authStore.logout()
+  await navigateTo('/login')
+}
 
 const normalizedTerminalId = computed(() => normalizeTerminalId(settings.value.terminalId))
 const showSampleReceipt = ref(false)

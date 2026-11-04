@@ -2,17 +2,6 @@
   <header
     class="no-print flex items-center gap-2 sm:gap-3 px-2.5 sm:px-4 h-14 min-h-[56px] bg-white border-b border-gray-200 z-10 select-none"
   >
-    <!-- LEFT: Mobile Hamburger Menu Button (Visible on < lg) -->
-    <button
-      type="button"
-      class="lg:hidden w-9 h-9 rounded-lg border border-gray-200 bg-white hover:bg-gray-100 flex items-center justify-center text-gray-700 flex-shrink-0 transition-colors cursor-pointer"
-      title="Open navigation menu"
-      aria-label="Open navigation menu"
-      @click="openMobile"
-    >
-      <UIcon name="i-heroicons-bars-3" class="w-5 h-5" />
-    </button>
-
     <!-- LEFT: Store & Register Identity -->
     <div
       class="hidden sm:flex items-center gap-2.5 flex-shrink-0 cursor-pointer hover:bg-gray-50 p-1 rounded-md transition-colors"
@@ -204,10 +193,12 @@
         <span class="text-xs text-gray-500">{{ dateStr }}</span>
       </div>
 
-      <!-- Cashier -->
-      <div
-        class="flex items-center gap-2 h-9 pl-1 pr-2 sm:pr-3 rounded-lg bg-gray-50 border border-gray-200 flex-shrink-0"
-        :title="`Signed in as ${cashierName}`"
+      <!-- Cashier Profile (Clickable -> Settings on mobile & desktop) -->
+      <NuxtLink
+        to="/settings"
+        class="flex items-center gap-1.5 sm:gap-2 h-9 pl-1 pr-1.5 sm:pr-2.5 rounded-lg bg-gray-50 border border-gray-200 hover:bg-gray-100 hover:border-gray-300 transition-colors flex-shrink-0 cursor-pointer"
+        :title="`Signed in as ${cashierName} · Settings`"
+        aria-label="Cashier profile and settings"
       >
         <div class="w-7 h-7 rounded-md bg-gray-900 text-white text-xs font-bold flex items-center justify-center flex-shrink-0">
           {{ cashierInitials }}
@@ -216,16 +207,34 @@
           <span class="text-xs font-semibold text-gray-900 whitespace-nowrap max-w-[110px] truncate">{{ cashierName }}</span>
           <span class="text-xs text-gray-500">Cashier</span>
         </div>
-      </div>
+        <UIcon name="i-heroicons-cog-6-tooth" class="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+      </NuxtLink>
+
+      <!-- Sign Out -->
+      <button
+        type="button"
+        class="h-9 px-2 sm:px-2.5 rounded-lg border border-gray-200 bg-white text-gray-700 hover:bg-gray-100 flex items-center gap-1.5 text-xs font-semibold transition-colors cursor-pointer flex-shrink-0"
+        title="Sign Out"
+        aria-label="Sign Out"
+        @click="handleLogout"
+      >
+        <UIcon name="i-heroicons-arrow-right-on-rectangle" class="w-4 h-4 text-gray-500" />
+        <span class="hidden md:inline">Sign Out</span>
+      </button>
     </div>
   </header>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { useSidebar } from '~/composables/useSidebar'
+import { useAuthStore } from '~/stores/auth'
 
-const { openMobile } = useSidebar()
+const authStore = useAuthStore()
+
+async function handleLogout() {
+  await authStore.logout()
+  await navigateTo('/login')
+}
 
 defineProps<{
   branchName: string

@@ -63,7 +63,7 @@ const shortcuts = [
   { key: 'F1', description: 'Show / hide this list' },
   { key: 'F2', description: 'Jump to search & scan field' },
   { key: 'F4', description: 'Pay — open payment' },
-  { key: 'F7', description: 'Pay by ABA KHQR (full-screen QR)' },
+  { key: 'F7', description: 'Pay with ABA (PayWay Checkout)' },
   { key: 'F8', description: 'Add or change customer' },
   { key: 'F9', description: 'Park current order / open parked orders' },
   { key: 'Enter', description: 'Search field: add exact barcode/SKU, or open the only matching product' },

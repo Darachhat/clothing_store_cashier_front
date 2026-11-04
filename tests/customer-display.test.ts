@@ -749,7 +749,7 @@ describe('POS Customer Display — Architecture, Lifecycle & Reliability Suite',
       assert.ok(displayVueSource.includes('Welcome! Your order will appear here.'), 'Must display welcoming empty state message')
     })
 
-    it('uses the unified Main Default Layout (layouts/default.vue) across all pages with persistent AppSidebar', () => {
+    it('uses the full-screen Main Default Layout (layouts/default.vue) without sidebar menu for single-screen POS', () => {
       const defaultLayoutPath = path.resolve(import.meta.dirname, '../app/layouts/default.vue')
       const posIndexPath = path.resolve(import.meta.dirname, '../app/pages/pos/index.vue')
       const settingsPath = path.resolve(import.meta.dirname, '../app/pages/settings.vue')
@@ -758,20 +758,19 @@ describe('POS Customer Display — Architecture, Lifecycle & Reliability Suite',
       const posIndexSource = fs.readFileSync(posIndexPath, 'utf-8')
       const settingsSource = fs.readFileSync(settingsPath, 'utf-8')
 
-      // 1. Default layout must host the single shared <AppSidebar>, <PosShortcutsModal>, and <AppToast>
-      assert.ok(defaultLayoutSource.includes('<AppSidebar'), 'layouts/default.vue must render <AppSidebar>')
+      // 1. Default layout must host <PosShortcutsModal> and <AppToast>, but no sidebar menu
+      assert.ok(!defaultLayoutSource.includes('<AppSidebar'), 'layouts/default.vue must not render <AppSidebar>')
       assert.ok(defaultLayoutSource.includes('<PosShortcutsModal'), 'layouts/default.vue must render <PosShortcutsModal>')
       assert.ok(defaultLayoutSource.includes('<AppToast'), 'layouts/default.vue must render <AppToast>')
       assert.ok(defaultLayoutSource.includes('h-dvh w-screen overflow-hidden'), 'layouts/default.vue must lock outer shell viewport')
 
-      // 2. Pages must not opt out via layout: false or duplicate <AppSidebar>
+      // 2. Pages must not duplicate <AppSidebar>
       for (const [name, src] of [
         ['pos/index.vue', posIndexSource],
         ['pos/customer-display.vue', displayVueSource],
         ['settings.vue', settingsSource],
       ] as const) {
-        assert.ok(!src.includes('layout: false'), `${name} must use the default layout instead of layout: false`)
-        assert.ok(!src.includes('<AppSidebar'), `${name} must not duplicate <AppSidebar> outside layouts/default.vue`)
+        assert.ok(!src.includes('<AppSidebar'), `${name} must not duplicate <AppSidebar>`)
       }
     })
   })
