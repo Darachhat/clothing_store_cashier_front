@@ -59,7 +59,6 @@ export default defineNuxtConfig({
     apiBaseAuth: process.env.NUXT_API_BASE_AUTH || '',
     public: {
       apiBase:     process.env.NUXT_PUBLIC_API_BASE     || '',
-      backendBase: process.env.NUXT_PUBLIC_BACKEND_BASE || process.env.NUXT_API_BASE || '',
       appName:     process.env.NUXT_PUBLIC_APP_NAME     || '',
     },
   },
