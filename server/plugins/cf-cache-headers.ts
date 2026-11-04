@@ -5,17 +5,27 @@
  *    (`Cloudflare-CDN-Cache-Control: no-store`, `CDN-Cache-Control: no-store`,
  *    `Cache-Control: no-cache, no-store, must-revalidate`) so every new commit/rebuild
  *    immediately serves the latest HTML and `_nuxt/*` chunk hashes without manual cache purging.
- * 2. If `CF_ZONE_ID` and `CF_API_TOKEN` are provided in Worker runtime variables,
+ * 2. Strips any residual `<link rel="prefetch">` tags from `html.head` so Cloudflare Workers
+ *    Speculation Rules never return `503 Service Unavailable` (`Cf-Speculation-Refused`).
+ * 3. If `CF_ZONE_ID` and `CF_API_TOKEN` are provided in Worker runtime variables,
  *    triggers a non-blocking one-time Cloudflare cache purge when a new Worker isolate boots.
  */
 let purgeTriggered = false
 
 export default defineNitroPlugin((nitroApp) => {
-  nitroApp.hooks.hook('render:html', (_html, { event }) => {
+  nitroApp.hooks.hook('render:html', (html, { event }) => {
     setResponseHeader(event, 'cache-control', 'no-cache, no-store, must-revalidate')
     setResponseHeader(event, 'cdn-cache-control', 'no-store')
     setResponseHeader(event, 'cloudflare-cdn-cache-control', 'no-store')
     setResponseHeader(event, 'pragma', 'no-cache')
+
+    if (Array.isArray(html.head)) {
+      html.head = html.head.map((chunk) =>
+        typeof chunk === 'string'
+          ? chunk.replace(/<link[^>]*\brel=["']prefetch["'][^>]*>/gi, '')
+          : chunk
+      )
+    }
 
     if (!purgeTriggered) {
       purgeTriggered = true
@@ -40,4 +50,3 @@ export default defineNitroPlugin((nitroApp) => {
     }
   })
 })
-

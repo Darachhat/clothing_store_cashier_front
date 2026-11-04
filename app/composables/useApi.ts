@@ -188,6 +188,7 @@ export function usePaymentApi() {
     createPurchaseForm: (saleId: string, paymentOption: string = 'cards') =>
       apiFetch<{
         action_url: string
+        script_url: string
         form_data: Record<string, string>
         payment_id: string
         tran_id: string

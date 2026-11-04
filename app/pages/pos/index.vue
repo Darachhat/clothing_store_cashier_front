@@ -2012,6 +2012,7 @@ async function startAbaModalCheckout(paymentOption?: string) {
     // 3. Launch ABA PayWay popup modal overlay
     const ok = await launchAbaCheckoutModal({
       action_url: formResp.action_url,
+      script_url: formResp.script_url,
       form_data: formResp.form_data,
     })
 
@@ -2481,6 +2482,21 @@ onMounted(async () => {
   posStore.setTerminal(posSettings.value.terminalId, posSettings.value.terminalDbId)
   posStore.hydrateFromStorage(posSettings.value.terminalId)
 
+  // Initialize clock and keyboard listeners immediately on mount
+  updateClock()
+  timerInterval = setInterval(updateClock, 1000)
+  window.addEventListener('keydown', handleGlobalKeydown)
+  window.addEventListener('beforeunload', handlePosBeforeUnload)
+
+  if (typeof BroadcastChannel !== 'undefined') {
+    scannerBroadcastChannel = new BroadcastChannel('pos_scanner_channel')
+    scannerBroadcastChannel.onmessage = (e) => {
+      if (e.data?.type === 'barcode_scanned' && e.data?.barcode) {
+        handleBarcodeScanned(String(e.data.barcode))
+      }
+    }
+  }
+
   // Initialize dual-screen Customer Display BroadcastChannel IMMEDIATELY on mount
   getCustomerDisplayChannel()
   broadcastCustomerDisplayState('INITIAL_LOAD')
@@ -2495,28 +2511,20 @@ onMounted(async () => {
     syncCustomerDisplayCart()
   })
 
-  // Sync active terminals from backend, resolve terminal DB UUID and warehouse
-  await syncTerminalContext()
-  pingTerminalHeartbeat()
-  terminalHeartbeatTimer = setInterval(pingTerminalHeartbeat, 30000)
-  await checkActiveShift()
-  window.addEventListener('beforeunload', handlePosBeforeUnload)
+  // Run terminal sync + shift check concurrently with catalog & stock loading
+  const terminalAndShiftTask = (async () => {
+    await syncTerminalContext()
+    pingTerminalHeartbeat()
+    terminalHeartbeatTimer = setInterval(pingTerminalHeartbeat, 30000)
+    await checkActiveShift()
+  })()
 
-  if (typeof BroadcastChannel !== 'undefined') {
-    scannerBroadcastChannel = new BroadcastChannel('pos_scanner_channel')
-    scannerBroadcastChannel.onmessage = (e) => {
-      if (e.data?.type === 'barcode_scanned' && e.data?.barcode) {
-        handleBarcodeScanned(String(e.data.barcode))
-      }
-    }
-  }
+  await Promise.allSettled([
+    terminalAndShiftTask,
+    loadCatalog(),
+    loadStocks(),
+  ])
 
-  updateClock()
-  timerInterval = setInterval(updateClock, 1000)
-  window.addEventListener('keydown', handleGlobalKeydown)
-
-  // Customer search fires on-demand only — not on mount (avoids loading all customers)
-  await Promise.all([loadCatalog(), loadStocks()])
   // Re-broadcast once branch metadata has loaded so branchName is populated
   broadcastCustomerDisplayState('CART_UPDATED')
   isInitialLoadDone.value = true

@@ -8,6 +8,13 @@
 </template>
 
 <script setup lang="ts">
-navigateTo('/pos')
-</script>
+definePageMeta({
+  middleware: [
+    () => navigateTo('/pos', { replace: true }),
+  ],
+})
 
+onMounted(() => {
+  navigateTo('/pos', { replace: true })
+})
+</script>

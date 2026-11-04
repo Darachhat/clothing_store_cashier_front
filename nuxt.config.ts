@@ -2,6 +2,7 @@
 export default defineNuxtConfig({
   compatibilityDate: '2024-11-01',
   ssr: false,
+  spaLoadingTemplate: 'spa-loading-template.html',
   devtools: { enabled: true },
 
   experimental: {
@@ -49,23 +50,17 @@ export default defineNuxtConfig({
           href: 'https://fonts.googleapis.com/css2?family=Battambang:wght@400;700&family=Inter:wght@300;400;500;600;700&family=Inter+Tight:wght@400;500;600;700&family=Kantumruy+Pro:wght@400;500;600;700&family=Noto+Sans+Khmer:wght@400;500;600;700&display=swap',
         },
       ],
-      script: [
-        {
-          src: 'https://checkout.payway.com.kh/plugins/checkout2-0.js?hide-close=2',
-          defer: true,
-        },
-      ],
     },
   },
 
   runtimeConfig: {
-    apiBase:     process.env.NUXT_API_BASE     || 'https://api.kimvannak.store',
+    apiBase:     process.env.NUXT_API_BASE     || '',
     // X-System-Authorization value injected server-side; never sent to browser
     apiBaseAuth: process.env.NUXT_API_BASE_AUTH || '',
     public: {
-      apiBase:     process.env.NUXT_PUBLIC_API_BASE     || '/api/proxy',
-      backendBase: process.env.NUXT_API_BASE            || 'https://api.kimvannak.store',
-      appName:     process.env.NUXT_PUBLIC_APP_NAME     || 'Clothing Store — POS',
+      apiBase:     process.env.NUXT_PUBLIC_API_BASE     || '',
+      backendBase: process.env.NUXT_PUBLIC_BACKEND_BASE || process.env.NUXT_API_BASE || '',
+      appName:     process.env.NUXT_PUBLIC_APP_NAME     || '',
     },
   },
 
@@ -130,6 +125,8 @@ export default defineNuxtConfig({
       },
     },
     '/_nuxt/**': { headers: { 'cache-control': 'public, max-age=31536000, immutable' } },
-    '/uploads/**': { proxy: `${process.env.NUXT_API_BASE || 'https://api.kimvannak.store'}/uploads/**` },
+    ...(process.env.NUXT_API_BASE
+      ? { '/uploads/**': { proxy: `${process.env.NUXT_API_BASE}/uploads/**` } }
+      : {}),
   } as any,
 })

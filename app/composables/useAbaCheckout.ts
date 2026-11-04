@@ -27,16 +27,19 @@ export function useAbaCheckout() {
   }
 
   /**
-   * Ensure checkout2-0.js and its sub-scripts (checkout.prod.js) are loaded.
+   * Ensure the PayWay checkout script (provided by backend) is loaded.
    */
-  async function ensureAbaScript(): Promise<void> {
+  async function ensureAbaScript(scriptUrl: string): Promise<void> {
     if (typeof window === 'undefined') return
     if (getAbaPaywayInstance()) return
+    if (!scriptUrl) {
+      throw new Error('Missing ABA PayWay checkout script URL from backend')
+    }
 
-    // Inject checkout2-0.js if missing
-    if (!document.querySelector('script[src*="checkout2-0.js"]')) {
+    // Inject PayWay checkout script if missing
+    if (!document.querySelector(`script[src="${scriptUrl}"]`)) {
       const script = document.createElement('script')
-      script.src = 'https://checkout.payway.com.kh/plugins/checkout2-0.js?hide-close=2'
+      script.src = scriptUrl
       script.async = true
       script.defer = true
       document.head.appendChild(script)
@@ -84,6 +87,7 @@ export function useAbaCheckout() {
    */
   async function launchCheckout(payload: {
     action_url: string
+    script_url: string
     form_data: Record<string, string>
   }): Promise<boolean> {
     if (typeof window === 'undefined') return false
@@ -92,7 +96,7 @@ export function useAbaCheckout() {
     checkoutError.value = null
 
     try {
-      await ensureAbaScript()
+      await ensureAbaScript(payload.script_url)
 
       // Find or create hidden form
       let form = document.getElementById('aba_merchant_request') as HTMLFormElement | null

@@ -1,33 +1,26 @@
 // Centralized HTTP Client for Cashier POS Frontend
+import { isJwtExpired } from '~/stores/auth'
 
-function isJwtExpired(token: string, bufferSeconds = 30): boolean {
-  try {
-    const parts = token.split('.')
-    if (parts.length < 2) return false
-    const base64 = parts[1]!.replace(/-/g, '+').replace(/_/g, '/')
-    const jsonStr = decodeURIComponent(
-      atob(base64)
-        .split('')
-        .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
-        .join('')
-    )
-    const payload = JSON.parse(jsonStr)
-    if (typeof payload.exp === 'number') {
-      return Date.now() >= (payload.exp - bufferSeconds) * 1000
-    }
-  } catch {
-    // If decoding fails, assume not expired and let backend handle
-  }
-  return false
-}
+let cachedClientBaseURL: string | null = null
 
 export function createCashierApiClient() {
-  const config = useRuntimeConfig()
   const authStore = useAuthStore()
 
-  const baseURL = (import.meta.server
-    ? (config.apiBase || 'http://backend:8000')
-    : config.public.apiBase) as string
+  let baseURL = cachedClientBaseURL || ''
+  if (!baseURL || import.meta.server) {
+    const config = useRuntimeConfig()
+    baseURL = String(import.meta.server ? config.apiBase : config.public?.apiBase || '').trim()
+    if (!baseURL) {
+      throw new Error(
+        import.meta.server
+          ? 'Missing NUXT_API_BASE in runtimeConfig'
+          : 'Missing NUXT_PUBLIC_API_BASE in runtimeConfig.public'
+      )
+    }
+    if (!import.meta.server) {
+      cachedClientBaseURL = baseURL
+    }
+  }
 
   const apiFetch = $fetch.create({
     baseURL,
@@ -61,10 +54,12 @@ export function createCashierApiClient() {
       if (token) {
         headers.set('Authorization', `Bearer ${token}`)
       }
-      // Attach system credential server-side only (credential stays private)
       if (import.meta.server) {
-        const sysAuth = config.apiBaseAuth as string
-        if (sysAuth) headers.set('X-System-Authorization', sysAuth)
+        try {
+          const config = useRuntimeConfig()
+          const sysAuth = config.apiBaseAuth as string
+          if (sysAuth) headers.set('X-System-Authorization', sysAuth)
+        } catch {}
       }
       options.headers = headers
     },
@@ -72,8 +67,10 @@ export function createCashierApiClient() {
       if (response.status === 401) {
         const refreshed = await authStore.refreshSession()
         if (!refreshed) {
-          authStore.logout()
-          await navigateTo('/login')
+          await authStore.logout()
+          if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
+            window.location.replace('/login')
+          }
         }
       }
     },
@@ -96,4 +93,3 @@ export function createCashierApiClient() {
 }
 
 export type CashierApiClient = ReturnType<typeof createCashierApiClient>
-
