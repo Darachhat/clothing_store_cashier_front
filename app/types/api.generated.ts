@@ -1835,6 +1835,18 @@ export interface TELEGRAM_SEND_MESSAGE_SCHEMA {
   parse_mode?: string;
 }
 
+export interface TELEGRAM_STATUS_RESPONSE_SCHEMA {
+  enabled?: boolean;
+  bot_username?: string | null;
+  is_linked?: boolean;
+  telegram_is_verified?: boolean;
+  telegram_id?: string | null;
+  telegram_user_id?: string | null;
+  telegram_username?: string | null;
+  telegram_photo_url?: string | null;
+  telegram_linked_at?: string | null;
+}
+
 export interface TERMINAL_CREATE_SCHEMA {
   branch_id: string;
   warehouse_id: string;
@@ -1902,9 +1914,11 @@ export interface USER_RESPONSE_SCHEMA {
   phone_verified?: boolean;
   phone_verified_at?: string | null;
   telegram_id?: string | null;
+  telegram_user_id?: string | null;
   telegram_username?: string | null;
   telegram_photo_url?: string | null;
   telegram_linked_at?: string | null;
+  telegram_is_verified?: boolean;
   last_login_at?: string | null;
   roles?: ROLE_RESPONSE_SCHEMA[];
 }
