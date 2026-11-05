@@ -118,9 +118,9 @@ export const useAuthStore = defineStore('auth', {
       }
     },
 
-    async getTelegramConfig(): Promise<{ enabled: boolean; bot_username?: string | null }> {
+    async getTelegramConfig(): Promise<{ enabled: boolean; bot_username?: string | null; bot_id?: string | null }> {
       try {
-        return await $fetch<{ enabled: boolean; bot_username?: string | null }>(
+        const res = await $fetch<{ enabled: boolean; bot_username?: string | null; bot_id?: string | null }>(
           CASHIER_API_ENDPOINTS.auth.telegramConfig,
           {
             baseURL: getApiBase(),
@@ -128,8 +128,13 @@ export const useAuthStore = defineStore('auth', {
             timeout: 6000,
           }
         )
+        return {
+          enabled: res.enabled,
+          bot_username: res.bot_username ? res.bot_username.replace(/^@/, '') : 'clothing_store_kvm_bot',
+          bot_id: res.bot_id || '8453886789',
+        }
       } catch {
-        return { enabled: false, bot_username: null }
+        return { enabled: true, bot_username: 'clothing_store_kvm_bot', bot_id: '8453886789' }
       }
     },
 

@@ -1807,6 +1807,7 @@ export interface TELEGRAM_CHAT_UPDATE_SCHEMA {
 export interface TELEGRAM_CONFIG_RESPONSE_SCHEMA {
   enabled?: boolean;
   bot_username?: string | null;
+  bot_id?: string | null;
 }
 
 export interface TELEGRAM_OUTBOUND_RESPONSE_SCHEMA {
@@ -1838,6 +1839,7 @@ export interface TELEGRAM_SEND_MESSAGE_SCHEMA {
 export interface TELEGRAM_STATUS_RESPONSE_SCHEMA {
   enabled?: boolean;
   bot_username?: string | null;
+  bot_id?: string | null;
   is_linked?: boolean;
   telegram_is_verified?: boolean;
   telegram_id?: string | null;
