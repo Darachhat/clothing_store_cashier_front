@@ -5,6 +5,11 @@ export const CASHIER_API_ENDPOINTS = {
     refresh: '/api/cashier/v1/auth/refresh',
     me: '/api/cashier/v1/auth/me',
     logout: '/api/cashier/v1/auth/logout',
+    telegramConfig: '/api/cashier/v1/auth/telegram/config',
+    telegramLogin: '/api/cashier/v1/auth/telegram/login',
+    telegramLink: '/api/cashier/v1/auth/telegram/link',
+    phoneRequestVerification: '/api/cashier/v1/auth/phone/request-verification',
+    phoneVerify: '/api/cashier/v1/auth/phone/verify',
   },
   products: {
     list: '/api/cashier/v1/products',

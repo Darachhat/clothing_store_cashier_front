@@ -118,6 +118,47 @@ export const useAuthStore = defineStore('auth', {
       }
     },
 
+    async getTelegramConfig(): Promise<{ enabled: boolean; bot_username?: string | null }> {
+      try {
+        return await $fetch<{ enabled: boolean; bot_username?: string | null }>(
+          CASHIER_API_ENDPOINTS.auth.telegramConfig,
+          {
+            baseURL: getApiBase(),
+            method: 'GET',
+            timeout: 6000,
+          }
+        )
+      } catch {
+        return { enabled: false, bot_username: null }
+      }
+    },
+
+    async loginWithTelegram(payload: Record<string, unknown>) {
+      const apiBase = getApiBase()
+      const data = await $fetch<{
+        access_token: string
+        refresh_token: string
+        user: User
+      }>(CASHIER_API_ENDPOINTS.auth.telegramLogin, {
+        baseURL: apiBase,
+        method: 'POST',
+        body: payload,
+        timeout: 12000,
+      })
+
+      this.accessToken = data.access_token
+      this.$state.refreshToken = data.refresh_token
+      this.user = data.user
+
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('cashier_access_token', data.access_token)
+        localStorage.setItem('cashier_refresh_token', data.refresh_token)
+        try {
+          localStorage.setItem('cashier_user', JSON.stringify(data.user))
+        } catch {}
+      }
+    },
+
     async refreshSession(): Promise<boolean> {
       const apiBase = getApiBase()
       const currentRefresh =

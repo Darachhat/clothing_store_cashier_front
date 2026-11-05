@@ -375,6 +375,13 @@ export interface EXPENSE_UPDATE_SCHEMA {
   notes?: string | null;
 }
 
+export interface GENERIC_SETTING_SCHEMA {
+  category: string;
+  key: string;
+  value: Record<string, unknown>;
+  description?: string | null;
+}
+
 export interface GOODS_RECEIPT_CREATE_FOR_ORDER_SCHEMA {
   purchase_order_id?: string | null;
   warehouse_id?: string | null;
@@ -556,6 +563,7 @@ export interface PAYMENT_PURCHASE_FORM_REQUEST_SCHEMA {
 
 export interface PAYMENT_PURCHASE_FORM_RESPONSE_SCHEMA {
   action_url: string;
+  script_url: string;
   form_data: Record<string, string>;
   payment_id: string;
   tran_id: string;
@@ -593,6 +601,22 @@ export interface PERMISSION_RESPONSE_SCHEMA {
   name: string;
   module: string;
   status_code?: string;
+}
+
+export interface PHONE_VERIFICATION_CHALLENGE_RESPONSE_SCHEMA {
+  message: string;
+  normalized_phone: string;
+  expires_in_seconds: number;
+  delivery_channel?: string;
+}
+
+export interface PHONE_VERIFICATION_REQUEST_SCHEMA {
+  phone_number: string;
+}
+
+export interface PHONE_VERIFY_CONFIRM_SCHEMA {
+  phone_number: string;
+  otp_code: string;
 }
 
 export interface PRODUCT_CREATE_SCHEMA {
@@ -1170,6 +1194,8 @@ export interface SALE_COMPLETE_SCHEMA {
 export interface SALE_CREATE_SCHEMA {
   branch_id?: string | null;
   warehouse_id?: string | null;
+  terminal_id?: string | null;
+  shift_id?: string | null;
   customer_id?: string | null;
   items: SALE_ITEM_CREATE_SCHEMA[];
   discount_amount?: number | string;
@@ -1252,9 +1278,81 @@ export interface SALE_RESPONSE_SCHEMA {
   notes?: string | null;
   cashier_id: string;
   cashier_name?: string | null;
+  terminal_id?: string | null;
+  terminal_code?: string | null;
+  shift_id?: string | null;
   promotion_id?: string | null;
   items?: SALE_ITEM_RESPONSE_SCHEMA[];
   payments?: SALE_PAYMENT_RESPONSE_SCHEMA[];
+}
+
+export interface SHIFT_CLOSE_SCHEMA {
+  /** Actual counted drawer cash in USD */
+  closing_cash_usd: number | string;
+  /** Actual counted drawer cash in KHR */
+  closing_cash_khr: number | string;
+  notes?: string | null;
+}
+
+export interface SHIFT_OPEN_SCHEMA {
+  terminal_id: string;
+  /** Opening drawer float in USD */
+  opening_float_usd?: number | string;
+  /** Opening drawer float in KHR */
+  opening_float_khr?: number | string;
+  notes?: string | null;
+}
+
+export interface SHIFT_RESPONSE_SCHEMA {
+  id: string;
+  terminal_id: string;
+  terminal_code?: string | null;
+  branch_id: string;
+  branch_name?: string | null;
+  cashier_id: string;
+  cashier_name?: string | null;
+  opened_at: string;
+  closed_at?: string | null;
+  opening_float_usd?: string;
+  opening_float_khr?: string;
+  closing_cash_usd?: string | null;
+  closing_cash_khr?: string | null;
+  expected_cash_usd?: string | null;
+  expected_cash_khr?: string | null;
+  status_code?: string;
+  notes?: string | null;
+  created_at: string;
+}
+
+export interface SHIFT_SUMMARY_SCHEMA {
+  shift_id: string;
+  terminal_id: string;
+  terminal_code?: string | null;
+  branch_id: string;
+  branch_name?: string | null;
+  cashier_id: string;
+  cashier_name?: string | null;
+  opened_at: string;
+  closed_at?: string | null;
+  status_code?: string;
+  opening_float_usd?: string;
+  opening_float_khr?: string;
+  total_sales_count?: number;
+  total_sales_amount?: string;
+  cash_sales_amount?: string;
+  cash_payments_count?: number;
+  aba_sales_amount?: string;
+  aba_payments_count?: number;
+  card_sales_amount?: string;
+  card_payments_count?: number;
+  bank_sales_amount?: string;
+  expected_cash_usd?: string;
+  expected_cash_khr?: string;
+  closing_cash_usd?: string | null;
+  closing_cash_khr?: string | null;
+  discrepancy_usd?: string | null;
+  discrepancy_khr?: string | null;
+  notes?: string | null;
 }
 
 export interface SIZE_CREATE_SCHEMA {
@@ -1342,6 +1440,18 @@ export interface STOCK_TRANSFER_RESPONSE_SCHEMA {
   created_by?: unknown | null;
   approved_by?: unknown | null;
   items?: STOCK_TRANSFER_ITEM_RESPONSE_SCHEMA[];
+}
+
+export interface STORE_SETTINGS_SCHEMA {
+  name?: string;
+  currency?: string;
+  phone?: string | null;
+  email?: string | null;
+  address?: string | null;
+  receipt_footer?: string | null;
+  default_tax_rate?: number;
+  tax_inclusive?: boolean;
+  rounding?: string;
 }
 
 export interface SUPPLIER_CREATE_SCHEMA {
@@ -1595,6 +1705,16 @@ export interface StoreOrderItemCreate {
   quantity: number;
 }
 
+export interface TELEGRAM_AUTH_PAYLOAD_SCHEMA {
+  id: number | string;
+  first_name?: string | null;
+  last_name?: string | null;
+  username?: string | null;
+  photo_url?: string | null;
+  auth_date: number;
+  hash: string;
+}
+
 export interface TELEGRAM_BOT_CREATE_SCHEMA {
   code: string;
   name: string;
@@ -1684,6 +1804,11 @@ export interface TELEGRAM_CHAT_UPDATE_SCHEMA {
   status_code?: string | null;
 }
 
+export interface TELEGRAM_CONFIG_RESPONSE_SCHEMA {
+  enabled?: boolean;
+  bot_username?: string | null;
+}
+
 export interface TELEGRAM_OUTBOUND_RESPONSE_SCHEMA {
   id: string;
   telegram_chat_code?: string | null;
@@ -1710,6 +1835,37 @@ export interface TELEGRAM_SEND_MESSAGE_SCHEMA {
   parse_mode?: string;
 }
 
+export interface TERMINAL_CREATE_SCHEMA {
+  branch_id: string;
+  warehouse_id: string;
+  /** Register code, e.g. POS-01 */
+  code: string;
+  /** Register name, e.g. Front Counter Main */
+  name: string;
+  notes?: string | null;
+}
+
+export interface TERMINAL_RESPONSE_SCHEMA {
+  id: string;
+  branch_id: string;
+  warehouse_id: string;
+  code: string;
+  name: string;
+  status_code: string;
+  notes?: string | null;
+  last_active_at?: string | null;
+  created_at: string;
+  branch_name?: string | null;
+  warehouse_name?: string | null;
+}
+
+export interface TERMINAL_UPDATE_SCHEMA {
+  name?: string | null;
+  warehouse_id?: string | null;
+  status_code?: string | null;
+  notes?: string | null;
+}
+
 export interface TOKEN_RESPONSE_SCHEMA {
   access_token: string;
   refresh_token: string;
@@ -1723,6 +1879,8 @@ export interface USER_CREATE_SCHEMA {
   password: string;
   employee_code?: string | null;
   branch_id?: string | null;
+  phone_number?: string | null;
+  phone_verified?: boolean;
   role_ids?: string[];
   status_code?: string;
 }
@@ -1740,6 +1898,14 @@ export interface USER_RESPONSE_SCHEMA {
   full_name: string;
   employee_code?: string | null;
   branch_id?: string | null;
+  phone_number?: string | null;
+  phone_verified?: boolean;
+  phone_verified_at?: string | null;
+  telegram_id?: string | null;
+  telegram_username?: string | null;
+  telegram_photo_url?: string | null;
+  telegram_linked_at?: string | null;
+  last_login_at?: string | null;
   roles?: ROLE_RESPONSE_SCHEMA[];
 }
 
@@ -1750,6 +1916,10 @@ export interface USER_UPDATE_SCHEMA {
   email?: string | null;
   employee_code?: string | null;
   branch_id?: string | null;
+  phone_number?: string | null;
+  phone_verified?: boolean | null;
+  unlink_phone?: boolean | null;
+  unlink_telegram?: boolean | null;
   password?: string | null;
   role_ids?: string[] | null;
 }

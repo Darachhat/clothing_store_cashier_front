@@ -20,18 +20,18 @@
       <div class="login-form-wrap">
         <div class="login-form-header">
           <h1 class="login-form-title">Cashier Sign In</h1>
-          <p class="login-form-subtitle">Enter your cashier credentials to open the POS.</p>
+          <p class="login-form-subtitle">Enter your cashier username, verified phone, or Telegram account.</p>
         </div>
 
         <form class="login-form" @submit.prevent="handleLogin">
           <div class="login-field">
-            <label class="login-label" for="username">Username</label>
+            <label class="login-label" for="username">Username or Verified Phone</label>
             <input
               id="username"
               v-model="form.username"
               type="text"
               class="login-input"
-              placeholder="cashier"
+              placeholder="cashier or +85569382165"
               autocomplete="username"
               autofocus
               required
@@ -66,6 +66,44 @@
           </button>
         </form>
 
+        <div class="login-divider">
+          <span>or</span>
+        </div>
+
+        <div class="telegram-login-section">
+          <div ref="telegramWidgetContainer" class="telegram-widget-box" />
+          <button
+            type="button"
+            class="login-tg-btn"
+            :disabled="loading"
+            @click="showTelegramModal = !showTelegramModal"
+          >
+            <UIcon name="i-heroicons-paper-airplane" class="w-4 h-4" />
+            <span>Sign in with Telegram</span>
+          </button>
+
+          <div v-if="showTelegramModal" class="telegram-payload-card">
+            <p class="telegram-payload-hint">
+              Paste a signed Telegram Login verification payload:
+            </p>
+            <textarea
+              v-model="telegramPayloadJson"
+              rows="3"
+              class="telegram-payload-textarea"
+              placeholder='{"id": 123456789, "first_name": "Cashier", "username": "cashier_tg", "auth_date": 1730000000, "hash": "..."}'
+            />
+            <button
+              type="button"
+              class="login-btn"
+              :disabled="loading || !telegramPayloadJson.trim()"
+              @click="handleTelegramJsonLogin"
+            >
+              <UIcon name="i-heroicons-check-badge" class="w-4 h-4" />
+              <span>Verify &amp; Open POS</span>
+            </button>
+          </div>
+        </div>
+
         <p class="login-footer-note">
           For cashier accounts only. Contact your manager if you need access.
         </p>
@@ -86,6 +124,10 @@ const loading = ref(false)
 const showPassword = ref(false)
 const errorMsg = ref('')
 
+const telegramWidgetContainer = ref<HTMLElement | null>(null)
+const showTelegramModal = ref(false)
+const telegramPayloadJson = ref('')
+
 const features = [
   'Barcode & QR code scanning',
   'Multi-payment checkout',
@@ -93,22 +135,26 @@ const features = [
   'Receipt printing',
 ]
 
+async function verifyPortalRolesAndRedirect() {
+  const roles = authStore.user?.roles?.map((r: any) => r.name) ?? []
+  if (!roles.some((r: string) => ['CASHIER', 'ADMIN'].includes(r))) {
+    await authStore.logout()
+    errorMsg.value = 'This POS terminal is for Cashier accounts only.'
+    return
+  }
+  await router.push('/pos')
+}
+
 async function handleLogin() {
   errorMsg.value = ''
   if (!form.username.trim() || !form.password) {
-    errorMsg.value = 'Please enter both username and password.'
+    errorMsg.value = 'Please enter both username/phone and password.'
     return
   }
   loading.value = true
   try {
     await authStore.login(form.username.trim(), form.password)
-    const roles = authStore.user?.roles?.map((r: any) => r.name) ?? []
-    if (!roles.some((r: string) => ['CASHIER', 'ADMIN'].includes(r))) {
-      await authStore.logout()
-      errorMsg.value = 'This POS terminal is for Cashier accounts only.'
-      return
-    }
-    await router.push('/pos')
+    await verifyPortalRolesAndRedirect()
   } catch (err: unknown) {
     const error = err as { data?: { detail?: string } }
     errorMsg.value = error?.data?.detail || 'Invalid username or password.'
@@ -116,6 +162,49 @@ async function handleLogin() {
     loading.value = false
   }
 }
+
+async function handleTelegramAuthCallback(userPayload: Record<string, unknown>) {
+  errorMsg.value = ''
+  loading.value = true
+  try {
+    await authStore.loginWithTelegram(userPayload)
+    await verifyPortalRolesAndRedirect()
+  } catch (err: unknown) {
+    const error = err as { data?: { detail?: string } }
+    errorMsg.value = error?.data?.detail || 'Telegram authentication failed.'
+  } finally {
+    loading.value = false
+  }
+}
+
+async function handleTelegramJsonLogin() {
+  errorMsg.value = ''
+  try {
+    const parsed = JSON.parse(telegramPayloadJson.value)
+    await handleTelegramAuthCallback(parsed)
+  } catch {
+    errorMsg.value = 'Invalid Telegram authentication JSON format.'
+  }
+}
+
+onMounted(async () => {
+  if (typeof window !== 'undefined') {
+    ;(window as any).onTelegramAuthCashier = (user: Record<string, unknown>) => {
+      handleTelegramAuthCallback(user)
+    }
+  }
+  const tgConfig = await authStore.getTelegramConfig()
+  if (tgConfig.enabled && tgConfig.bot_username && telegramWidgetContainer.value) {
+    const script = document.createElement('script')
+    script.async = true
+    script.src = 'https://telegram.org/js/telegram-widget.js?22'
+    script.setAttribute('data-telegram-login', tgConfig.bot_username)
+    script.setAttribute('data-size', 'large')
+    script.setAttribute('data-onauth', 'onTelegramAuthCashier(user)')
+    script.setAttribute('data-request-access', 'write')
+    telegramWidgetContainer.value.appendChild(script)
+  }
+})
 </script>
 
 <style scoped>
@@ -176,6 +265,32 @@ async function handleLogin() {
 .login-btn:hover:not(:disabled) { background: #f0f0f0; }
 .login-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 .login-btn__spinner { animation: spin 0.8s linear infinite; color: var(--brand-900); }
+
+.login-divider { display: flex; align-items: center; gap: 10px; font-size: 11px; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 0.06em; }
+.login-divider::before, .login-divider::after { content: ''; flex: 1; height: 1px; background: rgba(255,255,255,0.15); }
+
+.telegram-login-section { display: flex; flex-direction: column; gap: 8px; }
+.telegram-widget-box { display: flex; justify-content: center; }
+.login-tg-btn {
+  height: 40px; width: 100%;
+  background: rgba(255,255,255,0.08); color: white;
+  border: 1px solid rgba(255,255,255,0.2); border-radius: var(--radius-md);
+  font-family: var(--font-body); font-size: 13px; font-weight: 600;
+  cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.login-tg-btn:hover:not(:disabled) { background: rgba(255,255,255,0.14); }
+.telegram-payload-card {
+  padding: 10px; border: 1px solid rgba(255,255,255,0.2);
+  border-radius: var(--radius-md); background: rgba(255,255,255,0.06);
+  display: flex; flex-direction: column; gap: 8px;
+}
+.telegram-payload-hint { font-size: 11px; color: rgba(255,255,255,0.65); line-height: 1.4; }
+.telegram-payload-textarea {
+  width: 100%; border: 1px solid rgba(255,255,255,0.2); border-radius: var(--radius-md);
+  padding: 8px; font-family: monospace; font-size: 11px;
+  color: white; background: rgba(0,0,0,0.2); outline: none; resize: vertical;
+}
+
 @keyframes spin { to { transform: rotate(360deg); } }
 .login-footer-note { font-size: 12px; color: rgba(255,255,255,0.35); text-align: center; max-width: none; }
 </style>
