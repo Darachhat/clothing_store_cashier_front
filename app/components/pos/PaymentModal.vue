@@ -15,9 +15,9 @@
         <!-- 1. Header -->
         <div class="px-5 py-3 border-b border-gray-200 flex items-center justify-between gap-3 flex-shrink-0">
           <div class="flex flex-col leading-tight min-w-0">
-            <h3 id="pos-payment-title" class="text-base font-semibold text-gray-900">Complete Payment</h3>
+            <h3 id="pos-payment-title" class="text-base font-semibold text-gray-900">{{ t('pos.payment_title', 'Complete Payment') }}</h3>
             <p class="text-sm text-gray-600 truncate">
-              {{ itemCount ?? 0 }} item{{ itemCount === 1 ? '' : 's' }} &bull; {{ customerName || 'Walk-in customer' }}
+              {{ itemCount ?? 0 }} item{{ itemCount === 1 ? '' : 's' }} &bull; {{ customerName || t('pos.walk_in', 'Walk-in customer') }}
             </p>
           </div>
           <button
@@ -38,7 +38,7 @@
             class="px-5 py-4 bg-gray-50 border border-gray-200 rounded-xl flex flex-col items-center text-center gap-1 flex-shrink-0"
             aria-live="polite"
           >
-            <span class="text-xs font-semibold uppercase tracking-wider text-gray-600">Amount Due</span>
+            <span class="text-xs font-semibold uppercase tracking-wider text-gray-600">{{ t('pos.amount_due', 'Amount Due') }}</span>
             <div class="flex items-baseline gap-1 text-gray-900">
               <span class="text-2xl font-semibold font-mono text-gray-500">$</span>
               <span class="text-5xl leading-none font-bold font-mono tabular-nums tracking-tight">{{ grandTotal.toFixed(2) }}</span>
@@ -428,7 +428,7 @@
             @click="$emit('finalizeSale')"
           >
             <UIcon :name="processingSale ? 'i-heroicons-arrow-path' : 'i-heroicons-check'" class="w-5 h-5" :class="{ 'animate-spin': processingSale }" />
-            <span>{{ processingSale ? 'Processing payment…' : `Complete sale · $${grandTotal.toFixed(2)}` }}</span>
+            <span>{{ processingSale ? t('common.loading', 'Processing payment…') : `${t('pos.complete_payment', 'Complete sale')} · $${grandTotal.toFixed(2)}` }}</span>
           </button>
         </div>
       </div>
@@ -440,6 +440,9 @@
 import { computed, nextTick, ref, toRef, watch } from 'vue'
 import { useDialogFocus } from '~/composables/useDialogFocus'
 import { KHR_EXCHANGE_RATE } from '~/composables/useCustomerDisplaySync'
+import { useAppTranslation } from '~/composables/useAppTranslation'
+
+const { t } = useAppTranslation()
 
 export interface AbaOptionItem {
   value: 'bakong' | 'abapay' | 'cards' | 'alipay' | 'wechat' | 'google_pay'

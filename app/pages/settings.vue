@@ -31,6 +31,40 @@
 
       <!-- Settings Content Body -->
       <main class="flex-1 overflow-y-auto p-6 flex flex-col gap-6 max-w-4xl mx-auto w-full">
+        <!-- Section: Language & Regional Preferences -->
+        <div class="bg-white rounded-2xl border border-gray-200/80 p-5 shadow-xs flex flex-col gap-4">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center text-gray-700">
+              <UIcon name="i-heroicons-globe-alt" class="w-5 h-5" />
+            </div>
+            <div>
+              <h2 class="text-sm font-bold text-gray-900">{{ t('pos.settings.language_pref', 'Language & Regional Preferences') }}</h2>
+              <p class="text-xs text-gray-500">{{ t('pos.settings.language_desc', 'Select the active display language for POS terminal and customer-facing interfaces.') }}</p>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 pt-1">
+            <button
+              v-for="loc in supportedLocales"
+              :key="loc.code"
+              type="button"
+              class="flex flex-col items-center justify-center p-3 rounded-xl border text-xs font-medium transition-all cursor-pointer"
+              :class="currentLocale === loc.code
+                ? 'border-gray-900 bg-gray-900 text-white shadow-xs'
+                : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'"
+              @click="setLocale(loc.code)"
+            >
+              <span class="text-2xl mb-1">{{ loc.flag }}</span>
+              <span class="font-semibold">{{ loc.native }}</span>
+              <span class="text-[10px] opacity-75">({{ loc.name }})</span>
+              <span v-if="currentLocale === loc.code" class="mt-1.5 inline-flex items-center gap-1 text-[10px] font-medium">
+                <UIcon name="i-heroicons-check-circle" class="w-3.5 h-3.5" />
+                Active
+              </span>
+            </button>
+          </div>
+        </div>
+
         <!-- Section: Secondary Customer Display -->
         <div class="bg-white rounded-2xl border border-gray-200/80 p-5 shadow-xs flex flex-col gap-4">
           <div class="flex items-center justify-between">
@@ -279,15 +313,17 @@ import { computed, onMounted, ref } from 'vue'
 import { useAuthStore } from '~/stores/auth'
 import { usePosSettings } from '~/composables/usePosSettings'
 import { usePosAudio } from '~/composables/usePosAudio'
+import { useAppTranslation } from '~/composables/useAppTranslation'
 import { CUSTOMER_DISPLAY_CHANNEL, normalizeTerminalId } from '~/composables/useCustomerDisplaySync'
 
 const toast = useAppToast()
 const authStore = useAuthStore()
+const { t, currentLocale, supportedLocales, setLocale } = useAppTranslation()
 const { settings, loadSettings, saveSettings } = usePosSettings()
 const { playBeep, playAbaChime } = usePosAudio()
 
 const userName = computed(() => {
-  const u = authStore.currentUser
+  const u = authStore.currentUser as any
   if (!u) return 'Cashier'
   return `${u.first_name || ''} ${u.last_name || ''}`.trim() || u.username || 'Cashier'
 })
@@ -295,7 +331,7 @@ const userName = computed(() => {
 const userInitials = computed(() => {
   const name = userName.value
   const parts = name.split(/\s+/).filter(Boolean)
-  if (parts.length >= 2) {
+  if (parts.length >= 2 && parts[0] && parts[1]) {
     return `${parts[0][0]}${parts[1][0]}`.toUpperCase()
   }
   return name.slice(0, 2).toUpperCase() || 'CA'

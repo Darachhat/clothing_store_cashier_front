@@ -17,7 +17,9 @@ export default defineNuxtConfig({
   hooks: {
     'build:manifest': (manifest) => {
       for (const key in manifest) {
-        manifest[key].prefetch = false
+        if (manifest[key]) {
+          manifest[key].prefetch = false
+        }
       }
     },
   },

@@ -18,7 +18,7 @@
         <span class="text-sm font-semibold text-gray-900 whitespace-nowrap max-w-[180px] truncate">{{ branchName }}</span>
         <span class="text-xs text-gray-500 whitespace-nowrap flex items-center gap-1">
           <UIcon name="i-heroicons-computer-desktop" class="w-3 h-3 text-gray-400" />
-          {{ terminalId || 'POS-01' }} &bull; Register
+          {{ terminalId || 'POS-01' }} &bull; {{ t('pos.register', 'Register') }}
         </span>
       </div>
     </div>
@@ -42,10 +42,10 @@
           enterkeyhint="search"
           autocomplete="off"
           spellcheck="false"
-          title="Search or scan (F2)"
+          :title="t('pos.search_placeholder', 'Search or scan (F2)')"
           aria-label="Search products by name or SKU, or scan a barcode"
           class="w-full h-10 bg-gray-50 hover:bg-gray-100 focus:bg-white border border-gray-200 focus:border-gray-400 rounded-lg pl-8 sm:pl-10 pr-12 sm:pr-24 lg:pr-[148px] text-xs sm:text-sm font-medium text-gray-900 placeholder-gray-500 transition-colors"
-          placeholder="Scan barcode or search name / SKU (F2)"
+          :placeholder="t('pos.search_placeholder', 'Scan barcode or search name / SKU (F2)')"
           @input="$emit('update:modelValue', ($event.target as HTMLInputElement).value)"
           @keydown.esc="$emit('update:modelValue', '')"
           @focus="(e: FocusEvent) => (e.target as HTMLInputElement).select()"
@@ -69,7 +69,7 @@
           @click="$emit('scan')"
         >
           <UIcon name="i-heroicons-qr-code" class="w-4 h-4" />
-          <span class="hidden sm:inline">Camera</span>
+          <span class="hidden sm:inline">{{ t('pos.camera', 'Camera') }}</span>
         </button>
       </div>
     </form>
@@ -102,7 +102,7 @@
         @click="$emit('openParked')"
       >
         <UIcon name="i-heroicons-pause-circle" class="w-4 h-4 flex-shrink-0" />
-        <span class="hidden lg:inline">Parked</span>
+        <span class="hidden lg:inline">{{ t('pos.parked', 'Parked') }}</span>
         <span
           v-if="heldCount > 0"
           class="min-w-[18px] h-4.5 px-1 rounded-full text-xs font-bold bg-amber-700 text-white leading-none flex items-center justify-center"
@@ -115,22 +115,22 @@
         v-if="hasLastReceipt"
         type="button"
         class="hidden sm:flex h-9 px-2.5 sm:px-3 rounded-lg border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 items-center gap-2 text-sm font-semibold transition-colors cursor-pointer"
-        title="Reprint last invoice"
+        :title="t('pos.last_receipt', 'Last receipt')"
         @click="$emit('reprintLast')"
       >
         <UIcon name="i-heroicons-printer" class="w-4 h-4" />
-        <span class="hidden lg:inline">Last receipt</span>
+        <span class="hidden lg:inline">{{ t('pos.last_receipt', 'Last receipt') }}</span>
       </button>
 
       <!-- Shift Orders History -->
       <button
         type="button"
         class="hidden sm:flex h-9 px-2.5 sm:px-3 rounded-lg border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 items-center gap-2 text-sm font-semibold transition-colors cursor-pointer"
-        title="View shift sales history"
+        :title="t('pos.history', 'History')"
         @click="$emit('openHistory')"
       >
         <UIcon name="i-heroicons-clock" class="w-4 h-4" />
-        <span class="hidden 2xl:inline">History</span>
+        <span class="hidden 2xl:inline">{{ t('pos.history', 'History') }}</span>
       </button>
 
       <!-- Customer Display (opens the customer-facing screen for this register) -->
@@ -146,7 +146,7 @@
           :class="customerDisplayOnline ? 'bg-gray-900' : 'bg-gray-300'"
         />
         <UIcon name="i-heroicons-computer-desktop" class="w-4 h-4" />
-        <span class="hidden 2xl:inline">Display</span>
+        <span class="hidden 2xl:inline">{{ t('pos.display', 'Display') }}</span>
       </button>
 
       <!-- Cashier Shift / Register Drawer -->
@@ -161,31 +161,47 @@
           :class="shiftActive ? 'bg-gray-900' : 'bg-gray-400'"
         />
         <UIcon name="i-heroicons-banknotes" class="w-4 h-4 text-gray-600" />
-        <span class="hidden 2xl:inline">{{ shiftActive ? 'Shift' : 'Open Shift' }}</span>
+        <span class="hidden 2xl:inline">{{ shiftActive ? t('pos.shift', 'Shift') : t('pos.open_shift', 'Open Shift') }}</span>
       </button>
 
       <!-- Stickers (hidden on small mobile) -->
       <button
         type="button"
         class="hidden md:flex h-9 px-2.5 sm:px-3 rounded-lg border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 items-center gap-2 text-sm font-semibold transition-colors cursor-pointer"
-        title="Print product barcode / QR stickers"
+        :title="t('pos.stickers', 'Stickers')"
         aria-label="Print product stickers"
         @click="$emit('openStickers')"
       >
         <UIcon name="i-heroicons-tag" class="w-4 h-4" />
-        <span class="hidden 2xl:inline">Stickers</span>
+        <span class="hidden 2xl:inline">{{ t('pos.stickers', 'Stickers') }}</span>
       </button>
 
       <!-- Shortcuts (hidden on mobile) -->
       <button
         type="button"
         class="hidden sm:flex h-9 w-9 rounded-lg border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 items-center justify-center transition-colors cursor-pointer"
-        title="Keyboard shortcuts (F1)"
+        :title="t('pos.shortcuts', 'Keyboard shortcuts (F1)')"
         aria-label="Keyboard shortcuts"
         @click="$emit('openShortcuts')"
       >
         <UIcon name="i-heroicons-command-line" class="w-4 h-4" />
       </button>
+
+      <!-- Language Switcher -->
+      <UDropdown
+        :items="languageMenuItems"
+        :popper="{ placement: 'bottom-end' }"
+      >
+        <button
+          type="button"
+          class="flex items-center gap-1.5 h-9 px-2 sm:px-2.5 rounded-lg border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 text-xs font-semibold transition-colors cursor-pointer flex-shrink-0"
+          :title="`Language: ${currentLocaleObj?.name || 'Khmer'}`"
+        >
+          <span class="text-sm leading-none">{{ currentLocaleObj?.flag || '🇰🇭' }}</span>
+          <span class="hidden lg:inline text-xs font-medium">{{ currentLocaleObj?.native || 'ភាសាខ្មែរ' }}</span>
+          <UIcon name="i-heroicons-chevron-down" class="w-3 h-3 text-gray-400" />
+        </button>
+      </UDropdown>
 
       <!-- Clock -->
       <div class="hidden xl:flex flex-col items-end leading-tight pl-1" aria-label="Current time">
@@ -226,10 +242,20 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useAuthStore } from '~/stores/auth'
+import { useAppTranslation } from '~/composables/useAppTranslation'
 
 const authStore = useAuthStore()
+const { t, currentLocale, currentLocaleObj, supportedLocales, setLocale } = useAppTranslation()
+
+const languageMenuItems = computed(() => [
+  supportedLocales.map(l => ({
+    label: `${l.flag}  ${l.native} (${l.name})`,
+    click: () => setLocale(l.code),
+    class: currentLocale.value === l.code ? 'font-bold bg-gray-50' : '',
+  }))
+])
 
 async function handleLogout() {
   await authStore.logout()

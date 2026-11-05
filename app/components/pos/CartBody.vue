@@ -16,7 +16,7 @@
             <UIcon name="i-heroicons-chevron-left" class="w-5 h-5" />
           </button>
 
-          <h2 class="text-base font-semibold text-gray-900">Order</h2>
+          <h2 class="text-base font-semibold text-gray-900">{{ t('pos.cart_title', 'Order') }}</h2>
           <span
             class="min-w-[24px] h-6 px-2 rounded-full text-xs font-bold font-mono tabular-nums bg-gray-900 text-white leading-6 text-center"
             :aria-label="`${itemCount} items`"
@@ -28,21 +28,21 @@
             <button
               type="button"
               class="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md text-sm font-semibold text-gray-800 bg-white hover:bg-gray-100 border border-gray-200 transition-colors cursor-pointer"
-              title="Park this order and start another (F9)"
+              :title="t('pos.park_order', 'Park this order and start another (F9)')"
               @click="$emit('holdCart')"
             >
               <UIcon name="i-heroicons-pause-circle" class="w-4 h-4" />
-              <span class="hidden sm:inline">Park</span>
+              <span class="hidden sm:inline">{{ t('pos.park_order', 'Park') }}</span>
               <PosKeyHint class="hidden sm:inline-flex">F9</PosKeyHint>
             </button>
             <button
               type="button"
               class="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md text-sm font-semibold text-red-700 bg-white hover:bg-red-50 border border-gray-200 transition-colors cursor-pointer"
-              title="Remove all items (asks to confirm)"
+              :title="t('pos.clear_cart', 'Remove all items (asks to confirm)')"
               @click="$emit('clearCart')"
             >
               <UIcon name="i-heroicons-trash" class="w-4 h-4" />
-              <span class="hidden sm:inline">Clear</span>
+              <span class="hidden sm:inline">{{ t('pos.clear_cart', 'Clear') }}</span>
             </button>
           </div>
 
@@ -69,7 +69,7 @@
             </div>
             <div class="flex flex-col min-w-0 leading-tight">
               <span class="text-sm font-semibold text-gray-900 truncate">
-                {{ selectedCustomer?.name || 'Walk-in customer' }}
+                {{ selectedCustomer?.name || t('pos.walk_in', 'Walk-in customer') }}
               </span>
               <span v-if="selectedCustomer" class="text-xs text-gray-600 truncate flex items-center gap-1">
                 <template v-if="selectedCustomer.loyalty_account">
@@ -252,15 +252,15 @@
       <!-- Totals -->
       <dl class="flex flex-col gap-1 text-sm">
         <div class="flex justify-between text-gray-700">
-          <dt>Subtotal</dt>
+          <dt>{{ t('pos.subtotal', 'Subtotal') }}</dt>
           <dd class="font-mono tabular-nums text-gray-900">${{ cartSubtotal.toFixed(2) }}</dd>
         </div>
         <div v-if="totalDiscount > 0" class="flex justify-between text-emerald-800 font-semibold">
-          <dt>Discounts</dt>
+          <dt>{{ t('pos.discount', 'Discounts') }}</dt>
           <dd class="font-mono tabular-nums">&minus;${{ totalDiscount.toFixed(2) }}</dd>
         </div>
         <div class="flex justify-between text-gray-700">
-          <dt>VAT ({{ (taxRate * 100).toFixed(0) }}%)</dt>
+          <dt>{{ t('pos.tax', 'Tax') }} ({{ (taxRate * 100).toFixed(0) }}%)</dt>
           <dd class="font-mono tabular-nums text-gray-900">${{ taxAmount.toFixed(2) }}</dd>
         </div>
       </dl>
@@ -268,7 +268,7 @@
       <!-- Final payable amount -->
       <div class="flex items-end justify-between gap-3 px-3 py-2.5 rounded-lg bg-gray-50 border border-gray-200">
         <div class="flex flex-col leading-tight">
-          <span class="text-sm font-semibold text-gray-900">Total due</span>
+          <span class="text-sm font-semibold text-gray-900">{{ t('pos.total', 'Total due') }}</span>
           <span class="text-xs font-mono tabular-nums text-gray-600">&asymp; {{ formatRiel(grandTotal) }}</span>
         </div>
         <div class="flex items-baseline gap-0.5" aria-live="polite">
@@ -293,7 +293,7 @@
         >
           <span class="flex items-center gap-2">
             <UIcon :name="processingSale ? 'i-heroicons-arrow-path' : 'i-heroicons-credit-card'" class="w-5 h-5" :class="{ 'animate-spin': processingSale }" />
-            {{ processingSale ? 'Processing…' : 'Pay' }}
+            {{ processingSale ? t('common.loading', 'Processing…') : t('pos.pay', 'Pay') }}
           </span>
           <span class="flex items-center gap-2">
             <span class="font-mono tabular-nums">${{ grandTotal.toFixed(2) }}</span>
@@ -324,6 +324,9 @@ import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import CartItem from './CartItem.vue'
 import type { CartItem as CartItemType, CustomerSummary, PosCoupon } from '~/types/pos'
 import { usePosStore } from '~/stores/pos'
+import { useAppTranslation } from '~/composables/useAppTranslation'
+
+const { t } = useAppTranslation()
 
 const props = withDefaults(
   defineProps<{
