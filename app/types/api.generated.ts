@@ -1705,6 +1705,23 @@ export interface StoreOrderItemCreate {
   quantity: number;
 }
 
+export interface TELEGRAM_APP_CHALLENGE_RESPONSE_SCHEMA {
+  challenge_token: string;
+  bot_username: string;
+  tg_app_url: string;
+  tg_web_url: string;
+  expires_in_seconds?: number;
+}
+
+export interface TELEGRAM_APP_STATUS_RESPONSE_SCHEMA {
+  status: string;
+  message?: string | null;
+  access_token?: string | null;
+  refresh_token?: string | null;
+  token_type?: string;
+  user?: USER_RESPONSE_SCHEMA | null;
+}
+
 export interface TELEGRAM_AUTH_PAYLOAD_SCHEMA {
   id: number | string;
   first_name?: string | null;

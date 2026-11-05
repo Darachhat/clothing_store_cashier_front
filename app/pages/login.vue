@@ -71,17 +71,43 @@
         </div>
 
         <div class="telegram-login-section">
-          <div ref="telegramWidgetContainer" class="telegram-widget-box" />
           <button
-            v-if="!widgetLoaded"
             type="button"
             class="login-tg-btn"
-            :disabled="loading"
-            @click="startTelegramRedirectLogin"
+            :disabled="loading || appChallengeActive"
+            @click="startTelegramAppLogin"
           >
             <UIcon name="i-heroicons-paper-airplane" class="w-4 h-4" />
-            <span>{{ loading ? 'Verifying Telegram...' : 'Log in with Telegram' }}</span>
+            <span>{{ appChallengeActive ? 'Waiting for Telegram App...' : 'Log in with Telegram App' }}</span>
           </button>
+
+          <div v-if="appChallengeActive" class="telegram-payload-card">
+            <div class="flex items-center gap-2 text-xs text-white/90">
+              <UIcon name="i-heroicons-arrow-path" class="w-4 h-4 login-btn__spinner" />
+              <span>{{ appChallengeMessage || 'Confirm login in your Telegram App (@clothing_store_kvm_bot)...' }}</span>
+            </div>
+            <div class="flex items-center gap-2 pt-1">
+              <a
+                v-if="appChallengeWebUrl"
+                :href="appChallengeWebUrl"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="login-tg-btn"
+                style="text-decoration: none; height: 34px; font-size: 12px;"
+              >
+                <UIcon name="i-heroicons-arrow-top-right-on-square" class="w-3.5 h-3.5" />
+                <span>Open in Telegram</span>
+              </a>
+              <button
+                type="button"
+                class="login-tg-btn"
+                style="height: 34px; font-size: 12px;"
+                @click="cancelTelegramAppLogin"
+              >
+                <span>Cancel</span>
+              </button>
+            </div>
+          </div>
         </div>
 
         <p class="login-footer-note">
@@ -105,8 +131,10 @@ const showPassword = ref(false)
 const errorMsg = ref('')
 
 const telegramBotId = ref<string>('8453886789')
-const telegramWidgetContainer = ref<HTMLElement | null>(null)
-const widgetLoaded = ref(false)
+const appChallengeActive = ref(false)
+const appChallengeMessage = ref('')
+const appChallengeWebUrl = ref('')
+let pollTimer: ReturnType<typeof setInterval> | null = null
 
 const features = [
   'Barcode & QR code scanning',
@@ -189,29 +217,57 @@ function extractTelegramRedirectPayload(): Record<string, unknown> | null {
   return null
 }
 
-function startTelegramRedirectLogin() {
+function cancelTelegramAppLogin() {
+  if (pollTimer) {
+    clearInterval(pollTimer)
+    pollTimer = null
+  }
+  appChallengeActive.value = false
+  appChallengeMessage.value = ''
+  appChallengeWebUrl.value = ''
+}
+
+async function startTelegramAppLogin() {
   if (typeof window === 'undefined') return
   errorMsg.value = ''
-  const tgWindow = window as any
-  if (tgWindow.Telegram?.Login?.auth && telegramBotId.value) {
-    tgWindow.Telegram.Login.auth(
-      { bot_id: telegramBotId.value, request_access: 'write' },
-      (data: Record<string, unknown> | false) => {
-        if (data) handleTelegramAuthCallback(data)
+  cancelTelegramAppLogin()
+  try {
+    const ch = await authStore.createTelegramAppChallenge()
+    appChallengeActive.value = true
+    appChallengeMessage.value = "Tap 'Start' in your Telegram App to sign in..."
+    appChallengeWebUrl.value = ch.tg_web_url
+    window.location.href = ch.tg_app_url
+
+    pollTimer = setInterval(async () => {
+      try {
+        const res = await authStore.pollTelegramAppStatus(ch.challenge_token)
+        if (res.message) appChallengeMessage.value = res.message
+        if (res.status === 'APPROVED') {
+          cancelTelegramAppLogin()
+          await verifyPortalRolesAndRedirect()
+        } else if (res.status === 'REJECTED' || res.status === 'EXPIRED') {
+          const msg = res.message || 'Telegram login was declined or expired.'
+          cancelTelegramAppLogin()
+          errorMsg.value = msg
+        }
+      } catch (err: any) {
+        if (err?.status === 403 || err?.statusCode === 403) {
+          cancelTelegramAppLogin()
+          errorMsg.value = err?.data?.detail || 'Account is not authorized for this POS terminal.'
+        }
       }
-    )
-    return
+    }, 2000)
+  } catch (err: any) {
+    errorMsg.value = err?.data?.detail || 'Could not start Telegram App login.'
   }
-  const origin = window.location.origin
-  const returnTo = `${origin}${window.location.pathname}`
-  window.location.href = `https://oauth.telegram.org/auth?bot_id=${encodeURIComponent(telegramBotId.value)}&origin=${encodeURIComponent(origin)}&embed=0&request_access=write&return_to=${encodeURIComponent(returnTo)}`
 }
+
+onBeforeUnmount(() => {
+  cancelTelegramAppLogin()
+})
 
 onMounted(async () => {
   if (typeof window !== 'undefined') {
-    ;(window as any).onTelegramAuthCashier = (user: Record<string, unknown>) => {
-      handleTelegramAuthCallback(user)
-    }
     const redirectedPayload = extractTelegramRedirectPayload()
     if (redirectedPayload) {
       await handleTelegramAuthCallback(redirectedPayload)
@@ -219,25 +275,7 @@ onMounted(async () => {
     }
   }
   const tgConfig = await authStore.getTelegramConfig()
-  const cleanBotUsername = (tgConfig.bot_username || 'clothing_store_kvm_bot').replace(/^@/, '')
   if (tgConfig.bot_id) telegramBotId.value = tgConfig.bot_id
-  if (telegramWidgetContainer.value && cleanBotUsername) {
-    const script = document.createElement('script')
-    script.async = true
-    script.src = 'https://telegram.org/js/telegram-widget.js?22'
-    script.setAttribute('data-telegram-login', cleanBotUsername)
-    script.setAttribute('data-size', 'large')
-    script.setAttribute('data-onauth', 'onTelegramAuthCashier(user)')
-    script.setAttribute('data-request-access', 'write')
-    script.onload = () => {
-      setTimeout(() => {
-        if (telegramWidgetContainer.value?.querySelector('iframe')) {
-          widgetLoaded.value = true
-        }
-      }, 300)
-    }
-    telegramWidgetContainer.value.appendChild(script)
-  }
 })
 </script>
 

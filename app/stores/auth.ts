@@ -164,6 +164,54 @@ export const useAuthStore = defineStore('auth', {
       }
     },
 
+    async createTelegramAppChallenge(): Promise<{
+      challenge_token: string
+      bot_username: string
+      tg_app_url: string
+      tg_web_url: string
+      expires_in_seconds: number
+    }> {
+      return await $fetch(CASHIER_API_ENDPOINTS.auth.telegramAppChallenge, {
+        baseURL: getApiBase(),
+        method: 'POST',
+        timeout: 10000,
+      })
+    },
+
+    async pollTelegramAppStatus(challengeToken: string): Promise<{
+      status: string
+      message?: string
+      access_token?: string
+      refresh_token?: string
+      user?: User
+    }> {
+      const res = await $fetch<{
+        status: string
+        message?: string
+        access_token?: string
+        refresh_token?: string
+        user?: User
+      }>(CASHIER_API_ENDPOINTS.auth.telegramAppStatus(challengeToken), {
+        baseURL: getApiBase(),
+        method: 'GET',
+        timeout: 10000,
+      })
+
+      if (res.status === 'APPROVED' && res.access_token && res.refresh_token && res.user) {
+        this.accessToken = res.access_token
+        this.$state.refreshToken = res.refresh_token
+        this.user = res.user
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('cashier_access_token', res.access_token)
+          localStorage.setItem('cashier_refresh_token', res.refresh_token)
+          try {
+            localStorage.setItem('cashier_user', JSON.stringify(res.user))
+          } catch {}
+        }
+      }
+      return res
+    },
+
     async refreshSession(): Promise<boolean> {
       const apiBase = getApiBase()
       const currentRefresh =

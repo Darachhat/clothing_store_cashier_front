@@ -8,6 +8,8 @@ export const CASHIER_API_ENDPOINTS = {
     telegramConfig: '/api/cashier/v1/auth/telegram/config',
     telegramLogin: '/api/cashier/v1/auth/telegram/login',
     telegramLink: '/api/cashier/v1/auth/telegram/link',
+    telegramAppChallenge: '/api/cashier/v1/auth/telegram/app-challenge',
+    telegramAppStatus: (token: string) => `/api/cashier/v1/auth/telegram/app-status/${token}`,
     phoneRequestVerification: '/api/cashier/v1/auth/phone/request-verification',
     phoneVerify: '/api/cashier/v1/auth/phone/verify',
   },
