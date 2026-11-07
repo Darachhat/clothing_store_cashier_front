@@ -71,10 +71,10 @@ export function useBrand() {
       let data: any = null
 
       try {
-        data = await settingsApi.getBrandSettings()
+        data = await settingsApi.getPublicBrandSettings()
       } catch {
         try {
-          data = await settingsApi.getPublicBrandSettings()
+          data = await settingsApi.getBrandSettings()
         } catch {
           // ignore
         }

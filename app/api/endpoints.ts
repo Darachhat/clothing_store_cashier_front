@@ -24,9 +24,11 @@ export const CASHIER_API_ENDPOINTS = {
     qr: (id: string, format: 'png' | 'svg' = 'svg') => `/api/cashier/v1/product-variants/${id}/qr?format=${format}`,
     barcode: (id: string, format: 'png' | 'svg' = 'svg', writeText = false) =>
       `/api/cashier/v1/product-variants/${id}/barcode?format=${format}&write_text=${writeText}`,
-    byQr: (ref: string) => `/api/cashier/v1/product-variants/by-qr/${ref}`,
-    byBarcode: (barcode: string) => `/api/cashier/v1/product-variants/by-barcode/${barcode}`,
-    bySku: (sku: string) => `/api/cashier/v1/product-variants/by-sku/${sku}`,
+    scan: (code: string, warehouseId?: string) =>
+      `/api/cashier/v1/product-variants/scan?code=${encodeURIComponent(code)}${warehouseId ? `&warehouse_id=${encodeURIComponent(warehouseId)}` : ''}`,
+    byQr: (ref: string) => `/api/cashier/v1/product-variants/by-qr/${encodeURIComponent(ref)}`,
+    byBarcode: (barcode: string) => `/api/cashier/v1/product-variants/by-barcode/${encodeURIComponent(barcode)}`,
+    bySku: (sku: string) => `/api/cashier/v1/product-variants/by-sku/${encodeURIComponent(sku)}`,
   },
   sales: {
     list: '/api/cashier/v1/sales',
@@ -87,6 +89,8 @@ export const CASHIER_API_ENDPOINTS = {
     category: (cat: string) => `/api/cashier/v1/settings/${cat}`,
     store: '/api/cashier/v1/settings/store',
     receipt: '/api/cashier/v1/settings/receipt',
+    sticker: '/api/cashier/v1/settings/sticker',
+    stickerPublic: '/api/cashier/v1/settings/sticker/public',
     brand: '/api/cashier/v1/settings/brand',
     brandPublic: '/api/cashier/v1/brand/public',
   },

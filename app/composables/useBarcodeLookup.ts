@@ -1,5 +1,6 @@
 import type { Ref } from 'vue'
 import type { ProductVariant } from '~/types/index'
+import { normalizeScannedCode } from '~/utils/scanCode'
 import { usePosAudio } from './usePosAudio'
 import { usePosOfflineCatalog } from './usePosOfflineCatalog'
 
@@ -7,6 +8,8 @@ export interface BarcodeLookupContext {
   allVariants: Ref<ProductVariant[]>
   getVariantStock: (variantId: string) => number
   getLineStock: (variantId: string) => number | null
+  setVariantStock?: (variantId: string, stock: number) => void
+  onProductMatched?: (product: any) => void
   posStore: ReturnType<typeof usePosStore>
   soundBeep?: Ref<boolean>
   toast?: any
@@ -19,7 +22,7 @@ export interface BarcodeLookupContext {
  * image decoding, and manual barcode entry with offline resilient caching.
  */
 export function useBarcodeLookup(ctx: BarcodeLookupContext) {
-  const { searchByBarcode, searchBySku, searchByQr } = useProductApi()
+  const { scanCode, searchByBarcode, searchBySku, searchByQr } = useProductApi()
   const { playBeep, playError } = usePosAudio()
   const offlineCatalog = usePosOfflineCatalog()
 
@@ -29,8 +32,11 @@ export function useBarcodeLookup(ctx: BarcodeLookupContext) {
   /**
    * Helper to handle successful variant addition to cart with audio & toast.
    */
-  function handleVariantMatch(variant: ProductVariant, sourceLabel = 'Item Scanned'): boolean {
-    const stock = ctx.getVariantStock(variant.id)
+  function handleVariantMatch(variant: ProductVariant, sourceLabel = 'Item Scanned', freshStock?: number): boolean {
+    if (typeof freshStock === 'number' && ctx.setVariantStock) {
+      ctx.setVariantStock(variant.id, freshStock)
+    }
+    const stock = typeof freshStock === 'number' ? freshStock : ctx.getVariantStock(variant.id)
     if (ctx.getLineStock(variant.id) !== null && stock <= 0) {
       playError(true)
       ctx.toast?.add({
@@ -60,62 +66,90 @@ export function useBarcodeLookup(ctx: BarcodeLookupContext) {
 
   /**
    * Process a scanned or typed barcode/SKU/QR string.
-   * Debounces duplicate scans within 600ms.
+   * Normalizes URLs (/p/VAR-xxxxx), strips control characters, and debounces duplicate scans within 600ms.
    *
-   * @param rawCode - The raw barcode or SKU string.
-   * @returns true if product was found and added to cart, false otherwise.
+   * @param rawCode - The raw barcode, QR URL, QR reference, SKU, or Product Code string.
+   * @returns true if product/variant was found and handled, false otherwise.
    */
   async function processBarcode(rawCode: string): Promise<boolean> {
-    const code = rawCode.trim()
+    const code = normalizeScannedCode(rawCode)
     if (!code) return false
 
     // Debounce duplicate scans within 600ms
     const now = Date.now()
-    if (code === lastProcessedCode && now - lastProcessedAt < 600) {
+    if (code.toLowerCase() === lastProcessedCode.toLowerCase() && now - lastProcessedAt < 600) {
       return false
     }
     lastProcessedCode = code
     lastProcessedAt = now
 
+    const codeLower = code.toLowerCase()
+
     // 1. Direct search in current in-memory variants (fast path for active page)
     const directMatch = ctx.allVariants.value.find(
       (v) =>
-        v.barcode?.toLowerCase() === code.toLowerCase() ||
-        v.sku?.toLowerCase() === code.toLowerCase() ||
-        (v as any).qr_reference?.toLowerCase() === code.toLowerCase(),
+        v.barcode?.toLowerCase() === codeLower ||
+        v.sku?.toLowerCase() === codeLower ||
+        (v as any).qr_reference?.toLowerCase() === codeLower,
     )
 
+    if (directMatch && ctx.getLineStock(directMatch.id) !== null && ctx.getVariantStock(directMatch.id) > 0) {
+      return handleVariantMatch(directMatch, 'Item Scanned')
+    }
+
+    // 2. Unified single-roundtrip backend scan lookup (matches barcode, SKU, QR ref, or Product code + fresh stock)
+    try {
+      const scanRes = await scanCode(code, ctx.posStore.warehouseId || undefined)
+      if (scanRes) {
+        if (scanRes.match_type === 'variant' && scanRes.variant) {
+          offlineCatalog.saveVariants([scanRes.variant]).catch(() => {})
+          return handleVariantMatch(scanRes.variant, 'Item Scanned', scanRes.total_stock)
+        }
+        if (scanRes.match_type === 'product' && scanRes.product) {
+          if (Array.isArray(scanRes.variants)) {
+            offlineCatalog.saveVariants(scanRes.variants).catch(() => {})
+          }
+          playBeep(ctx.soundBeep?.value ?? true)
+          if (ctx.onProductMatched) {
+            ctx.onProductMatched({
+              ...scanRes.product,
+              variants: scanRes.variants || scanRes.product.variants || [],
+            })
+            return true
+          }
+        }
+      }
+    } catch {
+      // Fallback to offline cache or legacy endpoints below
+    }
+
+    // 3. If direct match was found in memory (even if stock wasn't known in inventoryMap yet)
     if (directMatch) {
       return handleVariantMatch(directMatch, 'Item Scanned')
     }
 
-    // 2. Offline Resilient Search (IndexedDB / memory catalog cache)
+    // 4. Offline Resilient Search (IndexedDB / memory catalog cache)
     try {
       const offlineMatch = await offlineCatalog.findVariantByCode(code)
       if (offlineMatch) {
         return handleVariantMatch(offlineMatch, 'Item Scanned (Offline Cache)')
       }
     } catch {
-      // Continue to API search if offline check threw
+      // Continue to legacy fallback
     }
 
-    // 3. Query backend by barcode/sku/qr in parallel (when connected)
+    // 5. Legacy fallback parallel lookup
     try {
-      const lookups = [
+      const results = await Promise.all([
         searchByBarcode(code).catch(() => null),
         searchBySku(code).catch(() => null),
         searchByQr(code).catch(() => null),
-      ]
-
-      const results = await Promise.all(lookups)
+      ])
       const result: any = results.find((r) => r !== null)
-
       if (result) {
-        // Save into offline cache for future instant offline lookups
         offlineCatalog.saveVariants([result]).catch(() => {})
         return handleVariantMatch(result, 'Item Found & Added')
       }
-
       return false
     } catch {
       playError(true)

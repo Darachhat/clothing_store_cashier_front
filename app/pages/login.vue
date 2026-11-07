@@ -4,15 +4,22 @@
       <div class="login-brand__inner">
         <div class="login-brand__logo">
           <img
-            v-if="brand.logo_url || brand.logo_dark_url"
+            v-if="brand.logo_dark_url || brand.logo_url"
             :src="brand.logo_dark_url || brand.logo_url"
             :alt="displayName"
             class="max-w-full max-h-full object-contain p-1"
           />
           <UIcon v-else name="i-heroicons-computer-desktop" class="w-6 h-6 text-white" />
         </div>
-        <div class="login-brand__name font-khmer">{{ displayName }}</div>
-        <p class="login-brand__tagline">{{ brand.tagline || 'Point of Sale system for cashiers. Fast, reliable checkout with barcode scanning.' }}</p>
+        <div>
+          <div class="login-brand__name font-khmer">{{ displayNameKh || displayName }}</div>
+          <div v-if="displayNameKh && displayName !== displayNameKh" class="login-brand__subname">
+            {{ displayName }}
+          </div>
+        </div>
+        <p class="login-brand__tagline">
+          {{ brand.tagline || 'Point of Sale system for cashiers. Fast, reliable checkout with barcode & QR scanning.' }}
+        </p>
         <div class="login-brand__features">
           <div v-for="feat in features" :key="feat" class="login-brand__feature">
             <UIcon name="i-heroicons-check" class="w-3.5 h-3.5 text-white" />
@@ -24,6 +31,23 @@
 
     <div class="login-form-panel">
       <div class="login-form-wrap">
+        <!-- Mobile Brand Header (visible below 768px) -->
+        <div class="login-mobile-brand">
+          <div class="login-mobile-brand__logo">
+            <img
+              v-if="brand.logo_dark_url || brand.logo_url"
+              :src="brand.logo_dark_url || brand.logo_url"
+              :alt="displayName"
+              class="max-w-full max-h-full object-contain p-1"
+            />
+            <UIcon v-else name="i-heroicons-computer-desktop" class="w-5 h-5 text-white" />
+          </div>
+          <div class="min-w-0">
+            <div class="login-mobile-brand__name font-khmer truncate">{{ displayNameKh || displayName }}</div>
+            <div class="login-mobile-brand__sub truncate">{{ displayName }} • POS Terminal</div>
+          </div>
+        </div>
+
         <div class="login-form-header">
           <h1 class="login-form-title">Cashier Sign In</h1>
           <p class="login-form-subtitle">Enter your cashier username, verified phone, or Telegram account.</p>
@@ -55,7 +79,12 @@
               autocomplete="current-password"
               required
             />
-            <button type="button" class="login-pw-toggle" @click="showPassword = !showPassword">
+            <button
+              type="button"
+              class="login-pw-toggle"
+              :aria-label="showPassword ? 'Hide password' : 'Show password'"
+              @click="showPassword = !showPassword"
+            >
               <UIcon v-if="!showPassword" name="i-heroicons-eye" class="w-4 h-4" />
               <UIcon v-else name="i-heroicons-eye-slash" class="w-4 h-4" />
             </button>
@@ -63,7 +92,7 @@
 
           <div v-if="errorMsg" class="login-error">
             <UIcon name="i-heroicons-exclamation-circle" class="w-4 h-4 flex-shrink-0" />
-            {{ errorMsg }}
+            <span>{{ errorMsg }}</span>
           </div>
 
           <button type="submit" class="login-btn" :disabled="loading">
@@ -84,7 +113,7 @@
             @click="startTelegramAppLogin"
           >
             <UIcon name="i-heroicons-paper-airplane" class="w-4 h-4" />
-            <span>{{ appChallengeActive ? 'Waiting for Telegram App...' : 'Log in with Telegram App' }}</span>
+            <span>{{ appChallengeActive ? 'Waiting for Telegram App...' : 'Open in Telegram App' }}</span>
           </button>
 
           <div v-if="appChallengeActive" class="telegram-payload-card">
@@ -126,14 +155,13 @@
 
 <script setup lang="ts">
 definePageMeta({ layout: false, middleware: ['guest'] })
-useHead({ title: 'Cashier Sign In — POS Terminal' })
 
 const authStore = useAuthStore()
 const router = useRouter()
-const { brand, displayName, loadBrand } = useBrand()
+const { brand, displayName, displayNameKh, loadBrand } = useBrand()
 
-onMounted(() => {
-  loadBrand()
+useHead({
+  title: computed(() => `Cashier Sign In — ${displayName.value || 'POS Terminal'}`),
 })
 
 const form = reactive({ username: '', password: '' })
@@ -141,17 +169,16 @@ const loading = ref(false)
 const showPassword = ref(false)
 const errorMsg = ref('')
 
-const telegramBotId = ref<string>('8453886789')
 const appChallengeActive = ref(false)
 const appChallengeMessage = ref('')
 const appChallengeWebUrl = ref('')
 let pollTimer: ReturnType<typeof setInterval> | null = null
 
 const features = [
-  'Barcode & QR code scanning',
-  'Multi-payment checkout',
-  'Hold & resume orders',
-  'Receipt printing',
+  'Unified 1D barcode & 2D QR code scanning',
+  'Multi-payment checkout (Cash, Card, KHQR)',
+  'Hold & resume customer orders',
+  'Thermal receipt & product sticker printing',
 ]
 
 async function verifyPortalRolesAndRedirect() {
@@ -278,15 +305,13 @@ onBeforeUnmount(() => {
 })
 
 onMounted(async () => {
+  loadBrand()
   if (typeof window !== 'undefined') {
     const redirectedPayload = extractTelegramRedirectPayload()
     if (redirectedPayload) {
       await handleTelegramAuthCallback(redirectedPayload)
-      return
     }
   }
-  const tgConfig = await authStore.getTelegramConfig()
-  if (tgConfig.bot_id) telegramBotId.value = tgConfig.bot_id
 })
 </script>
 
@@ -308,9 +333,40 @@ onMounted(async () => {
 .login-brand__inner { display: flex; flex-direction: column; gap: var(--space-3); }
 .login-brand__logo { width: 48px; height: 48px; background: rgba(255,255,255,0.1); border-radius: var(--radius-lg); display: flex; align-items: center; justify-content: center; }
 .login-brand__name { font-size: 22px; font-weight: 700; color: white; letter-spacing: -0.02em; margin-top: 4px; }
+.login-brand__subname { font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.65); margin-top: 2px; }
 .login-brand__tagline { font-size: 14px; color: rgba(255,255,255,0.5); line-height: 1.6; max-width: 52ch; }
 .login-brand__features { display: flex; flex-direction: column; gap: 10px; margin-top: var(--space-1); }
 .login-brand__feature { display: flex; align-items: center; gap: 10px; font-size: 13px; color: rgba(255,255,255,0.7); }
+
+.login-mobile-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+@media (min-width: 768px) {
+  .login-mobile-brand { display: none; }
+}
+.login-mobile-brand__logo {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+  background: rgba(255,255,255,0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.login-mobile-brand__name {
+  font-size: 15px;
+  font-weight: 700;
+  color: white;
+}
+.login-mobile-brand__sub {
+  font-size: 11px;
+  color: rgba(255,255,255,0.55);
+}
 
 .login-form-panel { flex: 1; display: flex; align-items: center; justify-content: center; padding: var(--space-4) var(--space-2); }
 .login-form-wrap { width: 100%; max-width: 360px; display: flex; flex-direction: column; gap: var(--space-3); }
@@ -336,7 +392,17 @@ onMounted(async () => {
 .login-pw-toggle { position: absolute; right: 10px; bottom: 12px; color: rgba(255,255,255,0.4); background: none; border: none; cursor: pointer; padding: 0; display: flex; }
 .login-pw-toggle:hover { color: rgba(255,255,255,0.8); }
 
-.login-error { display: flex; align-items: center; gap: 6px; padding: 10px 12px; background: rgba(239,68,68,0.2); border-radius: var(--radius-md); font-size: 13px; color: #fca5a5; }
+.login-error {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 12px;
+  background: rgba(239,68,68,0.18);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  color: #fca5a5;
+}
 
 .login-btn {
   height: 44px; width: 100%;
@@ -353,7 +419,6 @@ onMounted(async () => {
 .login-divider::before, .login-divider::after { content: ''; flex: 1; height: 1px; background: rgba(255,255,255,0.15); }
 
 .telegram-login-section { display: flex; flex-direction: column; gap: 8px; }
-.telegram-widget-box { display: flex; justify-content: center; }
 .login-tg-btn {
   height: 40px; width: 100%;
   background: rgba(255,255,255,0.08); color: white;
@@ -366,12 +431,6 @@ onMounted(async () => {
   padding: 10px; border: 1px solid rgba(255,255,255,0.2);
   border-radius: var(--radius-md); background: rgba(255,255,255,0.06);
   display: flex; flex-direction: column; gap: 8px;
-}
-.telegram-payload-hint { font-size: 11px; color: rgba(255,255,255,0.65); line-height: 1.4; }
-.telegram-payload-textarea {
-  width: 100%; border: 1px solid rgba(255,255,255,0.2); border-radius: var(--radius-md);
-  padding: 8px; font-family: monospace; font-size: 11px;
-  color: white; background: rgba(0,0,0,0.2); outline: none; resize: vertical;
 }
 
 @keyframes spin { to { transform: rotate(360deg); } }

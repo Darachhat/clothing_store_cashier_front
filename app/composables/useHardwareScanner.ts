@@ -1,4 +1,5 @@
 import { onMounted, onUnmounted, ref } from 'vue'
+import { normalizeScannedCode } from '~/utils/scanCode'
 
 export interface HardwareScannerOptions {
   /** Maximum interval in ms between keystrokes to be considered scanner burst input (default: 50ms) */
@@ -69,10 +70,13 @@ export function useHardwareScanner(options: HardwareScannerOptions) {
         // Successful barcode scanned
         event.preventDefault()
         event.stopPropagation()
-        const scannedCode = buffer.trim()
+        const rawCode = buffer.trim()
         buffer = ''
         isScanning.value = false
-        onScan(scannedCode)
+        const scannedCode = normalizeScannedCode(rawCode) || rawCode
+        if (scannedCode) {
+          onScan(scannedCode)
+        }
         return
       }
       buffer = ''

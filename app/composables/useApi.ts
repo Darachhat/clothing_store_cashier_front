@@ -31,6 +31,8 @@ export function useProductApi() {
       `${useRuntimeConfig().public.apiBase}${CASHIER_API_ENDPOINTS.productVariants.qr(variantId, format)}`,
     getVariantBarcode: (variantId: string, format: 'png' | 'svg' = 'svg', writeText = false) =>
       `${useRuntimeConfig().public.apiBase}${CASHIER_API_ENDPOINTS.productVariants.barcode(variantId, format, writeText)}`,
+    scanCode: (code: string, warehouseId?: string) =>
+      apiFetch<any>(CASHIER_API_ENDPOINTS.productVariants.scan(code, warehouseId)),
     searchByQr: (ref: string) =>
       apiFetch(CASHIER_API_ENDPOINTS.productVariants.byQr(ref)),
     searchByBarcode: (barcode: string) =>
@@ -310,6 +312,10 @@ export function useSystemSettingsApi() {
       apiFetch<Record<string, any>>(CASHIER_API_ENDPOINTS.settings.store),
     getReceiptSettings: () =>
       apiFetch<Record<string, any>>(CASHIER_API_ENDPOINTS.settings.receipt),
+    getStickerSettings: () =>
+      apiFetch<Record<string, any>>(CASHIER_API_ENDPOINTS.settings.sticker),
+    getPublicStickerSettings: () =>
+      apiFetch<Record<string, any>>(CASHIER_API_ENDPOINTS.settings.stickerPublic),
     getBrandSettings: () =>
       apiFetch<Record<string, any>>(CASHIER_API_ENDPOINTS.settings.brand),
     getPublicBrandSettings: () =>

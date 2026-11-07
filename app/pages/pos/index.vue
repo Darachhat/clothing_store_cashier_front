@@ -467,6 +467,7 @@ import type { ProductVariant, CustomerSummary, CartItem, PaymentEntry } from '~/
 import { usePosProducts } from '~/composables/usePosProducts'
 import { usePosSettings } from '~/composables/usePosSettings'
 import { useSidebar } from '~/composables/useSidebar'
+import { normalizeScannedCode } from '~/utils/scanCode'
 import {
   CUSTOMER_DISPLAY_CHANNEL,
   CUSTOMER_DISPLAY_HEARTBEAT_KEY,
@@ -964,6 +965,12 @@ const { processBarcode } = useBarcodeLookup({
   allVariants,
   getVariantStock,
   getLineStock,
+  setVariantStock(variantId: string, stock: number) {
+    inventoryMap.value[variantId] = stock
+  },
+  onProductMatched(prod: any) {
+    handleProductCardClick(prod)
+  },
   posStore,
   soundBeep: computed(() => posSettings.value.soundBeep),
   toast,
@@ -977,8 +984,9 @@ useHardwareScanner({
 
 // ── Actions: Barcode & Omnibar ────────────────────────────────────
 async function handleBarcodeOrSkuSearch() {
-  const q = searchQuery.value.trim()
-  if (!q) return
+  const raw = searchQuery.value.trim()
+  if (!raw) return
+  const q = normalizeScannedCode(raw) || raw
 
   // 1. Try exact barcode/SKU/QR lookup via unified pipeline
   const added = await processBarcode(q)
@@ -1019,8 +1027,9 @@ async function handleBarcodeOrSkuSearch() {
 }
 
 async function handleBarcodeScanned(barcodeStr: string) {
-  const code = barcodeStr.trim()
-  if (!code) return
+  const raw = barcodeStr.trim()
+  if (!raw) return
+  const code = normalizeScannedCode(raw) || raw
 
   // Direct addition via unified pipeline
   const added = await processBarcode(code)
@@ -1029,7 +1038,7 @@ async function handleBarcodeScanned(barcodeStr: string) {
     return
   }
 
-  // If not matched as exact variant, place in search query for manual review
+  // If not matched as exact variant, place normalized code in search query for manual review
   searchQuery.value = code
   await handleBarcodeOrSkuSearch()
 }
@@ -2555,9 +2564,14 @@ watch(searchQuery, (val, oldVal) => {
   if (val === oldVal) return
   const trimmed = val.trim()
   if (trimmed.length >= 2) {
-    setSearch(trimmed)
+    const normalized = normalizeScannedCode(trimmed) || trimmed
+    setSearch(normalized)
   } else if (trimmed.length === 0 && oldVal && oldVal.trim().length > 0) {
-    applySearch('')
+    if (productFilters.value.search) {
+      applySearch('')
+    } else {
+      setSearch('')
+    }
   }
 })
 

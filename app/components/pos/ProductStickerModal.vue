@@ -216,29 +216,29 @@
                 :class="`size-${labelWidthMm}x${labelHeightMm}`"
               >
                 <!-- Store Header (Compact Khmer) -->
-                <div class="kh-sticker__store">
-                  គឹម វណ្ណាក់ ហាងលក់សម្លៀកបំពាក់ 
+                <div v-if="stickerTemplate.show_store_header" class="kh-sticker__store">
+                  {{ storeName }}
                 </div>
 
                 <!-- Product Name (Khmer or English) -->
-                <div class="kh-sticker__product-name">
+                <div v-if="stickerTemplate.show_product_name" class="kh-sticker__product-name">
                   {{ item.product?.name || item.sku }}
                 </div>
 
                 <!-- Middle Info Row: SKU + Khmer Variant Details on Left, Prominent Price on Right -->
                 <div class="kh-sticker__info-row">
                   <div class="kh-sticker__meta">
-                    <div class="kh-sticker__sku-line">
+                    <div v-if="stickerTemplate.show_sku" class="kh-sticker__sku-line">
                       SKU: <span class="font-mono font-bold">{{ item.sku }}</span>
                     </div>
-                    <div class="kh-sticker__variant-line">
+                    <div v-if="stickerTemplate.show_variant_attrs" class="kh-sticker__variant-line">
                       <span>ពណ៌: <strong>{{ item.color?.name || 'ទូទៅ' }}</strong></span>
                       <span class="kh-sticker__var-sep">ទំហំ: <strong>{{ item.size?.name || 'Free' }}</strong></span>
                     </div>
                   </div>
 
                   <div class="kh-sticker__price-box">
-                    <div class="kh-sticker__price-usd">${{ Number(item.selling_price).toFixed(2) }}</div>
+                    <div v-if="stickerTemplate.show_price_usd" class="kh-sticker__price-usd">${{ Number(item.selling_price).toFixed(2) }}</div>
                     <div v-if="showKhr" class="kh-sticker__price-khr">{{ formatRiel(Number(item.selling_price)) }}</div>
                   </div>
                 </div>
@@ -314,6 +314,7 @@ import { computed, ref, watch } from 'vue'
 import type { ProductVariant } from '~/types/pos'
 import { usePosSettings } from '~/composables/usePosSettings'
 import { printWithKhmerFonts } from '~/composables/useKhmerPrint'
+import { normalizeScannedCode } from '~/utils/scanCode'
 
 const props = defineProps<{
   modelValue: boolean
@@ -330,16 +331,23 @@ const config = useRuntimeConfig()
 const authStore = useAuthStore()
 const toast = useAppToast()
 const { settings: posSettings } = usePosSettings()
+const { brand } = useBrand()
+const { stickerTemplate, loadStickerTemplate } = useStickerTemplate()
 
 const searchText = ref('')
 const stickerQueue = ref<Array<{ variant: ProductVariant; quantity: number }>>([])
 const stickerPreset = ref<'THERMAL_50x30' | 'THERMAL_40x30' | 'THERMAL_60x40' | 'A4_SHEET'>('THERMAL_50x30')
 const codeType = ref<'BARCODE' | 'QR'>('BARCODE')
-const showKhr = ref(false)
+const showKhr = ref(true)
 const downloadingPdf = ref(false)
 
 const storeName = computed(
-  () => posSettings.value.receiptStoreName?.trim() || 'គឹម វណ្ណាក់ ហាងលក់សម្លៀកបំពាក់ ',
+  () =>
+    stickerTemplate.value.store_header?.trim() ||
+    brand.value.store_name_kh?.trim() ||
+    brand.value.store_name?.trim() ||
+    posSettings.value.receiptStoreName?.trim() ||
+    'គឹម វណ្ណាក់ ហាងលក់សម្លៀកបំពាក់',
 )
 
 const labelWidthMm = computed(() => {
@@ -355,18 +363,37 @@ const labelHeightMm = computed(() => {
 
 watch(
   () => props.modelValue,
-  (open) => {
-    if (open && props.initialVariants?.length) {
-      stickerQueue.value = props.initialVariants.map((item) => ({
-        variant: item.variant,
-        quantity: Math.max(1, item.quantity || 1),
-      }))
+  async (open) => {
+    if (open) {
+      const tpl = await loadStickerTemplate()
+      if (tpl.code_type === 'QR' || tpl.code_type === 'BARCODE') {
+        codeType.value = tpl.code_type
+      }
+      if (tpl.paper_size === 'A4') {
+        stickerPreset.value = 'A4_SHEET'
+      } else if (
+        tpl.paper_size === 'THERMAL_50x30' ||
+        tpl.paper_size === 'THERMAL_40x30' ||
+        tpl.paper_size === 'THERMAL_60x40'
+      ) {
+        stickerPreset.value = tpl.paper_size
+      }
+      showKhr.value = tpl.show_khr ?? true
+
+      if (props.initialVariants?.length) {
+        const defCopies = Math.max(1, Number(tpl.default_copies) || 1)
+        stickerQueue.value = props.initialVariants.map((item) => ({
+          variant: item.variant,
+          quantity: Math.max(1, item.quantity || defCopies),
+        }))
+      }
     }
   },
 )
 
 const filteredCatalogVariants = computed(() => {
-  const q = searchText.value.trim().toLowerCase()
+  const raw = searchText.value.trim()
+  const q = (normalizeScannedCode(raw) || raw).toLowerCase()
   const list = props.catalogVariants || []
   if (!q) return list.slice(0, 12)
   return list
@@ -375,6 +402,7 @@ const filteredCatalogVariants = computed(() => {
         v.product?.name?.toLowerCase().includes(q) ||
         v.sku?.toLowerCase().includes(q) ||
         v.barcode?.toLowerCase().includes(q) ||
+        (v as any).qr_reference?.toLowerCase().includes(q) ||
         v.color?.name?.toLowerCase().includes(q) ||
         v.size?.name?.toLowerCase().includes(q),
     )

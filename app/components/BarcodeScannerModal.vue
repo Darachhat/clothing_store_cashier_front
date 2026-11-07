@@ -166,6 +166,7 @@
 <script setup lang="ts">
 import { ref, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { usePosAudio } from '~/composables/usePosAudio'
+import { normalizeScannedCode } from '~/utils/scanCode'
 
 const props = withDefaults(
   defineProps<{
@@ -209,7 +210,8 @@ function playChime() {
 }
 
 // Handle incoming scan
-function onBarcodeReceived(barcode: string, source = 'Camera') {
+function onBarcodeReceived(rawBarcode: string, source = 'Camera') {
+  const barcode = normalizeScannedCode(rawBarcode) || rawBarcode?.trim()
   if (!barcode) return
   const now = Date.now()
   if (barcode === lastHandledBarcode && now - lastHandledTime < 1200) {
