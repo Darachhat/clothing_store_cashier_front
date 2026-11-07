@@ -228,12 +228,17 @@
               <p v-if="receiptTemplate?.return_policy" class="text-[9.5px] text-gray-500 mt-0.5 leading-snug">{{ receiptTemplate.return_policy }}</p>
               <p v-if="receiptTemplate?.wifi_info" class="text-[9.5px] font-mono text-gray-600 mt-0.5">{{ receiptTemplate.wifi_info }}</p>
 
-              <!-- QR Code Mock for Feedback / Digital Receipt -->
-              <div v-if="receiptTemplate?.qr_content" class="flex flex-col items-center justify-center pt-2">
-                <div class="w-16 h-16 border border-gray-300 rounded p-1 flex items-center justify-center bg-gray-50">
-                  <UIcon name="i-heroicons-qr-code" class="w-12 h-12 text-gray-800" />
+              <!-- QR Code for Feedback / Digital Receipt (Real Scannable Vector QR) -->
+              <div v-if="Boolean(receiptTemplate?.qr_content)" class="flex flex-col items-center justify-center pt-2.5">
+                <div class="w-[88px] h-[88px] p-1.5 bg-white border border-gray-300 rounded flex items-center justify-center shadow-2xs">
+                  <div
+                    v-if="qrSvg"
+                    class="w-full h-full flex items-center justify-center [&>svg]:w-full [&>svg]:h-full [&>svg]:block"
+                    v-html="qrSvg"
+                  />
+                  <UIcon v-else name="i-heroicons-qr-code" class="w-12 h-12 text-gray-800" />
                 </div>
-                <span class="text-[8px] text-gray-500 mt-1 font-sans">ស្កេនមើលវិក្កយបត្រ / Scan QR</span>
+                <span class="text-[8.5px] text-gray-600 font-medium mt-1 font-khmer">ស្កេនមើលវិក្កយបត្រ / Scan QR</span>
               </div>
             </div>
           </div>
@@ -360,6 +365,15 @@
                     លេខយោង (Ref): #{{ pay.reference_number }}
                   </span>
                 </div>
+
+                <!-- Digital Invoice Verification QR Code -->
+                <div v-if="Boolean(receiptTemplate?.qr_content) && qrSvg" class="mt-3 pt-2.5 border-t border-gray-200 flex items-center gap-3">
+                  <div class="w-14 h-14 bg-white p-1 border border-gray-300 rounded flex-shrink-0 flex items-center justify-center [&>svg]:w-full [&>svg]:h-full [&>svg]:block shadow-2xs" v-html="qrSvg" />
+                  <div class="text-[10px] text-gray-600 leading-snug font-khmer">
+                    <strong class="text-gray-900 block font-semibold">ស្កេនផ្ទៀងផ្ទាត់វិក្កយបត្រ</strong>
+                    <span>Scan to verify digital invoice: {{ receipt.invoice_number }}</span>
+                  </div>
+                </div>
               </div>
 
               <!-- Financial Summary -->
@@ -450,6 +464,7 @@
 
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue'
+import { renderSVG } from 'uqr'
 import { usePosSettings } from '~/composables/usePosSettings'
 import { normalizeTerminalId } from '~/composables/useCustomerDisplaySync'
 import {
@@ -548,6 +563,24 @@ const khmerCustomerName = computed(() => formatKhmerCustomerName(props.receipt?.
 const compactDateStr = computed(() => formatReceiptCompactDate(props.receipt?.rawDate || props.receipt?.date))
 const khmerInvoiceDateStr = computed(() => formatKhmerInvoiceDate(props.receipt?.rawDate || props.receipt?.date))
 
+const qrContent = computed(() => {
+  const custom = receiptTemplate.value?.qr_content?.trim()
+  if (custom) return custom
+  if (props.receipt?.invoice_number) {
+    return `https://kimvannak.store/invoice/${props.receipt.invoice_number}`
+  }
+  return 'https://kimvannak.store'
+})
+
+const qrSvg = computed(() => {
+  if (!qrContent.value) return ''
+  try {
+    return renderSVG(qrContent.value, { ecc: 'M', border: 1 })
+  } catch {
+    return ''
+  }
+})
+
 const paymentStatus = computed(() =>
   formatKhmerPaymentStatus(
     props.receipt?.paymentStatus || 'PAID',
@@ -599,14 +632,31 @@ async function handlePrintTemplate(mode: 'RECEIPT' | 'A4') {
 .khmer-print-surface {
   font-family: var(--font-khmer, 'Kantumruy Pro', 'Battambang', 'Noto Sans Khmer', 'Battambang Local', 'Inter', sans-serif);
   line-height: 1.6;
+  font-feature-settings: 'liga' 1, 'calt' 1, 'clig' 1, 'kern' 1;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.khmer-ui,
+.khmer-print-surface,
+.font-khmer,
+.kh-receipt-store-kh,
+.kh-a4-store-kh,
+.kh-receipt-branch,
+.kh-receipt-item-title {
+  letter-spacing: normal !important;
 }
 
 /* ── Template B: 80mm Khmer Thermal Receipt Styles ──────────────── */
 .kh-receipt-store-kh {
-  font-size: 14px;
+  font-family: var(--font-khmer, 'Kantumruy Pro', 'Battambang', 'Noto Sans Khmer', sans-serif);
+  font-size: 15px;
   font-weight: 700;
   color: #111827;
   line-height: 1.65;
+  letter-spacing: normal !important;
 }
 
 .kh-receipt-store-en {
@@ -618,10 +668,12 @@ async function handlePrintTemplate(mode: 'RECEIPT' | 'A4') {
 }
 
 .kh-receipt-branch {
-  font-size: 11px;
+  font-family: var(--font-khmer, 'Kantumruy Pro', 'Battambang', 'Noto Sans Khmer', sans-serif);
+  font-size: 11.5px;
   font-weight: 600;
   color: #374151;
   line-height: 1.5;
+  letter-spacing: normal !important;
 }
 
 .kh-receipt-double-rule {

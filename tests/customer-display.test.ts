@@ -18,7 +18,7 @@ import {
   applyIncomingSnapshot,
   normalizeMessageToSnapshot,
   type CustomerDisplaySnapshot,
-} from '../app/composables/useCustomerDisplaySync.ts'
+} from '../app/composables/useCustomerDisplaySync'
 
 describe('POS Customer Display — Architecture, Lifecycle & Reliability Suite', () => {
   // ── Flow 1: Initial Page Load & Storage Hydration (Risk 1 & Risk 5) ──

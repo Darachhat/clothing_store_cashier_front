@@ -4,7 +4,7 @@ import {
   buildCustomerDisplayUrl,
   getDisplayPresenceStorageKey,
   isDisplayPresenceFresh,
-} from '../app/composables/useCustomerDisplaySync.ts'
+} from '../app/composables/useCustomerDisplaySync'
 
 describe('customer display presence', () => {
   const now = 1_000_000

@@ -1253,10 +1253,11 @@ async function syncTerminalContext() {
 
 async function pingTerminalHeartbeat() {
   if (!posSettings.value.terminalDbId) return
+  if (typeof navigator !== 'undefined' && !navigator.onLine) return
   try {
     await sendTerminalHeartbeat(posSettings.value.terminalDbId)
   } catch {
-    // Non-blocking background heartbeat
+    // Non-blocking background heartbeat (offline or transient network interruption)
   }
 }
 
@@ -2523,6 +2524,9 @@ onMounted(async () => {
     await syncTerminalContext()
     pingTerminalHeartbeat()
     terminalHeartbeatTimer = setInterval(pingTerminalHeartbeat, 30000)
+    if (typeof window !== 'undefined') {
+      window.addEventListener('online', pingTerminalHeartbeat)
+    }
     await checkActiveShift()
   })()
 
@@ -2558,6 +2562,9 @@ watch(searchQuery, (val, oldVal) => {
 })
 
 onBeforeUnmount(() => {
+  if (typeof window !== 'undefined') {
+    window.removeEventListener('online', pingTerminalHeartbeat)
+  }
   if (terminalHeartbeatTimer) {
     clearInterval(terminalHeartbeatTimer)
     terminalHeartbeatTimer = null

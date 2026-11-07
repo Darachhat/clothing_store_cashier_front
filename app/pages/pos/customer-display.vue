@@ -1,5 +1,5 @@
 <template>
-  <div class="flex-1 min-w-0 min-h-0 h-full w-full overflow-hidden bg-slate-950 text-white font-sans select-none flex flex-col">
+  <div class="flex-1 min-w-0 min-h-0 h-full w-full overflow-hidden bg-slate-950 text-white font-khmer select-none flex flex-col">
     <!-- ── Compact Top Header (56px) ──────────────────────────────── -->
     <header class="h-14 px-6 border-b border-slate-800 bg-slate-900/90 flex items-center justify-between flex-shrink-0">
       <!-- Left: Store Logo, Store Name, Branch Name -->
@@ -8,7 +8,7 @@
           <UIcon name="i-heroicons-shopping-bag" class="w-5 h-5 text-slate-100" />
         </div>
         <div class="flex items-center gap-2.5 min-w-0">
-          <h1 class="text-sm font-bold tracking-tight text-white truncate">
+          <h1 class="text-sm font-bold text-white truncate font-khmer">
             {{ displayStoreName }}
           </h1>
           <span class="text-slate-700 font-light">|</span>
@@ -62,11 +62,12 @@
           </div>
 
           <div class="space-y-2">
-            <h2 class="text-2xl lg:text-3xl font-extrabold tracking-tight text-white">
-              Welcome! Your order will appear here.
+            <h2 class="text-2xl lg:text-3xl font-extrabold text-white font-khmer">
+              សូមស្វាគមន៍! <span class="text-slate-300 font-semibold text-lg lg:text-xl block mt-0.5 font-sans">Welcome! Your order will appear here.</span>
             </h2>
-            <p class="text-sm lg:text-base text-slate-400 leading-relaxed max-w-md mx-auto">
-              As each item is scanned at the register, your selections, discounts, and total in USD and KHR will update automatically.
+            <p class="text-sm lg:text-base text-slate-300 leading-relaxed max-w-md mx-auto font-khmer">
+              ទំនិញដែលបានស្កេន តម្លៃបញ្ចុះ និងទឹកប្រាក់សរុបនឹងបង្ហាញនៅទីនេះដោយស្វ័យប្រវត្តិ។
+              <span class="block text-xs lg:text-sm text-slate-400 mt-1 font-sans">As each item is scanned at the register, your selections and totals will update automatically.</span>
             </p>
           </div>
 

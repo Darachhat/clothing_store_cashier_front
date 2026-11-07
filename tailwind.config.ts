@@ -81,8 +81,10 @@ export default ({
 
       // ── Typography ────────────────────────────────────────────────────
       fontFamily: {
-        body: ['Inter', 'ui-sans-serif', 'system-ui', '-apple-system', 'sans-serif'],
+        sans: ['Inter', 'Kantumruy Pro', 'Battambang', 'Noto Sans Khmer', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        body: ['Inter', 'Kantumruy Pro', 'Battambang', 'Noto Sans Khmer', 'ui-sans-serif', 'system-ui', 'sans-serif'],
         mono: ['Inter Tight', 'ui-monospace', 'Cascadia Code', 'monospace'],
+        khmer: ['Kantumruy Pro', 'Battambang', 'Noto Sans Khmer', 'Battambang Local', 'Inter', 'sans-serif'],
       },
 
       // ── Border Radius ─────────────────────────────────────────────────

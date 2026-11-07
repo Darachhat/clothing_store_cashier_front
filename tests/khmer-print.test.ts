@@ -11,7 +11,7 @@ import {
   formatKhmerCustomerName,
   formatKhmerBranchName,
   printWithKhmerFonts,
-} from '../app/composables/useKhmerPrint.ts'
+} from '../app/composables/useKhmerPrint'
 
 const testDir = path.dirname(new URL(import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1'))
 
