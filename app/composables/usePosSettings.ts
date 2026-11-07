@@ -15,6 +15,7 @@ export interface ReceiptCustomTemplate {
   store_name?: string
   store_name_kh?: string
   tagline?: string
+  logo_url?: string
   phone?: string
   address?: string
   tax_id?: string
@@ -54,6 +55,7 @@ const DEFAULT_RECEIPT_TEMPLATE: ReceiptCustomTemplate = {
   store_name: 'KIM VANNAK CLOTHING',
   store_name_kh: 'គឹម វណ្ណាក់ ហាងលក់សម្លៀកបំពាក់',
   tagline: 'Premium Streetwear & Contemporary Fashion',
+  logo_url: '',
   phone: '+855 23 888 999',
   address: '#123 Preah Norodom Blvd, Daun Penh, Phnom Penh',
   tax_id: 'K001-902348572',

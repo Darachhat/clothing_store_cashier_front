@@ -104,6 +104,7 @@
           >
             <!-- Double Rule Top Header -->
             <div class="kh-receipt-double-rule py-2 text-center flex flex-col items-center gap-0.5">
+              <img v-if="receiptTemplate?.logo_url" :src="receiptTemplate.logo_url" alt="Store Logo" class="max-h-12 max-w-[160px] object-contain mb-1" />
               <div class="kh-receipt-store-kh">{{ resolvedStoreNameKh }}</div>
               <div v-if="resolvedStoreName && resolvedStoreName !== resolvedStoreNameKh" class="text-[11px] font-bold tracking-wider text-gray-800 uppercase">{{ resolvedStoreName }}</div>
               <div v-if="receiptTemplate?.tagline" class="text-[10px] text-gray-600 font-normal leading-tight">{{ receiptTemplate.tagline }}</div>
@@ -254,7 +255,8 @@
             <!-- 1. A4 Header: Brand Identity Left, Invoice Title Right -->
             <div class="kh-a4-header">
               <div class="kh-a4-brand">
-                <div class="kh-a4-logo">
+                <img v-if="receiptTemplate?.logo_url" :src="receiptTemplate.logo_url" alt="Store Logo" class="h-12 max-w-[140px] object-contain flex-shrink-0" />
+                <div v-else class="kh-a4-logo">
                   <UIcon name="i-heroicons-building-storefront" class="w-6 h-6 text-white" />
                 </div>
                 <div class="kh-a4-brand-text">

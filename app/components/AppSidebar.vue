@@ -16,10 +16,16 @@
         :aria-label="config.public.appName"
       >
         <div class="app-sidebar__logo-mark">
-          <UIcon name="i-heroicons-building-storefront" class="w-4 h-4 text-white" />
+          <img
+            v-if="brand.logo_url"
+            :src="brand.logo_url"
+            :alt="displayName"
+            class="w-full h-full object-contain p-0.5 rounded"
+          />
+          <UIcon v-else name="i-heroicons-building-storefront" class="w-4 h-4 text-white" />
         </div>
         <div v-if="!isRail" class="app-sidebar__brand-meta">
-          <span class="app-sidebar__brand-name">{{ config.public.appName }}</span>
+          <span class="app-sidebar__brand-name font-khmer">{{ displayName }}</span>
           <span v-if="branchName" class="app-sidebar__brand-branch">{{ branchName }}</span>
         </div>
       </NuxtLink>
@@ -240,10 +246,17 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter, useRuntimeConfig } from '#app'
 import { useAuthStore } from '~/stores/auth'
 import { useSidebar, type NavItem } from '~/composables/useSidebar'
+import { useBrand } from '~/composables/useBrand'
+
+const { brand, displayName, loadBrand } = useBrand()
+
+onMounted(() => {
+  loadBrand()
+})
 
 const props = withDefaults(
   defineProps<{

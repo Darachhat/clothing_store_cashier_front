@@ -87,6 +87,8 @@ export const CASHIER_API_ENDPOINTS = {
     category: (cat: string) => `/api/cashier/v1/settings/${cat}`,
     store: '/api/cashier/v1/settings/store',
     receipt: '/api/cashier/v1/settings/receipt',
+    brand: '/api/cashier/v1/settings/brand',
+    brandPublic: '/api/cashier/v1/brand/public',
   },
   translations: {
     base: '/api/cashier/v1/translations',

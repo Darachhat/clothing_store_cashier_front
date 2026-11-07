@@ -3,10 +3,16 @@
     <div class="login-brand">
       <div class="login-brand__inner">
         <div class="login-brand__logo">
-          <UIcon name="i-heroicons-computer-desktop" class="w-6 h-6 text-white" />
+          <img
+            v-if="brand.logo_url || brand.logo_dark_url"
+            :src="brand.logo_dark_url || brand.logo_url"
+            :alt="displayName"
+            class="max-w-full max-h-full object-contain p-1"
+          />
+          <UIcon v-else name="i-heroicons-computer-desktop" class="w-6 h-6 text-white" />
         </div>
-        <div class="login-brand__name">POS Terminal</div>
-        <p class="login-brand__tagline">Point of Sale system for cashiers. Fast, reliable checkout with barcode scanning.</p>
+        <div class="login-brand__name font-khmer">{{ displayName }}</div>
+        <p class="login-brand__tagline">{{ brand.tagline || 'Point of Sale system for cashiers. Fast, reliable checkout with barcode scanning.' }}</p>
         <div class="login-brand__features">
           <div v-for="feat in features" :key="feat" class="login-brand__feature">
             <UIcon name="i-heroicons-check" class="w-3.5 h-3.5 text-white" />
@@ -124,6 +130,11 @@ useHead({ title: 'Cashier Sign In — POS Terminal' })
 
 const authStore = useAuthStore()
 const router = useRouter()
+const { brand, displayName, loadBrand } = useBrand()
+
+onMounted(() => {
+  loadBrand()
+})
 
 const form = reactive({ username: '', password: '' })
 const loading = ref(false)

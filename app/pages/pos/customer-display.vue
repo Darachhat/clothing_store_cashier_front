@@ -4,8 +4,14 @@
     <header class="h-14 px-6 border-b border-slate-800 bg-slate-900/90 flex items-center justify-between flex-shrink-0">
       <!-- Left: Store Logo, Store Name, Branch Name -->
       <div class="flex items-center gap-3 min-w-0">
-        <div class="w-9 h-9 rounded-lg bg-slate-800 border border-slate-700/80 flex items-center justify-center text-white flex-shrink-0">
-          <UIcon name="i-heroicons-shopping-bag" class="w-5 h-5 text-slate-100" />
+        <div class="w-9 h-9 rounded-lg bg-slate-800 border border-slate-700/80 flex items-center justify-center text-white flex-shrink-0 p-1">
+          <img
+            v-if="brand.logo_dark_url || brand.logo_url"
+            :src="brand.logo_dark_url || brand.logo_url"
+            alt="Logo"
+            class="max-w-full max-h-full object-contain"
+          />
+          <UIcon v-else name="i-heroicons-shopping-bag" class="w-5 h-5 text-slate-100" />
         </div>
         <div class="flex items-center gap-2.5 min-w-0">
           <h1 class="text-sm font-bold text-white truncate font-khmer">
@@ -57,8 +63,14 @@
 
         <!-- Center Welcome Messaging -->
         <div class="max-w-xl mx-auto flex flex-col items-center gap-4 my-auto py-4">
-          <div class="w-16 h-16 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-center shadow-sm">
-            <UIcon name="i-heroicons-shopping-bag" class="w-8 h-8 text-slate-200" />
+          <div class="w-16 h-16 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-center shadow-sm p-2">
+            <img
+              v-if="brand.logo_dark_url || brand.logo_url"
+              :src="brand.logo_dark_url || brand.logo_url"
+              alt="Welcome Logo"
+              class="max-w-full max-h-full object-contain"
+            />
+            <UIcon v-else name="i-heroicons-shopping-bag" class="w-8 h-8 text-slate-200" />
           </div>
 
           <div class="space-y-2">
@@ -661,6 +673,7 @@ import {
 
 const route = useRoute()
 const { settings: posSettings, loadSettings } = usePosSettings()
+const { brand, loadBrand } = useBrand()
 const { playAbaChime } = usePosAudio()
 
 const activeTerminalId = computed(() => {
@@ -721,9 +734,11 @@ const taxPercentLabel = computed(() => {
 
 const displayStoreName = computed(() => {
   return (
+    brand.value.store_name_kh ||
+    brand.value.store_name ||
     currentSnapshot.value.storeName ||
     posSettings.value.receiptStoreName ||
-    'Clothing Store Phnom Penh'
+    'គឹម វណ្ណាក់ ហាងលក់សម្លៀកបំពាក់'
   )
 })
 
@@ -733,6 +748,7 @@ const displayBranchName = computed(() => {
 
 const displayFooterNote = computed(() => {
   return (
+    brand.value.receipt_footer?.split('\n')[0] ||
     currentSnapshot.value.receiptFooterNote ||
     posSettings.value.receiptFooterNote ||
     'Thank you for shopping with us! Items can be exchanged within 7 days.'
@@ -1056,6 +1072,7 @@ function updateClockAndTimers() {
 
 onMounted(() => {
   loadSettings()
+  loadBrand()
   if (import.meta.client) {
     isBrowserOnline.value = navigator.onLine !== false
   }
