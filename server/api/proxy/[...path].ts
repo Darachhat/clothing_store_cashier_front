@@ -58,7 +58,8 @@ export default defineEventHandler(async (event) => {
   }
 
   const controller = new AbortController()
-  const timeoutId = setTimeout(() => controller.abort(), 15000)
+  // 45s upstream timeout to accommodate Render / backend server cold starts
+  const timeoutId = setTimeout(() => controller.abort(), 45000)
 
   try {
     const upstream = await fetch(targetUrl, {

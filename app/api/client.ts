@@ -17,8 +17,8 @@ export function createCashierApiClient() {
 
   const apiFetch = $fetch.create({
     baseURL,
-    retry: 1,
-    retryStatusCodes: [401],
+    retry: 2,
+    retryStatusCodes: [401, 502, 503, 504],
     async onRequest({ options }) {
       if (!authStore.accessToken && typeof window !== 'undefined') {
         authStore.restoreSession()
