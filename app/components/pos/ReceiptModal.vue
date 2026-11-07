@@ -104,7 +104,8 @@
           >
             <!-- Double Rule Top Header -->
             <div class="kh-receipt-double-rule py-2 text-center flex flex-col items-center gap-0.5">
-              <div class="kh-receipt-store-kh">{{ resolvedStoreName }}</div>
+              <div class="kh-receipt-store-kh">{{ resolvedStoreNameKh }}</div>
+              <div v-if="resolvedStoreName && resolvedStoreName !== resolvedStoreNameKh" class="text-[11px] font-bold tracking-wider text-gray-800 uppercase">{{ resolvedStoreName }}</div>
               <div v-if="receiptTemplate?.tagline" class="text-[10px] text-gray-600 font-normal leading-tight">{{ receiptTemplate.tagline }}</div>
               <div class="kh-receipt-branch">{{ khmerBranchName }}</div>
               <div v-if="receiptTemplate?.address" class="text-[9.5px] text-gray-500 font-normal leading-tight mt-0.5">{{ receiptTemplate.address }}</div>
@@ -122,11 +123,11 @@
                 <span class="text-gray-600">កាលបរិច្ឆេទ:</span>
                 <span class="font-mono text-gray-900">{{ compactDateStr }}</span>
               </div>
-              <div class="flex justify-between gap-2">
+              <div v-if="receiptTemplate?.show_cashier_name !== false" class="flex justify-between gap-2">
                 <span class="text-gray-600">អ្នកគិតលុយ:</span>
                 <span class="text-gray-900 text-right">{{ cashierName }}</span>
               </div>
-              <div class="flex justify-between gap-2">
+              <div v-if="receiptTemplate?.show_customer_info !== false" class="flex justify-between gap-2">
                 <span class="text-gray-600">អតិថិជន:</span>
                 <span class="text-gray-900 text-right">{{ khmerCustomerName }}</span>
               </div>
@@ -142,7 +143,7 @@
                 <!-- Line 1: Product Name + (Color / Size) -->
                 <div class="kh-receipt-item-title">
                   <span>{{ item.name }}</span>
-                  <span v-if="item.variantInfo" class="text-gray-700 font-normal">
+                  <span v-if="receiptTemplate?.show_variant_attrs !== false && item.variantInfo" class="text-gray-700 font-normal">
                     ({{ formatVariantSlash(item.variantInfo) }})
                   </span>
                 </div>
@@ -177,7 +178,7 @@
                   {{ Number(receipt.discount || 0) > 0 ? `-$${Number(receipt.discount).toFixed(2)}` : '$0.00' }}
                 </span>
               </div>
-              <div class="flex justify-between">
+              <div v-if="receiptTemplate?.show_tax_breakdown !== false" class="flex justify-between">
                 <span class="text-gray-700">ពន្ធ:</span>
                 <span class="font-mono font-semibold">${{ Number(receipt.tax || 0).toFixed(2) }}</span>
               </div>
@@ -191,7 +192,7 @@
                   ${{ Number(receipt.grandTotal || 0).toFixed(2) }}
                 </span>
               </div>
-              <div class="flex justify-between items-baseline text-[10.5px] text-gray-600">
+              <div v-if="receiptTemplate?.show_khr_conversion !== false" class="flex justify-between items-baseline text-[10.5px] text-gray-600">
                 <span>សរុបជាប្រាក់រៀល (KHR):</span>
                 <span class="font-mono font-semibold text-gray-800">{{ formatRiel(Number(receipt.grandTotal || 0)) }}</span>
               </div>
@@ -226,6 +227,14 @@
               <p class="text-[11px] font-medium text-gray-700 leading-tight">{{ resolvedFooterNote }}</p>
               <p v-if="receiptTemplate?.return_policy" class="text-[9.5px] text-gray-500 mt-0.5 leading-snug">{{ receiptTemplate.return_policy }}</p>
               <p v-if="receiptTemplate?.wifi_info" class="text-[9.5px] font-mono text-gray-600 mt-0.5">{{ receiptTemplate.wifi_info }}</p>
+
+              <!-- QR Code Mock for Feedback / Digital Receipt -->
+              <div v-if="receiptTemplate?.qr_content" class="flex flex-col items-center justify-center pt-2">
+                <div class="w-16 h-16 border border-gray-300 rounded p-1 flex items-center justify-center bg-gray-50">
+                  <UIcon name="i-heroicons-qr-code" class="w-12 h-12 text-gray-800" />
+                </div>
+                <span class="text-[8px] text-gray-500 mt-1 font-sans">ស្កេនមើលវិក្កយបត្រ / Scan QR</span>
+              </div>
             </div>
           </div>
 
@@ -244,10 +253,11 @@
                   <UIcon name="i-heroicons-building-storefront" class="w-6 h-6 text-white" />
                 </div>
                 <div class="kh-a4-brand-text">
-                  <h1 class="kh-a4-store-kh">គឹម វណ្ណាក់ ហាងលក់សម្លៀកបំពាក់ </h1>
+                  <h1 class="kh-a4-store-kh">{{ resolvedStoreNameKh }}</h1>
                   <div class="kh-a4-store-en">{{ resolvedStoreName }}</div>
+                  <div v-if="receiptTemplate?.tagline" class="text-[11px] text-gray-500 font-normal leading-tight mt-0.5">{{ receiptTemplate.tagline }}</div>
                   <div class="kh-a4-store-sub">
-                    {{ khmerBranchName }} &bull; រាជធានីភ្នំពេញ ប្រទេសកម្ពុជា &bull; ទូរស័ព្ទ: +855 23 888 999
+                    {{ khmerBranchName }} &bull; {{ receiptTemplate?.address || 'រាជធានីភ្នំពេញ ប្រទេសកម្ពុជា' }} &bull; ទូរស័ព្ទ: {{ receiptTemplate?.phone || '+855 23 888 999' }}<template v-if="receiptTemplate?.tax_id"> &bull; VAT TIN: {{ receiptTemplate.tax_id }}</template>
                   </div>
                 </div>
               </div>
@@ -276,11 +286,11 @@
               </div>
 
               <div class="kh-a4-meta-col">
-                <div class="kh-a4-meta-row">
+                <div v-if="receiptTemplate?.show_cashier_name !== false" class="kh-a4-meta-row">
                   <span class="kh-a4-meta-label">អ្នកគិតលុយ (Cashier):</span>
                   <span class="kh-a4-meta-value">{{ cashierName }} ({{ resolvedTerminalId }})</span>
                 </div>
-                <div class="kh-a4-meta-row">
+                <div v-if="receiptTemplate?.show_customer_info !== false" class="kh-a4-meta-row">
                   <span class="kh-a4-meta-label">អតិថិជន (Customer):</span>
                   <strong class="kh-a4-meta-value">{{ khmerCustomerName }}</strong>
                 </div>
@@ -298,7 +308,7 @@
                   <tr>
                     <th class="col-idx">ល.រ</th>
                     <th class="col-desc">បរិយាយទំនិញ</th>
-                    <th class="col-variant">ពណ៌ / ទំហំ</th>
+                    <th v-if="receiptTemplate?.show_variant_attrs !== false" class="col-variant">ពណ៌ / ទំហំ</th>
                     <th class="col-qty">ចំនួន</th>
                     <th class="col-price">តម្លៃរាយ</th>
                     <th class="col-total">សរុប</th>
@@ -309,9 +319,9 @@
                     <td class="col-idx">{{ toKhmerNumerals(Number(idx) + 1) }}</td>
                     <td class="col-desc">
                       <div class="kh-a4-item-name">{{ item.name }}</div>
-                      <div v-if="item.sku" class="kh-a4-item-sku">SKU: {{ item.sku }}</div>
+                      <div v-if="receiptTemplate?.show_item_sku !== false && item.sku" class="kh-a4-item-sku">SKU: {{ item.sku }}</div>
                     </td>
-                    <td class="col-variant">{{ formatVariantSlash(item.variantInfo) || '—' }}</td>
+                    <td v-if="receiptTemplate?.show_variant_attrs !== false" class="col-variant">{{ formatVariantSlash(item.variantInfo) || '—' }}</td>
                     <td class="col-qty">{{ toKhmerNumerals(item.quantity) }} ({{ item.quantity }})</td>
                     <td class="col-price font-mono">${{ Number(item.price).toFixed(2) }}</td>
                     <td class="col-total font-mono">${{ Number(item.total).toFixed(2) }}</td>
@@ -364,7 +374,7 @@
                     {{ Number(receipt.discount || 0) > 0 ? `-$${Number(receipt.discount).toFixed(2)}` : '$0.00' }}
                   </span>
                 </div>
-                <div class="kh-a4-tot-row">
+                <div v-if="receiptTemplate?.show_tax_breakdown !== false" class="kh-a4-tot-row">
                   <span>ពន្ធ (Tax)</span>
                   <span class="font-mono font-semibold">${{ Number(receipt.tax || 0).toFixed(2) }}</span>
                 </div>
@@ -376,7 +386,7 @@
                     ${{ Number(receipt.grandTotal || 0).toFixed(2) }}
                   </div>
                 </div>
-                <div class="kh-a4-tot-khr">
+                <div v-if="receiptTemplate?.show_khr_conversion !== false" class="kh-a4-tot-khr">
                   <span>សរុបជាប្រាក់រៀល (KHR Equivalent)</span>
                   <strong class="font-mono">{{ formatRiel(Number(receipt.grandTotal || 0)) }}</strong>
                 </div>
@@ -388,7 +398,7 @@
               <p class="kh-a4-thank-main">សូមអរគុណដែលបានគាំទ្រហាងរបស់យើង!</p>
               <p class="kh-a4-thank-sub">សូមអញ្ជើញមកទិញម្តងទៀត។</p>
               <p class="kh-a4-policy">
-                ទំនិញអាចប្តូរវិញបានក្នុងរយៈពេល ៧ ថ្ងៃ ដោយភ្ជាប់មកជាមួយវិក្កយបត្រ។ &bull; {{ resolvedFooterNote }}
+                {{ receiptTemplate?.return_policy || 'ទំនិញអាចប្តូរវិញបានក្នុងរយៈពេល ៧ ថ្ងៃ ដោយភ្ជាប់មកជាមួយវិក្កយបត្រ។' }} &bull; {{ resolvedFooterNote }}
               </p>
             </div>
           </div>
@@ -524,6 +534,9 @@ const activePaperWidth = computed(() => posSettings.value.paperWidth || '80mm')
 const receiptTemplate = computed(() => posSettings.value.receiptTemplate)
 const resolvedStoreName = computed(
   () => receiptTemplate.value?.store_name?.trim() || posSettings.value.receiptStoreName?.trim() || ENGLISH_STORE_NAME,
+)
+const resolvedStoreNameKh = computed(
+  () => receiptTemplate.value?.store_name_kh?.trim() || KHMER_STORE_NAME,
 )
 const resolvedFooterNote = computed(
   () => receiptTemplate.value?.footer_message?.trim() || posSettings.value.receiptFooterNote?.trim() || 'Items can be exchanged within 7 days with valid receipt.',

@@ -308,5 +308,7 @@ export function useSystemSettingsApi() {
       apiFetch<Record<string, any>>(CASHIER_API_ENDPOINTS.settings.category(category)),
     getStoreSettings: () =>
       apiFetch<Record<string, any>>(CASHIER_API_ENDPOINTS.settings.store),
+    getReceiptSettings: () =>
+      apiFetch<Record<string, any>>(CASHIER_API_ENDPOINTS.settings.receipt),
   }
 }

@@ -13,6 +13,7 @@ const RECEIPT_TEMPLATE_STORAGE_KEY = 'pos_receipt_template'
 
 export interface ReceiptCustomTemplate {
   store_name?: string
+  store_name_kh?: string
   tagline?: string
   phone?: string
   address?: string
@@ -50,7 +51,8 @@ export interface PosTerminalSettings {
 }
 
 const DEFAULT_RECEIPT_TEMPLATE: ReceiptCustomTemplate = {
-  store_name: 'VANNAK CLOTHING BOUTIQUE',
+  store_name: 'KIM VANNAK CLOTHING',
+  store_name_kh: 'គឹម វណ្ណាក់ ហាងលក់សម្លៀកបំពាក់',
   tagline: 'Premium Streetwear & Contemporary Fashion',
   phone: '+855 23 888 999',
   address: '#123 Preah Norodom Blvd, Daun Penh, Phnom Penh',
@@ -62,8 +64,8 @@ const DEFAULT_RECEIPT_TEMPLATE: ReceiptCustomTemplate = {
   show_tax_breakdown: true,
   show_cashier_name: true,
   show_customer_info: true,
-  footer_message: 'THANK YOU FOR SHOPPING WITH US!',
-  return_policy: 'Exchanges accepted within 7 days with original tag and receipt.',
+  footer_message: 'THANK YOU FOR SHOPPING WITH US!\nសូមអរគុណដែលបានគាំទ្រហាងយើងខ្ញុំ!',
+  return_policy: 'ទំនិញទិញរួចមិនអាចប្តូរប្រាក់វិញបានទេ (Exchange within 7 days with tag/receipt)',
   wifi_info: 'Guest Wi-Fi: Vannak_Store | Pass: fashion2026',
   qr_content: 'https://kimvannak.store',
 }
@@ -136,41 +138,40 @@ export function usePosSettings() {
 
   // ── Synchronize Remote Store & Receipt Settings ────────────────────
   async function fetchRemoteSettings(settingsApi?: {
-    getCategorySettings: (cat: string) => Promise<any>
-    getStoreSettings: () => Promise<any>
+    getCategorySettings?: (cat: string) => Promise<any>
+    getReceiptSettings?: () => Promise<any>
+    getStoreSettings?: () => Promise<any>
   }) {
     if (!import.meta.client) return
     try {
       if (settingsApi) {
-        const [receiptRes, storeRes] = await Promise.allSettled([
-          settingsApi.getCategorySettings('receipt'),
-          settingsApi.getStoreSettings(),
-        ])
-
-        if (receiptRes.status === 'fulfilled' && receiptRes.value && Object.keys(receiptRes.value).length > 0) {
-          settings.value.receiptTemplate = {
-            ...DEFAULT_RECEIPT_TEMPLATE,
-            ...settings.value.receiptTemplate,
-            ...receiptRes.value,
-          }
-          if (receiptRes.value.paper_width) {
-            settings.value.paperWidth = receiptRes.value.paper_width
-          }
-          if (receiptRes.value.store_name) {
-            settings.value.receiptStoreName = receiptRes.value.store_name
-          }
-          if (receiptRes.value.footer_message) {
-            settings.value.receiptFooterNote = receiptRes.value.footer_message
+        let receiptData: any = null
+        if (typeof settingsApi.getReceiptSettings === 'function') {
+          try {
+            receiptData = await settingsApi.getReceiptSettings()
+          } catch {
+            // fallback to category
           }
         }
+        if (!receiptData && typeof settingsApi.getCategorySettings === 'function') {
+          try {
+            receiptData = await settingsApi.getCategorySettings('receipt')
+          } catch {}
+        }
 
-        if (storeRes.status === 'fulfilled' && storeRes.value && Object.keys(storeRes.value).length > 0) {
-          const s = storeRes.value
-          if (s.name && !settings.value.receiptTemplate?.store_name) {
-            settings.value.receiptStoreName = s.name
+        if (receiptData && typeof receiptData === 'object' && Object.keys(receiptData).length > 0) {
+          settings.value.receiptTemplate = {
+            ...settings.value.receiptTemplate,
+            ...receiptData,
           }
-          if (s.receipt_footer && !settings.value.receiptTemplate?.footer_message) {
-            settings.value.receiptFooterNote = s.receipt_footer
+          if (receiptData.paper_width) {
+            settings.value.paperWidth = receiptData.paper_width
+          }
+          if (receiptData.store_name_kh || receiptData.store_name) {
+            settings.value.receiptStoreName = receiptData.store_name_kh || receiptData.store_name
+          }
+          if (receiptData.footer_message) {
+            settings.value.receiptFooterNote = receiptData.footer_message
           }
         }
 
