@@ -247,7 +247,7 @@
                 <div v-if="codeType === 'BARCODE'" class="kh-sticker__barcode-zone">
                   <div class="kh-sticker__barcode-wrap">
                     <img
-                      :src="getBarcodeImageUrl(item.id)"
+                      :src="generateBarcodeSvgDataUri(item.barcode || item.sku)"
                       :alt="item.barcode || item.sku"
                       class="kh-sticker__barcode-img"
                     >
@@ -260,7 +260,7 @@
                 <!-- Optional 2D QR Mode -->
                 <div v-else class="kh-sticker__qr-zone">
                   <img
-                    :src="getQrImageUrl(item.id)"
+                    :src="generateQrSvgDataUri((item as any).qr_reference || item.barcode || item.sku)"
                     :alt="item.sku"
                     class="kh-sticker__qr-img"
                   >
@@ -315,6 +315,7 @@ import type { ProductVariant } from '~/types/pos'
 import { usePosSettings } from '~/composables/usePosSettings'
 import { printWithKhmerFonts } from '~/composables/useKhmerPrint'
 import { normalizeScannedCode } from '~/utils/scanCode'
+import { generateBarcodeSvgDataUri, generateQrSvgDataUri } from '~/utils/labelSvg'
 
 const props = defineProps<{
   modelValue: boolean
@@ -444,16 +445,13 @@ function changeQty(idx: number, delta: number) {
   }
 }
 
-function getQrImageUrl(variantId: string): string {
-  return `${config.public.apiBase}/api/v1/product-variants/${variantId}/qr?format=svg`
-}
-
-function getBarcodeImageUrl(variantId: string): string {
-  return `${config.public.apiBase}/api/v1/product-variants/${variantId}/barcode?format=svg&write_text=false`
-}
-
 async function printStickersNow() {
-  await printWithKhmerFonts()
+  await printWithKhmerFonts({
+    printContainerId: 'pos-printable-stickers',
+    pageWidthMm: Number(labelWidthMm.value) || 50,
+    pageHeightMm: Number(labelHeightMm.value) || 30,
+    isA4Sheet: stickerPreset.value === 'A4_SHEET',
+  })
 }
 
 async function downloadStickersPdf() {
@@ -474,11 +472,12 @@ async function downloadStickersPdf() {
       store_name_override: storeName.value,
     }
 
-    const response = await fetch(`${config.public.apiBase}/api/cashier/v1/labels/generate`, {
+    const base = String(config.public.apiBase || '/api/proxy').replace(/\/$/, '')
+    const response = await fetch(`${base}/api/cashier/v1/labels/generate`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${authStore.accessToken}`,
+        ...(authStore.accessToken ? { Authorization: `Bearer ${authStore.accessToken}` } : {}),
       },
       body: JSON.stringify(body),
     })

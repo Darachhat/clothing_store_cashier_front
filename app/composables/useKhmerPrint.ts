@@ -133,22 +133,129 @@ export function formatKhmerBranchName(branchName?: string | null): string {
   return clean
 }
 
+export interface StickerPrintOptions {
+  printContainerId?: string
+  pageWidthMm?: number
+  pageHeightMm?: number
+  isA4Sheet?: boolean
+}
+
 /**
  * Wait for Khmer web/local fonts to finish loading before invoking window.print()
  * so Khmer vowels, subscripts, and diacritics never clip or shift during printing.
+ * When StickerPrintOptions are provided, isolates the target sticker container directly
+ * under document.body and injects exact @page dimensions so layout chrome and extra
+ * blank pages never appear.
  */
-export async function printWithKhmerFonts(): Promise<void> {
-  if (typeof window === 'undefined') return
+export async function printWithKhmerFonts(options?: StickerPrintOptions): Promise<void> {
+  if (typeof window === 'undefined' || typeof document === 'undefined') return
+
+  let isolatedRoot: HTMLElement | null = null
+  let styleEl: HTMLStyleElement | null = null
+
+  const cleanup = () => {
+    if (isolatedRoot && isolatedRoot.parentNode) {
+      isolatedRoot.parentNode.removeChild(isolatedRoot)
+    }
+    if (styleEl && styleEl.parentNode) {
+      styleEl.parentNode.removeChild(styleEl)
+    }
+    isolatedRoot = null
+    styleEl = null
+  }
+
   try {
-    if (typeof document !== 'undefined' && 'fonts' in document && document.fonts?.ready) {
+    if (options?.printContainerId) {
+      const sourceEl = document.getElementById(options.printContainerId)
+      if (sourceEl) {
+        document.getElementById('khmer-isolated-print-root')?.remove()
+        document.getElementById('khmer-dynamic-page-print')?.remove()
+
+        isolatedRoot = document.createElement('div')
+        isolatedRoot.id = 'khmer-isolated-print-root'
+        isolatedRoot.className = sourceEl.className
+          .replace(/\bprint-only-stickers\b/g, '')
+          .replace(/\binstant-print-only\b/g, '')
+          .replace(/\bprint-only\b/g, '')
+          .trim()
+        isolatedRoot.style.cssText = sourceEl.style.cssText
+        isolatedRoot.innerHTML = sourceEl.innerHTML
+        document.body.appendChild(isolatedRoot)
+
+        const wMm = Math.max(20, Number(options.pageWidthMm) || 50)
+        const hMm = Math.max(15, Number(options.pageHeightMm) || 30)
+        const pageRule = options.isA4Sheet
+          ? `@page { size: A4 portrait; margin: 5mm; }`
+          : `@page { size: ${wMm}mm ${hMm}mm; margin: 0mm; }`
+
+        styleEl = document.createElement('style')
+        styleEl.id = 'khmer-dynamic-page-print'
+        styleEl.textContent = `
+          @media screen {
+            #khmer-isolated-print-root {
+              display: none !important;
+            }
+          }
+          @media print {
+            ${pageRule}
+            html, body {
+              margin: 0 !important;
+              padding: 0 !important;
+              min-height: 0 !important;
+              height: auto !important;
+              width: auto !important;
+              background: #ffffff !important;
+              overflow: visible !important;
+            }
+            body > *:not(#khmer-isolated-print-root) {
+              display: none !important;
+            }
+            #khmer-isolated-print-root {
+              display: block !important;
+              margin: 0 !important;
+              padding: 0 !important;
+              background: #ffffff !important;
+            }
+            #khmer-isolated-print-root.is-sheet-print,
+            #khmer-isolated-print-root.is-sheet-grid {
+              display: grid !important;
+              grid-template-columns: repeat(var(--sheet-cols, 4), var(--sticker-w, 48mm)) !important;
+              gap: 2mm !important;
+              padding: 4mm !important;
+              justify-content: start !important;
+            }
+            #khmer-isolated-print-root.is-thermal-print .kh-product-sticker,
+            #khmer-isolated-print-root.is-thermal-roll .kh-product-sticker {
+              border: none !important;
+              box-shadow: none !important;
+              margin: 0 !important;
+              page-break-after: always !important;
+              break-after: page !important;
+            }
+            #khmer-isolated-print-root.is-thermal-print .kh-product-sticker:last-child,
+            #khmer-isolated-print-root.is-thermal-roll .kh-product-sticker:last-child {
+              page-break-after: auto !important;
+              break-after: auto !important;
+            }
+          }
+        `
+        document.head.appendChild(styleEl)
+      }
+    }
+
+    if ('fonts' in document && document.fonts?.ready) {
       await Promise.race([
         document.fonts.ready,
-        new Promise((resolve) => setTimeout(resolve, 500)),
+        new Promise((resolve) => setTimeout(resolve, 400)),
       ])
     }
+    await new Promise((resolve) => requestAnimationFrame(() => resolve(undefined)))
   } catch {
     // Ignore font readiness check errors and proceed to print
   }
+
+  window.addEventListener('afterprint', cleanup, { once: true })
   window.print()
+  setTimeout(cleanup, 1000)
 }
 

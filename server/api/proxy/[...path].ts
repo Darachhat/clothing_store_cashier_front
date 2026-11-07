@@ -45,6 +45,9 @@ export default defineEventHandler(async (event) => {
   const userAuth = getHeader(event, 'authorization')
   if (userAuth) forwardHeaders['authorization'] = userAuth
 
+  const cookieHeader = getHeader(event, 'cookie')
+  if (cookieHeader) forwardHeaders['cookie'] = cookieHeader
+
   const contentType = getHeader(event, 'content-type')
   if (contentType) forwardHeaders['content-type'] = contentType
 

@@ -73,10 +73,15 @@ export function useBrand() {
       try {
         data = await settingsApi.getPublicBrandSettings()
       } catch {
-        try {
-          data = await settingsApi.getBrandSettings()
-        } catch {
-          // ignore
+        const hasToken =
+          typeof window !== 'undefined' &&
+          !!(localStorage.getItem('cashier_access_token') || localStorage.getItem('access_token'))
+        if (hasToken) {
+          try {
+            data = await settingsApi.getBrandSettings()
+          } catch {
+            // ignore
+          }
         }
       }
 
