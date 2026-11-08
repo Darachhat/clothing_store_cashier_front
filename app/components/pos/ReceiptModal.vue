@@ -625,7 +625,15 @@ function setPaperWidth(width: '80mm' | '58mm') {
 async function handlePrintTemplate(mode: 'RECEIPT' | 'A4') {
   activeTemplate.value = mode
   await nextTick()
-  await printWithKhmerFonts()
+  const isReceipt = mode === 'RECEIPT'
+  const is58 = activePaperWidth.value === '58mm'
+  await printWithKhmerFonts({
+    printContainerId: isReceipt ? 'pos-thermal-receipt' : 'pos-a4-invoice',
+    isReceipt,
+    isA4Sheet: mode === 'A4',
+    paperWidth: activePaperWidth.value,
+    pageWidthMm: is58 ? 58 : 80,
+  })
 }
 </script>
 

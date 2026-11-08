@@ -133,21 +133,25 @@ export function formatKhmerBranchName(branchName?: string | null): string {
   return clean
 }
 
-export interface StickerPrintOptions {
+export interface KhmerPrintOptions {
   printContainerId?: string
   pageWidthMm?: number
   pageHeightMm?: number
   isA4Sheet?: boolean
+  isReceipt?: boolean
+  paperWidth?: '80mm' | '58mm' | string
 }
+
+export type StickerPrintOptions = KhmerPrintOptions
 
 /**
  * Wait for Khmer web/local fonts to finish loading before invoking window.print()
  * so Khmer vowels, subscripts, and diacritics never clip or shift during printing.
- * When StickerPrintOptions are provided, isolates the target sticker container directly
+ * When KhmerPrintOptions are provided, isolates the target container directly
  * under document.body and injects exact @page dimensions so layout chrome and extra
  * blank pages never appear.
  */
-export async function printWithKhmerFonts(options?: StickerPrintOptions): Promise<void> {
+export async function printWithKhmerFonts(options?: KhmerPrintOptions): Promise<void> {
   if (typeof window === 'undefined' || typeof document === 'undefined') return
 
   let isolatedRoot: HTMLElement | null = null
@@ -176,17 +180,94 @@ export async function printWithKhmerFonts(options?: StickerPrintOptions): Promis
         isolatedRoot.className = sourceEl.className
           .replace(/\bprint-only-stickers\b/g, '')
           .replace(/\binstant-print-only\b/g, '')
+          .replace(/\bprint-only-invoice\b/g, '')
           .replace(/\bprint-only\b/g, '')
+          .replace(/\bshadow-[a-z0-9]+\b/g, '')
+          .replace(/\bw-\[[^\]]+\]/g, '')
           .trim()
         isolatedRoot.style.cssText = sourceEl.style.cssText
         isolatedRoot.innerHTML = sourceEl.innerHTML
         document.body.appendChild(isolatedRoot)
 
-        const wMm = Math.max(20, Number(options.pageWidthMm) || 50)
-        const hMm = Math.max(15, Number(options.pageHeightMm) || 30)
-        const pageRule = options.isA4Sheet
-          ? `@page { size: A4 portrait; margin: 5mm; }`
-          : `@page { size: ${wMm}mm ${hMm}mm; margin: 0mm; }`
+        const isReceipt = Boolean(options.isReceipt || options.paperWidth === '80mm' || options.paperWidth === '58mm')
+        const is58 = options.paperWidth === '58mm' || options.pageWidthMm === 58
+        const receiptWidth = is58 ? 54 : 78
+
+        let pageRule = ''
+        let containerSpecificCss = ''
+
+        if (isReceipt) {
+          pageRule = `@page { margin: 0mm; }`
+          containerSpecificCss = `
+            #khmer-isolated-print-root {
+              display: block !important;
+              width: ${receiptWidth}mm !important;
+              max-width: ${receiptWidth}mm !important;
+              margin: 0 auto !important;
+              padding: ${is58 ? '1.5mm 2mm' : '2mm 3mm'} !important;
+              background: #ffffff !important;
+              color: #111827 !important;
+              box-shadow: none !important;
+              border: none !important;
+              border-radius: 0 !important;
+              box-sizing: border-box !important;
+              font-size: ${is58 ? '10px' : '11px'} !important;
+            }
+            #khmer-isolated-print-root * {
+              box-sizing: border-box !important;
+            }
+          `
+        } else if (options.isA4Sheet) {
+          pageRule = `@page { size: A4 portrait; margin: 5mm; }`
+          containerSpecificCss = `
+            #khmer-isolated-print-root {
+              display: block !important;
+              width: 190mm !important;
+              max-width: 190mm !important;
+              margin: 0 auto !important;
+              padding: 0 !important;
+              background: #ffffff !important;
+              color: #111827 !important;
+              box-shadow: none !important;
+              border: none !important;
+              box-sizing: border-box !important;
+            }
+            #khmer-isolated-print-root.is-sheet-print,
+            #khmer-isolated-print-root.is-sheet-grid {
+              display: grid !important;
+              grid-template-columns: repeat(var(--sheet-cols, 4), var(--sticker-w, 48mm)) !important;
+              gap: 2mm !important;
+              padding: 4mm !important;
+              justify-content: start !important;
+            }
+          `
+        } else {
+          // Individual thermal sticker roll
+          const wMm = Math.max(20, Number(options.pageWidthMm) || 50)
+          const hMm = Math.max(15, Number(options.pageHeightMm) || 30)
+          pageRule = `@page { size: ${wMm}mm ${hMm}mm; margin: 0mm; }`
+          containerSpecificCss = `
+            #khmer-isolated-print-root {
+              display: block !important;
+              margin: 0 !important;
+              padding: 0 !important;
+              background: #ffffff !important;
+            }
+            #khmer-isolated-print-root.is-thermal-print .kh-product-sticker,
+            #khmer-isolated-print-root.is-thermal-roll .kh-product-sticker {
+              border: none !important;
+              box-shadow: none !important;
+              margin: 0 !important;
+              page-break-after: always !important;
+              break-after: page !important;
+            }
+            #khmer-isolated-print-root.is-thermal-print .kh-product-sticker:last-child,
+            #khmer-isolated-print-root.is-thermal-roll .kh-product-sticker:last-child {
+              page-break-after: auto !important;
+              break-after: auto !important;
+            }
+          `
+        }
 
         styleEl = document.createElement('style')
         styleEl.id = 'khmer-dynamic-page-print'
@@ -210,33 +291,7 @@ export async function printWithKhmerFonts(options?: StickerPrintOptions): Promis
             body > *:not(#khmer-isolated-print-root) {
               display: none !important;
             }
-            #khmer-isolated-print-root {
-              display: block !important;
-              margin: 0 !important;
-              padding: 0 !important;
-              background: #ffffff !important;
-            }
-            #khmer-isolated-print-root.is-sheet-print,
-            #khmer-isolated-print-root.is-sheet-grid {
-              display: grid !important;
-              grid-template-columns: repeat(var(--sheet-cols, 4), var(--sticker-w, 48mm)) !important;
-              gap: 2mm !important;
-              padding: 4mm !important;
-              justify-content: start !important;
-            }
-            #khmer-isolated-print-root.is-thermal-print .kh-product-sticker,
-            #khmer-isolated-print-root.is-thermal-roll .kh-product-sticker {
-              border: none !important;
-              box-shadow: none !important;
-              margin: 0 !important;
-              page-break-after: always !important;
-              break-after: page !important;
-            }
-            #khmer-isolated-print-root.is-thermal-print .kh-product-sticker:last-child,
-            #khmer-isolated-print-root.is-thermal-roll .kh-product-sticker:last-child {
-              page-break-after: auto !important;
-              break-after: auto !important;
-            }
+            ${containerSpecificCss}
           }
         `
         document.head.appendChild(styleEl)
