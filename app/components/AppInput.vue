@@ -1,11 +1,17 @@
-<!-- AppInput — flat input field, 8px grid -->
+<!-- AppInput — flat input field, 8px grid, pure Tailwind -->
 <template>
-  <div class="a-input-wrap" :class="[block && 'a-input-wrap--block']">
-    <div class="a-input-inner" :class="[disabled && 'is-disabled', modelValue && 'has-value']">
+  <div :class="[block && 'w-full']">
+    <div
+      class="flex items-center h-9 border rounded-md bg-surface-card overflow-hidden transition-colors focus-within:border-border-default"
+      :class="[
+        error ? 'border-border-default bg-status-red-bg/20' : 'border-border-default hover:border-border-default',
+        disabled && 'bg-surface-bg opacity-50 pointer-events-none'
+      ]"
+    >
       <slot name="prefix" />
       <input
         v-bind="$attrs"
-        class="a-input"
+        class="flex-1 h-full px-2.5 text-xs sm:text-sm text-ink placeholder:text-ink-tertiary bg-transparent border-none outline-none min-w-0"
         :type="type"
         :value="modelValue"
         :placeholder="placeholder"
@@ -21,7 +27,7 @@
       />
       <slot name="suffix" />
     </div>
-    <p v-if="error" class="a-input-error">{{ error }}</p>
+    <p v-if="error" class="text-[11px] text-status-red mt-1 m-0">{{ error }}</p>
   </div>
 </template>
 
@@ -50,49 +56,3 @@ defineEmits<{
   'enter': []
 }>()
 </script>
-
-<style scoped>
-.a-input-wrap--block { width: 100%; }
-
-.a-input-inner {
-  display: flex;
-  align-items: center;
-  height: 36px;
-  border: 1px solid var(--border-default);
-  border-radius: var(--radius-md);
-  background: var(--surface-card);
-  overflow: hidden;
-  transition: border-color 0.1s;
-}
-
-.a-input-inner:focus-within {
-  border-color: var(--border-strong);
-}
-
-.a-input-inner.is-disabled {
-  background: var(--surface-bg);
-  opacity: 0.5;
-}
-
-.a-input {
-  flex: 1;
-  height: 100%;
-  padding: 0 10px;
-  font-family: var(--font-body);
-  font-size: 13px;
-  color: var(--text-primary);
-  background: transparent;
-  border: none;
-  outline: none;
-  min-width: 0;
-}
-
-.a-input::placeholder { color: var(--text-tertiary); }
-
-.a-input-error {
-  font-size: 11px;
-  color: var(--status-red);
-  margin-top: 4px;
-  max-width: none;
-}
-</style>

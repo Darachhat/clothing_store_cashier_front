@@ -210,12 +210,3 @@ function handlePrint() {
 }
 </script>
 
-<style scoped>
-@media print {
-  /* Hide non-printable elements */
-  :deep(.no-print) {
-    display: none !important;
-  }
-}
-</style>
-

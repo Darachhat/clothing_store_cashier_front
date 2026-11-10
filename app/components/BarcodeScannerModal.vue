@@ -1,29 +1,29 @@
 <template>
   <AppModal :model-value="modelValue" @update:model-value="$emit('update:modelValue', $event)">
-    <div class="scanner-modal">
+    <div class="flex flex-col gap-4 w-full max-w-[540px]">
       <!-- Modal Header -->
-      <div class="scanner-modal__header">
-        <div class="scanner-modal__title-group">
-          <div class="scanner-modal__icon">
+      <div class="flex items-center justify-between pb-3 border-b border-border-subtle">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-md bg-surface-active text-text-primary flex items-center justify-center border border-border-subtle">
             <UIcon name="i-heroicons-qr-code" class="w-5 h-5" />
           </div>
           <div>
-            <h3 class="scanner-modal__title">Barcode Scanner</h3>
-            <p class="scanner-modal__subtitle">Cross-device optical &amp; hardware tag scanning for POS</p>
+            <h3 class="text-[15px] font-semibold text-text-primary m-0">Barcode Scanner</h3>
+            <p class="text-xs text-text-tertiary m-0">Cross-device optical &amp; hardware tag scanning for POS</p>
           </div>
         </div>
 
-        <button class="scanner-modal__close-btn" @click="closeModal">
+        <button class="p-1 bg-transparent border-0 text-text-tertiary hover:text-text-primary cursor-pointer transition-colors" @click="closeModal">
           <UIcon name="i-heroicons-x-mark" class="w-4 h-4" />
         </button>
       </div>
 
       <!-- Mode Selector Tabs -->
-      <div class="scanner-tabs">
+      <div class="flex border-b border-border-subtle gap-1">
         <button
           type="button"
-          class="scanner-tab"
-          :class="{ 'is-active': activeTab === 'camera' }"
+          class="flex items-center gap-1.5 px-3.5 py-2 bg-transparent border-0 border-b-2 font-medium text-[13px] cursor-pointer -mb-px transition-colors"
+          :class="activeTab === 'camera' ? 'text-text-primary border-b-text-primary' : 'text-text-secondary border-b-transparent hover:text-text-primary'"
           @click="activeTab = 'camera'"
         >
           <UIcon name="i-heroicons-camera" class="w-4 h-4" />
@@ -32,8 +32,8 @@
 
         <button
           type="button"
-          class="scanner-tab"
-          :class="{ 'is-active': activeTab === 'image' }"
+          class="flex items-center gap-1.5 px-3.5 py-2 bg-transparent border-0 border-b-2 font-medium text-[13px] cursor-pointer -mb-px transition-colors"
+          :class="activeTab === 'image' ? 'text-text-primary border-b-text-primary' : 'text-text-secondary border-b-transparent hover:text-text-primary'"
           @click="activeTab = 'image'"
         >
           <UIcon name="i-heroicons-photo" class="w-4 h-4" />
@@ -42,26 +42,26 @@
       </div>
 
       <!-- Tab 1: Live Camera Scanner -->
-      <div v-if="activeTab === 'camera'" class="scanner-body">
-        <div v-if="cameraError" class="scanner-notice scanner-notice--error">
+      <div v-if="activeTab === 'camera'" class="flex flex-col gap-3.5">
+        <div v-if="cameraError" class="flex items-start gap-2.5 p-2.5 rounded-md text-xs leading-snug bg-amber-500/10 border border-border-subtle text-text-primary">
           <UIcon name="i-heroicons-exclamation-triangle" class="w-5 h-5 flex-shrink-0 text-amber-500" />
           <div>
             <strong>Camera Unavailable:</strong> {{ cameraError }}
-            <p class="mt-1 text-xs text-slate-400">
+            <p class="mt-1 text-xs text-text-tertiary">
               Check browser permissions, or switch to "Image File" above.
             </p>
           </div>
         </div>
 
         <!-- Camera Device Selector (if multiple cameras available) -->
-        <div v-if="availableCameras.length > 1" class="scanner-camera-controls">
-          <label class="camera-select-label">
-            <UIcon name="i-heroicons-video-camera" class="w-3.5 h-3.5 text-slate-400" />
+        <div v-if="availableCameras.length > 1" class="flex items-center gap-2 text-xs">
+          <label class="flex items-center gap-1 text-text-secondary">
+            <UIcon name="i-heroicons-video-camera" class="w-3.5 h-3.5 text-text-tertiary" />
             <span>Select Camera:</span>
           </label>
           <select
             v-model="selectedCameraId"
-            class="camera-select-input"
+            class="flex-1 bg-surface-card border border-border-subtle rounded px-2 py-1 text-xs text-text-primary focus:outline-none focus:ring-1 focus:ring-border-default"
             @change="restartCameraScanner"
           >
             <option
@@ -75,24 +75,24 @@
         </div>
 
         <!-- Viewport Box -->
-        <div class="scanner-camera-viewport-wrap">
-          <div id="pos-barcode-camera-reader" class="scanner-camera-reader" />
-          <div v-if="isCameraStarting" class="scanner-camera-loader">
+        <div class="relative w-full min-h-[240px] bg-[#090d16] border border-border-subtle rounded-lg overflow-hidden flex items-center justify-center">
+          <div id="pos-barcode-camera-reader" class="w-full !border-0" />
+          <div v-if="isCameraStarting" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-900/85 z-10">
             <UIcon name="i-heroicons-arrow-path" class="w-8 h-8 animate-spin text-slate-300" />
             <span class="mt-2 text-xs text-slate-300">Initializing camera lens...</span>
           </div>
         </div>
 
-        <p class="text-xs text-center text-slate-400">
+        <p class="text-xs text-center text-text-tertiary">
           Point your webcam or camera at standard retail barcodes (EAN-13, Code 128, UPC, QR).
         </p>
       </div>
 
       <!-- Tab 2: Local Image File Barcode Decoder -->
-      <div v-if="activeTab === 'image'" class="scanner-body">
+      <div v-if="activeTab === 'image'" class="flex flex-col gap-3.5">
         <div
-          class="scanner-dropzone"
-          :class="{ 'is-dragging': isDragging }"
+          class="flex flex-col items-center justify-center text-center p-8 bg-surface-card border-2 border-dashed border-border-subtle rounded-lg cursor-pointer transition-colors"
+          :class="isDragging ? 'bg-surface-active' : 'hover:bg-surface-hover'"
           @dragover.prevent="isDragging = true"
           @dragleave.prevent="isDragging = false"
           @drop.prevent="handleFileDrop"
@@ -105,19 +105,19 @@
             class="hidden"
             @change="handleFileSelect"
           />
-          <UIcon name="i-heroicons-arrow-up-tray" class="w-8 h-8 text-slate-400 mb-2" />
-          <strong class="text-sm text-slate-200">Click or drag a barcode image here</strong>
-          <p class="text-xs text-slate-400 mt-1">
+          <UIcon name="i-heroicons-arrow-up-tray" class="w-8 h-8 text-text-tertiary mb-2" />
+          <strong class="text-sm text-text-primary">Click or drag a barcode image here</strong>
+          <p class="text-xs text-text-tertiary mt-1">
             PNG, JPEG, WEBP photos of tags or product receipts. Decoded entirely inside your browser.
           </p>
-          <div v-if="isDecodingImage" class="mt-3 flex items-center gap-2 text-xs text-slate-300">
+          <div v-if="isDecodingImage" class="mt-3 flex items-center gap-2 text-xs text-text-secondary">
             <UIcon name="i-heroicons-arrow-path" class="w-4 h-4 animate-spin" />
             Decoding image...
           </div>
         </div>
 
-        <div v-if="imageDecodeMessage" class="scanner-notice scanner-notice--info">
-          <UIcon name="i-heroicons-information-circle" class="w-4 h-4 flex-shrink-0" />
+        <div v-if="imageDecodeMessage" class="flex items-start gap-2.5 p-2.5 rounded-md text-xs leading-snug bg-surface-hover border border-border-subtle text-text-primary">
+          <UIcon name="i-heroicons-information-circle" class="w-4 h-4 flex-shrink-0 text-text-secondary" />
           <span>{{ imageDecodeMessage }}</span>
         </div>
       </div>
@@ -126,38 +126,38 @@
       <div id="pos-barcode-hidden-file-decoder" class="hidden" />
 
       <!-- Recent Scans / Live Log -->
-      <div class="scanner-scans-panel">
-        <div class="scans-header">
-          <span class="scans-title">Live Scanned Items ({{ recentScans.length }})</span>
-          <button v-if="recentScans.length" type="button" class="clear-scans-btn" @click="recentScans = []">
+      <div class="bg-surface-card border border-border-subtle rounded-md p-2.5 flex flex-col gap-1.5 max-h-[140px] overflow-y-auto pos-scroll">
+        <div class="flex items-center justify-between">
+          <span class="text-[11px] font-semibold text-text-secondary uppercase tracking-wider">Live Scanned Items ({{ recentScans.length }})</span>
+          <button v-if="recentScans.length" type="button" class="text-[11px] text-text-tertiary bg-transparent border-0 cursor-pointer hover:text-text-primary transition-colors" @click="recentScans = []">
             Clear
           </button>
         </div>
 
-        <div v-if="recentScans.length === 0" class="scans-empty">
+        <div v-if="recentScans.length === 0" class="text-xs text-text-tertiary italic py-1.5">
           No items scanned yet in this session.
         </div>
 
-        <div v-else class="scans-list">
+        <div v-else class="flex flex-col gap-1">
           <div
             v-for="(scan, idx) in recentScans"
             :key="idx"
-            class="scan-item"
+            class="flex items-center justify-between px-2 py-1.5 bg-surface-hover rounded border border-border-subtle"
           >
-            <div class="scan-item__code font-mono">{{ scan.barcode }}</div>
-            <div class="scan-item__meta">
-              <span class="scan-item__source">{{ scan.source || 'Camera' }}</span>
-              <span class="scan-item__time">{{ formatTime(scan.timestamp) }}</span>
+            <div class="text-[13px] font-semibold text-text-primary font-mono">{{ scan.barcode }}</div>
+            <div class="flex items-center gap-2 text-[11px] text-text-tertiary">
+              <span class="bg-surface-active px-1.5 py-0.5 rounded border border-border-subtle">{{ scan.source || 'Camera' }}</span>
+              <span>{{ formatTime(scan.timestamp) }}</span>
             </div>
           </div>
         </div>
       </div>
 
       <!-- Footer -->
-      <div class="scanner-modal__footer">
-        <button type="button" class="btn btn--secondary" @click="closeModal">
+      <div class="flex justify-end pt-3 border-t border-border-subtle">
+        <AppButton variant="default" @click="closeModal">
           Done
-        </button>
+        </AppButton>
       </div>
     </div>
   </AppModal>
@@ -420,280 +420,3 @@ onUnmounted(() => {
 })
 </script>
 
-<style scoped>
-.scanner-modal {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  width: 100%;
-  max-width: 540px;
-}
-
-.scanner-modal__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  border-bottom: 1px solid var(--border-subtle, #e5e7eb);
-  padding-bottom: 12px;
-}
-
-.scanner-modal__title-group {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.scanner-modal__icon {
-  width: 38px;
-  height: 38px;
-  border-radius: 6px;
-  background: var(--surface-active, #f1f5f9);
-  color: var(--text-primary, #0f172a);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid var(--border-subtle, #e5e7eb);
-}
-
-.scanner-modal__title {
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--text-primary, #0f172a);
-  margin: 0;
-}
-
-.scanner-modal__subtitle {
-  font-size: 12px;
-  color: var(--text-tertiary, #64748b);
-  margin: 0;
-}
-
-.scanner-modal__close-btn {
-  background: transparent;
-  border: none;
-  color: var(--text-tertiary, #64748b);
-  cursor: pointer;
-  padding: 4px;
-}
-
-.scanner-modal__close-btn:hover {
-  color: var(--text-primary, #0f172a);
-}
-
-/* Tabs */
-.scanner-tabs {
-  display: flex;
-  border-bottom: 1px solid var(--border-subtle, #e5e7eb);
-  gap: 4px;
-}
-
-.scanner-tab {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 14px;
-  background: transparent;
-  border: none;
-  border-bottom: 2px solid transparent;
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text-secondary, #475569);
-  cursor: pointer;
-  margin-bottom: -1px;
-}
-
-.scanner-tab.is-active {
-  color: var(--text-primary, #0f172a);
-  border-bottom-color: var(--text-primary, #0f172a);
-}
-
-/* Body */
-.scanner-body {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
-.scanner-notice {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  padding: 10px 12px;
-  border-radius: 6px;
-  font-size: 12px;
-  line-height: 1.4;
-}
-
-.scanner-notice--info {
-  background: var(--surface-hover, #f8fafc);
-  border: 1px solid var(--border-subtle, #e5e7eb);
-  color: var(--text-primary, #0f172a);
-}
-
-.scanner-notice--error {
-  background: rgba(245, 158, 11, 0.08);
-  border: 1px solid var(--border-subtle, #e5e7eb);
-  color: var(--text-primary, #0f172a);
-}
-
-/* Camera controls & viewport */
-.scanner-camera-controls {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 12px;
-}
-
-.camera-select-label {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  color: var(--text-secondary, #475569);
-}
-
-.camera-select-input {
-  flex: 1;
-  background: var(--surface, #ffffff);
-  border: 1px solid var(--border-subtle, #e5e7eb);
-  border-radius: 4px;
-  padding: 4px 8px;
-  font-size: 12px;
-  color: var(--text-primary, #0f172a);
-}
-
-.scanner-camera-viewport-wrap {
-  position: relative;
-  width: 100%;
-  min-height: 240px;
-  background: #090d16;
-  border: 1px solid var(--border-subtle, #e5e7eb);
-  border-radius: 8px;
-  overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.scanner-camera-reader {
-  width: 100% !important;
-  border: none !important;
-}
-
-.scanner-camera-loader {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  background: rgba(15, 23, 42, 0.85);
-  z-index: 10;
-}
-
-/* Image Dropzone */
-.scanner-dropzone {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  padding: 32px 16px;
-  background: var(--surface, #ffffff);
-  border: 1.5px dashed var(--border-subtle, #cbd5e1);
-  border-radius: 8px;
-  cursor: pointer;
-  transition: background-color 0.15s ease;
-}
-
-.scanner-dropzone:hover,
-.scanner-dropzone.is-dragging {
-  background: var(--surface-hover, #f8fafc);
-}
-
-/* Recent Scans Live List */
-.scanner-scans-panel {
-  background: var(--surface, #ffffff);
-  border: 1px solid var(--border-subtle, #e5e7eb);
-  border-radius: 6px;
-  padding: 10px 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  max-height: 140px;
-  overflow-y: auto;
-}
-
-.scans-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.scans-title {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--text-secondary, #475569);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-.clear-scans-btn {
-  font-size: 11px;
-  color: var(--text-tertiary, #64748b);
-  background: transparent;
-  border: none;
-  cursor: pointer;
-}
-
-.scans-empty {
-  font-size: 12px;
-  color: var(--text-tertiary, #64748b);
-  font-style: italic;
-  padding: 6px 0;
-}
-
-.scans-list {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.scan-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 6px 8px;
-  background: var(--surface-hover, #f8fafc);
-  border-radius: 4px;
-  border: 1px solid var(--border-subtle, #e5e7eb);
-}
-
-.scan-item__code {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-primary, #0f172a);
-}
-
-.scan-item__meta {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 11px;
-  color: var(--text-tertiary, #64748b);
-}
-
-.scan-item__source {
-  background: var(--surface-active, #f1f5f9);
-  padding: 1px 5px;
-  border-radius: 3px;
-  border: 1px solid var(--border-subtle, #e5e7eb);
-}
-
-/* Footer */
-.scanner-modal__footer {
-  display: flex;
-  justify-content: flex-end;
-  border-top: 1px solid var(--border-subtle, #e5e7eb);
-  padding-top: 12px;
-}
-</style>

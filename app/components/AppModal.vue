@@ -1,26 +1,38 @@
-<!-- AppModal — flat modal overlay, no shadows, structured borders -->
+<!-- AppModal — flat modal overlay, pure Tailwind -->
 <template>
   <Teleport to="body">
-    <Transition name="a-modal">
+    <Transition
+      enter-active-class="transition-all duration-150 ease-out"
+      enter-from-class="opacity-0 scale-95"
+      enter-to-class="opacity-100 scale-100"
+      leave-active-class="transition-all duration-100 ease-in"
+      leave-from-class="opacity-100 scale-100"
+      leave-to-class="opacity-0 scale-95"
+    >
       <div
         v-if="modelValue"
-        class="a-modal-overlay"
+        class="fixed inset-0 bg-ink/40 z-[200] flex items-center justify-center p-3 sm:p-6 backdrop-blur-[1px]"
         @click.self="$emit('update:modelValue', false)"
       >
         <div
-          class="a-modal"
-          :class="`a-modal--${size}`"
+          class="bg-surface-card border border-border-subtle rounded-xl flex flex-col overflow-hidden max-h-[calc(100dvh-48px)] shadow-xl w-full"
+          :class="[
+            size === 'sm' ? 'max-w-[360px]' :
+            size === 'lg' ? 'max-w-[640px]' :
+            'max-w-[480px]'
+          ]"
           role="dialog"
           :aria-modal="true"
           :aria-label="title"
         >
           <!-- Header -->
-          <div v-if="title || $slots.header" class="a-modal__header">
+          <div v-if="title || $slots.header" class="flex items-center justify-between px-4 sm:px-5 py-3.5 border-b border-border-subtle shrink-0">
             <slot name="header">
-              <span class="a-modal__title">{{ title }}</span>
+              <span class="text-sm font-semibold text-ink tracking-tight">{{ title }}</span>
             </slot>
             <button
-              class="a-modal__close"
+              type="button"
+              class="w-7 h-7 rounded flex items-center justify-center text-ink-tertiary hover:bg-surface-hover hover:text-ink cursor-pointer transition-colors"
               aria-label="Close"
               @click="$emit('update:modelValue', false)"
             >
@@ -29,12 +41,12 @@
           </div>
 
           <!-- Body -->
-          <div class="a-modal__body">
+          <div class="p-4 sm:p-5 overflow-y-auto flex-1">
             <slot />
           </div>
 
           <!-- Footer -->
-          <div v-if="$slots.footer" class="a-modal__footer">
+          <div v-if="$slots.footer" class="px-4 sm:px-5 py-3 border-t border-border-subtle flex items-center justify-end gap-2 shrink-0 bg-surface-bg">
             <slot name="footer" />
           </div>
         </div>
@@ -57,91 +69,3 @@ defineEmits<{
   'update:modelValue': [value: boolean]
 }>()
 </script>
-
-<style scoped>
-.a-modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.38);
-  z-index: 200;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
-}
-
-.a-modal {
-  background: var(--surface-card);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-lg);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  max-height: calc(100dvh - 48px);
-}
-
-.a-modal--sm { width: 100%; max-width: 360px; }
-.a-modal--md { width: 100%; max-width: 480px; }
-.a-modal--lg { width: 100%; max-width: 640px; }
-
-.a-modal__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px 20px;
-  border-bottom: 1px solid var(--border-subtle);
-  flex-shrink: 0;
-}
-
-.a-modal__title {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--text-primary);
-  letter-spacing: -0.01em;
-}
-
-.a-modal__close {
-  width: 28px;
-  height: 28px;
-  border-radius: var(--radius-sm);
-  border: none;
-  background: transparent;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--text-tertiary);
-  cursor: pointer;
-}
-
-.a-modal__close:hover {
-  background: var(--surface-hover);
-  color: var(--text-primary);
-}
-
-.a-modal__body {
-  padding: 20px;
-  overflow-y: auto;
-  flex: 1;
-}
-
-.a-modal__footer {
-  padding: 12px 20px;
-  border-top: 1px solid var(--border-subtle);
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 8px;
-  flex-shrink: 0;
-  background: var(--surface-bg);
-}
-
-/* Transition */
-.a-modal-enter-active,
-.a-modal-leave-active { transition: opacity 0.12s; }
-.a-modal-enter-from,
-.a-modal-leave-to { opacity: 0; }
-.a-modal-enter-active .a-modal,
-.a-modal-leave-active .a-modal { transition: transform 0.12s; }
-.a-modal-enter-from .a-modal { transform: scale(0.97); }
-.a-modal-leave-to .a-modal { transform: scale(0.97); }
-</style>

@@ -1,25 +1,41 @@
-<!-- AppToast — flat toast notification stack, no Nuxt UI -->
+<!-- AppToast — flat toast notification stack, pure Tailwind -->
 <template>
   <Teleport to="body">
-    <div class="a-toast-stack" aria-live="polite">
+    <div
+      class="fixed top-3 right-3 left-3 sm:left-auto sm:top-5 sm:right-5 z-[99999] flex flex-col gap-2.5 pointer-events-none"
+      aria-live="polite"
+    >
       <TransitionGroup name="a-toast">
         <div
           v-for="toast in toasts"
           :key="toast.id"
-          class="a-toast"
-          :class="`a-toast--${toast.color || 'default'}`"
+          class="flex items-start gap-2.5 w-full sm:w-auto sm:min-w-[290px] sm:max-w-[380px] p-3 sm:px-3.5 bg-surface-card border border-border-subtle rounded-md shadow-lg pointer-events-auto backdrop-blur-sm"
         >
-          <div class="a-toast__icon">
+          <div
+            class="shrink-0 mt-0.5"
+            :class="[
+              toast.color === 'green' ? 'text-status-green' :
+              toast.color === 'red' ? 'text-status-red' :
+              toast.color === 'amber' ? 'text-status-amber' :
+              'text-ink-secondary'
+            ]"
+          >
             <UIcon v-if="toast.color === 'green'" name="i-heroicons-check-circle" class="w-4 h-4" />
             <UIcon v-else-if="toast.color === 'red'" name="i-heroicons-x-circle" class="w-4 h-4" />
             <UIcon v-else-if="toast.color === 'amber'" name="i-heroicons-exclamation-triangle" class="w-4 h-4" />
             <UIcon v-else name="i-heroicons-information-circle" class="w-4 h-4" />
           </div>
-          <div class="a-toast__content">
-            <span class="a-toast__title">{{ toast.title }}</span>
-            <span v-if="toast.description" class="a-toast__desc">{{ toast.description }}</span>
+
+          <div class="flex-1 min-w-0 flex flex-col gap-0.5">
+            <span class="text-xs sm:text-sm font-semibold text-ink leading-tight">{{ toast.title }}</span>
+            <span v-if="toast.description" class="text-xs text-ink-secondary leading-snug">{{ toast.description }}</span>
           </div>
-          <button class="a-toast__dismiss" @click="dismiss(toast.id)">
+
+          <button
+            class="shrink-0 text-ink-tertiary hover:text-ink hover:bg-surface-hover p-1 rounded transition-colors cursor-pointer"
+            aria-label="Dismiss toast"
+            @click="dismiss(toast.id)"
+          >
             <UIcon name="i-heroicons-x-mark" class="w-3.5 h-3.5" />
           </button>
         </div>
@@ -35,82 +51,6 @@ const { toasts, dismiss } = useAppToast()
 </script>
 
 <style scoped>
-.a-toast-stack {
-  position: fixed;
-  top: 20px;
-  right: 20px;
-  z-index: 99999;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  pointer-events: none;
-}
-
-.a-toast {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  min-width: 290px;
-  max-width: 380px;
-  padding: 12px 14px;
-  background: var(--surface-card, #ffffff);
-  border: 1px solid var(--border-subtle, #e5e7eb);
-  border-radius: var(--radius-md, 8px);
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.08);
-  pointer-events: all;
-  backdrop-filter: blur(8px);
-}
-
-.a-toast--green   .a-toast__icon { color: var(--status-green, #10b981); }
-.a-toast--red     .a-toast__icon { color: var(--status-red, #ef4444); }
-.a-toast--amber   .a-toast__icon { color: var(--status-amber, #f59e0b); }
-.a-toast--default .a-toast__icon { color: var(--text-secondary, #6b7280); }
-
-.a-toast__icon {
-  flex-shrink: 0;
-  margin-top: 1px;
-}
-
-.a-toast__content {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.a-toast__title {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-primary, #111827);
-}
-
-.a-toast__desc {
-  font-size: 12px;
-  color: var(--text-secondary, #4b5563);
-  line-height: 1.4;
-}
-
-.a-toast__dismiss {
-  flex-shrink: 0;
-  color: var(--text-tertiary, #9ca3af);
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 2px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: var(--radius-sm, 4px);
-  transition: all 0.15s;
-}
-
-.a-toast__dismiss:hover {
-  color: var(--text-primary, #111827);
-  background: var(--surface-hover, #f3f4f6);
-}
-
-/* Transitions */
 .a-toast-enter-active,
 .a-toast-leave-active {
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);

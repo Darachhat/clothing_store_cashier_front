@@ -1,9 +1,9 @@
-<!-- AppSelect — flat native select, custom chevron -->
+<!-- AppSelect — flat native select with UIcon, pure Tailwind -->
 <template>
-  <div class="a-select-wrap" :class="[block && 'a-select-wrap--block']">
+  <div class="relative" :class="[block && 'w-full']">
     <select
       v-bind="$attrs"
-      class="a-select"
+      class="w-full h-9 pl-2.5 pr-8 text-xs sm:text-sm font-medium text-ink bg-surface-card border border-border-default rounded-md appearance-none outline-none cursor-pointer hover:border-border-default focus:border-border-default transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       :value="modelValue"
       :disabled="disabled"
       @change="$emit('update:modelValue', ($event.target as HTMLSelectElement).value)"
@@ -17,6 +17,10 @@
         {{ typeof opt === 'object' ? opt.label : opt }}
       </option>
     </select>
+    <UIcon
+      name="i-heroicons-chevron-down"
+      class="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-tertiary pointer-events-none"
+    />
   </div>
 </template>
 
@@ -37,32 +41,3 @@ defineEmits<{
   'update:modelValue': [value: any]
 }>()
 </script>
-
-<style scoped>
-.a-select-wrap--block { width: 100%; }
-
-.a-select {
-  display: block;
-  height: 36px;
-  width: 100%;
-  border: 1px solid var(--border-default);
-  border-radius: var(--radius-md);
-  padding: 0 32px 0 10px;
-  font-family: var(--font-body);
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text-primary);
-  background: var(--surface-card);
-  cursor: pointer;
-  outline: none;
-  appearance: none;
-  -webkit-appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' fill='none' viewBox='0 0 24 24'%3E%3Cpath stroke='%239E9E9E' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 10px center;
-  transition: border-color 0.1s;
-}
-
-.a-select:focus { border-color: var(--border-strong); }
-.a-select:disabled { opacity: 0.5; cursor: not-allowed; }
-</style>

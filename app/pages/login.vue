@@ -1,8 +1,8 @@
 <template>
-  <div class="login-root">
-    <div class="login-brand">
-      <div class="login-brand__inner">
-        <div class="login-brand__logo">
+  <div class="flex min-h-dvh bg-brand-900">
+    <div class="hidden md:flex flex-col justify-center w-[380px] min-w-[380px] bg-white/[0.05] border-r border-white/[0.08] p-8 lg:p-12">
+      <div class="flex flex-col gap-6">
+        <div class="w-12 h-12 bg-white/10 rounded-lg flex items-center justify-center overflow-hidden">
           <img
             v-if="brand.logo_dark_url || brand.logo_url"
             :src="brand.logo_dark_url || brand.logo_url"
@@ -12,16 +12,16 @@
           <UIcon v-else name="i-heroicons-computer-desktop" class="w-6 h-6 text-white" />
         </div>
         <div>
-          <div class="login-brand__name font-khmer">{{ displayNameKh || displayName }}</div>
-          <div v-if="displayNameKh && displayName !== displayNameKh" class="login-brand__subname">
+          <div class="text-xl lg:text-2xl font-bold text-white tracking-tight mt-1 font-khmer">{{ displayNameKh || displayName }}</div>
+          <div v-if="displayNameKh && displayName !== displayNameKh" class="text-xs font-semibold text-white/65 mt-0.5">
             {{ displayName }}
           </div>
         </div>
-        <p class="login-brand__tagline">
+        <p class="text-sm text-white/50 leading-relaxed max-w-[52ch]">
           {{ brand.tagline || 'Point of Sale system for cashiers. Fast, reliable checkout with barcode & QR scanning.' }}
         </p>
-        <div class="login-brand__features">
-          <div v-for="feat in features" :key="feat" class="login-brand__feature">
+        <div class="flex flex-col gap-2.5 mt-2">
+          <div v-for="feat in features" :key="feat" class="flex items-center gap-2.5 text-xs lg:text-sm text-white/70">
             <UIcon name="i-heroicons-check" class="w-3.5 h-3.5 text-white" />
             {{ feat }}
           </div>
@@ -29,11 +29,11 @@
       </div>
     </div>
 
-    <div class="login-form-panel">
-      <div class="login-form-wrap">
+    <div class="flex-1 flex items-center justify-center p-4 sm:p-8">
+      <div class="w-full max-w-[360px] flex flex-col gap-6">
         <!-- Mobile Brand Header (visible below 768px) -->
-        <div class="login-mobile-brand">
-          <div class="login-mobile-brand__logo">
+        <div class="flex md:hidden items-center gap-3 pb-3 border-b border-white/10">
+          <div class="w-10 h-10 rounded-md bg-white/10 flex items-center justify-center shrink-0 overflow-hidden">
             <img
               v-if="brand.logo_dark_url || brand.logo_url"
               :src="brand.logo_dark_url || brand.logo_url"
@@ -43,24 +43,24 @@
             <UIcon v-else name="i-heroicons-computer-desktop" class="w-5 h-5 text-white" />
           </div>
           <div class="min-w-0">
-            <div class="login-mobile-brand__name font-khmer truncate">{{ displayNameKh || displayName }}</div>
-            <div class="login-mobile-brand__sub truncate">{{ displayName }} • POS Terminal</div>
+            <div class="text-sm font-bold text-white font-khmer truncate">{{ displayNameKh || displayName }}</div>
+            <div class="text-[11px] text-white/55 truncate">{{ displayName }} • POS Terminal</div>
           </div>
         </div>
 
-        <div class="login-form-header">
-          <h1 class="login-form-title">Cashier Sign In</h1>
-          <p class="login-form-subtitle">Enter your cashier username, verified phone, or Telegram account.</p>
+        <div class="flex flex-col gap-1">
+          <h1 class="text-xl sm:text-2xl font-bold text-white tracking-tight">Cashier Sign In</h1>
+          <p class="text-xs sm:text-sm text-white/55">Enter your cashier username, verified phone, or Telegram account.</p>
         </div>
 
-        <form class="login-form" @submit.prevent="handleLogin">
-          <div class="login-field">
-            <label class="login-label" for="username">Username or Verified Phone</label>
+        <form class="flex flex-col gap-4" @submit.prevent="handleLogin">
+          <div class="flex flex-col gap-1.5 relative">
+            <label class="text-xs font-semibold text-white/70 tracking-wide" for="username">Username or Verified Phone</label>
             <input
               id="username"
               v-model="form.username"
               type="text"
-              class="login-input"
+              class="h-11 w-full border border-white/15 rounded-md px-3 text-sm text-white bg-white/[0.08] outline-none placeholder:text-white/30 focus:border-white/40 focus:bg-white/[0.12] transition-colors"
               placeholder="cashier or +85569382165"
               autocomplete="username"
               autofocus
@@ -68,20 +68,20 @@
             />
           </div>
 
-          <div class="login-field">
-            <label class="login-label" for="password">Password</label>
+          <div class="flex flex-col gap-1.5 relative">
+            <label class="text-xs font-semibold text-white/70 tracking-wide" for="password">Password</label>
             <input
               id="password"
               v-model="form.password"
               :type="showPassword ? 'text' : 'password'"
-              class="login-input"
+              class="h-11 w-full border border-white/15 rounded-md px-3 text-sm text-white bg-white/[0.08] outline-none placeholder:text-white/30 focus:border-white/40 focus:bg-white/[0.12] transition-colors"
               placeholder="Enter your password"
               autocomplete="current-password"
               required
             />
             <button
               type="button"
-              class="login-pw-toggle"
+              class="absolute right-2.5 bottom-2.5 text-white/40 hover:text-white/80 transition-colors p-1 flex items-center justify-center cursor-pointer"
               :aria-label="showPassword ? 'Hide password' : 'Show password'"
               @click="showPassword = !showPassword"
             >
@@ -90,25 +90,29 @@
             </button>
           </div>
 
-          <div v-if="errorMsg" class="login-error">
-            <UIcon name="i-heroicons-exclamation-circle" class="w-4 h-4 flex-shrink-0" />
+          <div v-if="errorMsg" class="flex items-center gap-2 p-2.5 sm:px-3 bg-red-500/20 border border-white/15 rounded-md text-xs sm:text-sm text-red-200">
+            <UIcon name="i-heroicons-exclamation-circle" class="w-4 h-4 shrink-0" />
             <span>{{ errorMsg }}</span>
           </div>
 
-          <button type="submit" class="login-btn" :disabled="loading">
-            <UIcon v-if="loading" name="i-heroicons-arrow-path" class="login-btn__spinner w-4 h-4" />
+          <button
+            type="submit"
+            class="h-11 w-full bg-white text-brand-900 font-bold text-sm sm:text-base rounded-md flex items-center justify-center gap-2 mt-1 hover:bg-neutral-100 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            :disabled="loading"
+          >
+            <UIcon v-if="loading" name="i-heroicons-arrow-path" class="w-4 h-4 animate-spin" />
             {{ loading ? 'Opening POS...' : 'Open POS' }}
           </button>
         </form>
 
-        <div class="login-divider">
+        <div class="flex items-center gap-2.5 text-[11px] text-white/40 uppercase tracking-wider before:flex-1 before:h-px before:bg-white/15 after:flex-1 after:h-px after:bg-white/15">
           <span>or</span>
         </div>
 
-        <div class="telegram-login-section">
+        <div class="flex flex-col gap-2">
           <button
             type="button"
-            class="login-tg-btn"
+            class="h-10 w-full bg-white/[0.08] text-white border border-white/20 rounded-md text-xs sm:text-sm font-semibold flex items-center justify-center gap-2 hover:bg-white/[0.14] transition-colors cursor-pointer disabled:opacity-50"
             :disabled="loading || appChallengeActive"
             @click="startTelegramAppLogin"
           >
@@ -116,9 +120,9 @@
             <span>{{ appChallengeActive ? 'Waiting for Telegram App...' : 'Open in Telegram App' }}</span>
           </button>
 
-          <div v-if="appChallengeActive" class="telegram-payload-card">
+          <div v-if="appChallengeActive" class="p-2.5 border border-white/20 rounded-md bg-white/[0.06] flex flex-col gap-2">
             <div class="flex items-center gap-2 text-xs text-white/90">
-              <UIcon name="i-heroicons-arrow-path" class="w-4 h-4 login-btn__spinner" />
+              <UIcon name="i-heroicons-arrow-path" class="w-4 h-4 animate-spin" />
               <span>{{ appChallengeMessage || 'Confirm login in your Telegram App (@clothing_store_kvm_bot)...' }}</span>
             </div>
             <div class="flex items-center gap-2 pt-1">
@@ -127,16 +131,14 @@
                 :href="appChallengeWebUrl"
                 target="_blank"
                 rel="noopener noreferrer"
-                class="login-tg-btn"
-                style="text-decoration: none; height: 34px; font-size: 12px;"
+                class="flex-1 h-8.5 px-3 bg-white/[0.08] text-white border border-white/20 rounded-md text-xs font-semibold inline-flex items-center justify-center gap-1.5 hover:bg-white/[0.14] transition-colors no-underline"
               >
                 <UIcon name="i-heroicons-arrow-top-right-on-square" class="w-3.5 h-3.5" />
                 <span>Open in Telegram</span>
               </a>
               <button
                 type="button"
-                class="login-tg-btn"
-                style="height: 34px; font-size: 12px;"
+                class="h-8.5 px-3 bg-white/[0.08] text-white border border-white/20 rounded-md text-xs font-semibold inline-flex items-center justify-center gap-1.5 hover:bg-white/[0.14] transition-colors cursor-pointer"
                 @click="cancelTelegramAppLogin"
               >
                 <span>Cancel</span>
@@ -145,7 +147,7 @@
           </div>
         </div>
 
-        <p class="login-footer-note">
+        <p class="text-xs text-white/35 text-center mt-2 m-0">
           For cashier accounts only. Contact your manager if you need access.
         </p>
       </div>
@@ -314,125 +316,3 @@ onMounted(async () => {
   }
 })
 </script>
-
-<style scoped>
-.login-root { display: flex; min-height: 100dvh; background: var(--brand-900); }
-
-.login-brand {
-  display: none;
-  width: 380px;
-  min-width: 380px;
-  background: rgba(255,255,255,0.05);
-  border-right: 1px solid rgba(255,255,255,0.08);
-  padding: var(--space-6) var(--space-4);
-  flex-direction: column;
-  justify-content: center;
-}
-@media (min-width: 768px) { .login-brand { display: flex; } }
-
-.login-brand__inner { display: flex; flex-direction: column; gap: var(--space-3); }
-.login-brand__logo { width: 48px; height: 48px; background: rgba(255,255,255,0.1); border-radius: var(--radius-lg); display: flex; align-items: center; justify-content: center; }
-.login-brand__name { font-size: 22px; font-weight: 700; color: white; letter-spacing: -0.02em; margin-top: 4px; }
-.login-brand__subname { font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.65); margin-top: 2px; }
-.login-brand__tagline { font-size: 14px; color: rgba(255,255,255,0.5); line-height: 1.6; max-width: 52ch; }
-.login-brand__features { display: flex; flex-direction: column; gap: 10px; margin-top: var(--space-1); }
-.login-brand__feature { display: flex; align-items: center; gap: 10px; font-size: 13px; color: rgba(255,255,255,0.7); }
-
-.login-mobile-brand {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid rgba(255,255,255,0.1);
-}
-@media (min-width: 768px) {
-  .login-mobile-brand { display: none; }
-}
-.login-mobile-brand__logo {
-  width: 40px;
-  height: 40px;
-  border-radius: var(--radius-md);
-  background: rgba(255,255,255,0.1);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-.login-mobile-brand__name {
-  font-size: 15px;
-  font-weight: 700;
-  color: white;
-}
-.login-mobile-brand__sub {
-  font-size: 11px;
-  color: rgba(255,255,255,0.55);
-}
-
-.login-form-panel { flex: 1; display: flex; align-items: center; justify-content: center; padding: var(--space-4) var(--space-2); }
-.login-form-wrap { width: 100%; max-width: 360px; display: flex; flex-direction: column; gap: var(--space-3); }
-.login-form-header { display: flex; flex-direction: column; gap: 4px; }
-.login-form-title { font-size: 22px; font-weight: 700; color: white; letter-spacing: -0.02em; }
-.login-form-subtitle { font-size: 13px; color: rgba(255,255,255,0.55); }
-
-.login-form { display: flex; flex-direction: column; gap: var(--space-2); }
-.login-field { display: flex; flex-direction: column; gap: 6px; position: relative; }
-.login-label { font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.7); letter-spacing: 0.01em; max-width: none; }
-
-.login-input {
-  height: 44px; width: 100%;
-  border: 1px solid rgba(255,255,255,0.15);
-  border-radius: var(--radius-md);
-  padding: 0 12px;
-  font-family: var(--font-body); font-size: 15px;
-  color: white; background: rgba(255,255,255,0.08); outline: none;
-}
-.login-input:focus { border-color: rgba(255,255,255,0.4); background: rgba(255,255,255,0.12); }
-.login-input::placeholder { color: rgba(255,255,255,0.3); }
-
-.login-pw-toggle { position: absolute; right: 10px; bottom: 12px; color: rgba(255,255,255,0.4); background: none; border: none; cursor: pointer; padding: 0; display: flex; }
-.login-pw-toggle:hover { color: rgba(255,255,255,0.8); }
-
-.login-error {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 10px 12px;
-  background: rgba(239,68,68,0.18);
-  border: 1px solid rgba(255,255,255,0.15);
-  border-radius: var(--radius-md);
-  font-size: 13px;
-  color: #fca5a5;
-}
-
-.login-btn {
-  height: 44px; width: 100%;
-  background: white; color: var(--brand-900);
-  border: none; border-radius: var(--radius-md);
-  font-family: var(--font-body); font-size: 15px; font-weight: 700;
-  cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 4px;
-}
-.login-btn:hover:not(:disabled) { background: #f0f0f0; }
-.login-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-.login-btn__spinner { animation: spin 0.8s linear infinite; color: var(--brand-900); }
-
-.login-divider { display: flex; align-items: center; gap: 10px; font-size: 11px; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 0.06em; }
-.login-divider::before, .login-divider::after { content: ''; flex: 1; height: 1px; background: rgba(255,255,255,0.15); }
-
-.telegram-login-section { display: flex; flex-direction: column; gap: 8px; }
-.login-tg-btn {
-  height: 40px; width: 100%;
-  background: rgba(255,255,255,0.08); color: white;
-  border: 1px solid rgba(255,255,255,0.2); border-radius: var(--radius-md);
-  font-family: var(--font-body); font-size: 13px; font-weight: 600;
-  cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
-}
-.login-tg-btn:hover:not(:disabled) { background: rgba(255,255,255,0.14); }
-.telegram-payload-card {
-  padding: 10px; border: 1px solid rgba(255,255,255,0.2);
-  border-radius: var(--radius-md); background: rgba(255,255,255,0.06);
-  display: flex; flex-direction: column; gap: 8px;
-}
-
-@keyframes spin { to { transform: rotate(360deg); } }
-.login-footer-note { font-size: 12px; color: rgba(255,255,255,0.35); text-align: center; max-width: none; }
-</style>

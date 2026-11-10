@@ -1,6 +1,15 @@
-<!-- AppBadge — compact status chip, muted semantic colors -->
+<!-- AppBadge — compact status chip, muted semantic colors, pure Tailwind -->
 <template>
-  <span class="a-badge" :class="`a-badge--${color}`">
+  <span
+    class="inline-flex items-center h-5 px-1.5 rounded text-[11px] font-semibold tracking-wide border border-border-subtle"
+    :class="[
+      (color === 'green' || color === 'emerald') ? 'bg-status-green-bg text-status-green' :
+      (color === 'amber' || color === 'orange')  ? 'bg-status-amber-bg text-status-amber' :
+      (color === 'red')                          ? 'bg-status-red-bg text-status-red' :
+      (color === 'blue' || color === 'cyan' || color === 'purple' || color === 'primary') ? 'bg-status-blue-bg text-status-blue' :
+      'bg-surface-active text-ink-secondary'
+    ]"
+  >
     <slot>{{ label }}</slot>
   </span>
 </template>
@@ -13,43 +22,3 @@ withDefaults(defineProps<{
   color: 'default',
 })
 </script>
-
-<style scoped>
-.a-badge {
-  display: inline-flex;
-  align-items: center;
-  height: 20px;
-  padding: 0 7px;
-  border-radius: 4px;
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-}
-
-.a-badge--default,
-.a-badge--gray {
-  background: var(--surface-active);
-  color: var(--text-secondary);
-}
-.a-badge--green,
-.a-badge--emerald {
-  background: var(--status-green-bg);
-  color: var(--status-green);
-}
-.a-badge--amber,
-.a-badge--orange {
-  background: var(--status-amber-bg);
-  color: var(--status-amber);
-}
-.a-badge--red {
-  background: var(--status-red-bg);
-  color: var(--status-red);
-}
-.a-badge--blue,
-.a-badge--cyan,
-.a-badge--purple,
-.a-badge--primary {
-  background: var(--status-blue-bg);
-  color: var(--status-blue);
-}
-</style>

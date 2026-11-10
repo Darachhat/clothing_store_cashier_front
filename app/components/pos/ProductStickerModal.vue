@@ -6,25 +6,25 @@
       class="fixed inset-0 bg-slate-950/60 backdrop-blur-xs z-50 flex items-center justify-center p-4"
       @click.self="$emit('update:modelValue', false)"
     >
-      <div class="pos-sticker-dialog bg-white rounded-xl border border-gray-200 shadow-2xl w-full max-w-4xl max-h-[92vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+      <div class="bg-white rounded-xl border border-border-subtle shadow-2xl w-full max-w-4xl max-h-[92vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150">
         <!-- Header (no-print) -->
-        <div class="no-print px-5 py-3 border-b border-gray-200 flex items-center justify-between bg-gray-50">
+        <div class="no-print px-5 py-3 border-b border-border-subtle flex items-center justify-between bg-surface-hover">
           <div class="flex items-center gap-2.5">
-            <div class="w-8 h-8 rounded-lg bg-gray-900 text-white flex items-center justify-center flex-shrink-0">
+            <div class="w-8 h-8 rounded-lg bg-surface-active text-text-primary flex items-center justify-center flex-shrink-0 border border-border-subtle">
               <UIcon name="i-heroicons-tag" class="w-4 h-4" />
             </div>
             <div>
-              <h3 class="text-sm font-bold text-gray-900 leading-tight kh-text">
+              <h3 class="text-sm font-bold text-text-primary leading-tight kh-text">
                 បោះពុម្ពស្លាកទំនិញ &bull; Product Label &amp; Barcode Studio
               </h3>
-              <p class="text-[11px] text-gray-500">
+              <p class="text-[11px] text-text-tertiary">
                 Modern Khmer thermal garment stickers (50×30mm, 40×30mm, 60×40mm) with Code-128 barcode
               </p>
             </div>
           </div>
           <button
             type="button"
-            class="w-7 h-7 flex items-center justify-center text-gray-400 hover:text-gray-900 rounded-md hover:bg-gray-100 transition-colors cursor-pointer"
+            class="w-7 h-7 flex items-center justify-center text-text-tertiary hover:text-text-primary rounded-md hover:bg-surface-active transition-colors cursor-pointer"
             @click="$emit('update:modelValue', false)"
           >
             <UIcon name="i-heroicons-x-mark" class="w-4 h-4" />
@@ -34,7 +34,7 @@
         <!-- Body -->
         <div class="flex-1 min-h-0 flex flex-col md:flex-row overflow-hidden">
           <!-- Left Controls (no-print) -->
-          <div class="pos-sticker-left no-print w-full md:w-80 md:shrink-0 border-b md:border-b-0 md:border-r border-gray-200 p-4 overflow-y-auto flex flex-col gap-4 bg-white">
+          <div class="no-print w-full md:w-80 md:shrink-0 border-b md:border-b-0 md:border-r border-border-subtle p-4 overflow-y-auto flex flex-col gap-4 bg-surface-card">
             <!-- Variant Search / Selector -->
             <div class="flex flex-col gap-1.5">
               <label class="text-xs font-semibold text-gray-700 kh-text">
@@ -506,17 +506,6 @@ async function downloadStickersPdf() {
 <style>
 .kh-text {
   font-family: 'Kantumruy Pro', 'Battambang', 'Battambang Local', 'Noto Sans Khmer', sans-serif;
-}
-
-.pos-sticker-dialog {
-  max-width: 54rem;
-}
-
-@media (min-width: 768px) {
-  .pos-sticker-left {
-    width: 320px !important;
-    flex-shrink: 0 !important;
-  }
 }
 
 #pos-printable-stickers.is-thermal-roll {

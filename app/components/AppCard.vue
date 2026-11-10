@@ -1,13 +1,16 @@
-<!-- AppCard — flat white surface, 8px grid, 1px border -->
+<!-- AppCard — flat white surface, 8px grid, 1px border, pure Tailwind -->
 <template>
-  <div class="a-card" :class="[noPad && 'a-card--no-pad', flush && 'a-card--flush']">
-    <div v-if="$slots.header" class="a-card__header">
+  <div
+    class="bg-surface-card border border-border-subtle overflow-hidden"
+    :class="flush ? 'rounded-none border-x-0' : 'rounded-lg'"
+  >
+    <div v-if="$slots.header" class="px-5 pt-4 pb-3 text-xs sm:text-sm font-semibold text-ink tracking-tight border-b border-border-subtle">
       <slot name="header" />
     </div>
-    <div class="a-card__body">
+    <div :class="noPad ? 'p-0' : 'p-4 sm:p-5'">
       <slot />
     </div>
-    <div v-if="$slots.footer" class="a-card__footer">
+    <div v-if="$slots.footer" class="px-5 py-3 border-t border-border-subtle bg-surface-bg">
       <slot name="footer" />
     </div>
   </div>
@@ -19,37 +22,3 @@ defineProps<{
   flush?: boolean  // no border-radius, edge-to-edge
 }>()
 </script>
-
-<style scoped>
-.a-card {
-  background: var(--surface-card);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-lg);
-  overflow: hidden;
-}
-.a-card--flush {
-  border-radius: 0;
-  border-left: none;
-  border-right: none;
-}
-.a-card--no-pad .a-card__body {
-  padding: 0;
-}
-.a-card__header {
-  padding: 16px 20px 0;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-primary);
-  letter-spacing: -0.01em;
-  border-bottom: 1px solid var(--border-subtle);
-  padding-bottom: 12px;
-}
-.a-card__body {
-  padding: 20px;
-}
-.a-card__footer {
-  padding: 12px 20px;
-  border-top: 1px solid var(--border-subtle);
-  background: var(--surface-bg);
-}
-</style>
