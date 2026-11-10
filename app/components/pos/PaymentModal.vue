@@ -106,7 +106,7 @@
                   <span class="text-xs font-bold uppercase text-gray-600 w-9 flex-shrink-0">USD</span>
                   <button
                     type="button"
-                    class="h-9 px-3 rounded-md text-sm font-mono font-semibold tabular-nums bg-white border border-gray-300 text-gray-900 hover:bg-gray-100 transition-colors cursor-pointer"
+                    class="h-10 sm:h-11 px-3.5 rounded-lg text-sm font-mono font-semibold tabular-nums bg-white border border-gray-300 text-gray-900 hover:bg-gray-100 active:bg-gray-200 transition-colors cursor-pointer touch-manipulation"
                     @click="$emit('update:tenderAmount', Number(grandTotal.toFixed(2)))"
                   >
                     Exact ${{ grandTotal.toFixed(2) }}
@@ -115,14 +115,14 @@
                     v-for="amt in fastCashPresets"
                     :key="amt"
                     type="button"
-                    class="h-9 px-3 rounded-md text-sm font-mono font-semibold tabular-nums bg-white border border-gray-300 text-gray-900 hover:bg-gray-100 transition-colors cursor-pointer"
+                    class="h-10 sm:h-11 px-3.5 rounded-lg text-sm font-mono font-semibold tabular-nums bg-white border border-gray-300 text-gray-900 hover:bg-gray-100 active:bg-gray-200 transition-colors cursor-pointer touch-manipulation"
                     @click="$emit('update:tenderAmount', amt)"
                   >
                     ${{ amt }}
                   </button>
                   <button
                     type="button"
-                    class="h-9 px-3 rounded-md text-sm font-semibold bg-white border border-gray-300 text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition-colors cursor-pointer"
+                    class="h-10 sm:h-11 px-3 rounded-lg text-sm font-semibold bg-white border border-gray-300 text-gray-600 hover:bg-gray-100 active:bg-gray-200 hover:text-gray-900 transition-colors cursor-pointer touch-manipulation"
                     title="Clear tender amount"
                     @click="$emit('update:tenderAmount', 0)"
                   >
@@ -136,7 +136,7 @@
                     v-for="riel in [20000, 50000, 100000, 200000, 400000]"
                     :key="riel"
                     type="button"
-                    class="h-9 px-3 rounded-md text-sm font-mono font-medium tabular-nums bg-white border border-gray-300 text-gray-800 hover:bg-gray-100 transition-colors cursor-pointer"
+                    class="h-10 sm:h-11 px-3.5 rounded-lg text-sm font-mono font-medium tabular-nums bg-white border border-gray-300 text-gray-800 hover:bg-gray-100 active:bg-gray-200 transition-colors cursor-pointer touch-manipulation"
                     :title="`៛${riel.toLocaleString()} ($${(riel / KHR_EXCHANGE_RATE).toFixed(2)})`"
                     @click="$emit('update:tenderAmount', Number((riel / KHR_EXCHANGE_RATE).toFixed(2)))"
                   >

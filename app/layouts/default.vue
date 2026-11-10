@@ -1,5 +1,8 @@
 <template>
   <div class="app-main-layout flex h-dvh w-screen overflow-hidden bg-slate-100 text-slate-900 font-sans">
+    <!-- Accessible Skip to Content Link (WCAG 2.1 AA) -->
+    <a href="#pos-main-content" class="skip-link">Skip to POS register</a>
+
     <!-- Active Page Viewport (Full Screen Width - No Sidebar) -->
     <div class="app-main-layout__viewport flex-1 min-w-0 min-h-0 flex flex-col overflow-hidden relative">
       <slot />

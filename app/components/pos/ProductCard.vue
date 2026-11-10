@@ -50,20 +50,20 @@
     </button>
 
     <!-- Colour swatches + sizes -->
-    <div class="px-2.5 pt-1.5 flex items-center justify-between gap-2 min-h-[28px] min-w-0">
-      <div v-if="colors.length > 0" class="flex items-center gap-0.5 flex-shrink-0">
+    <div class="px-2.5 pt-1.5 flex items-center justify-between gap-2 min-h-[32px] min-w-0">
+      <div v-if="colors.length > 0" class="flex items-center gap-1 flex-shrink-0">
         <button
           v-for="color in colors.slice(0, 4)"
           :key="color.name"
           type="button"
-          class="w-6 h-6 flex items-center justify-center rounded-full cursor-pointer"
+          class="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center rounded-full cursor-pointer touch-manipulation focus-visible:outline-2 focus-visible:outline-gray-900 focus-visible:outline-offset-1"
           :aria-label="`Colour ${color.name}`"
           :aria-pressed="selectedColor === color.name"
           :title="color.name"
           @click.stop="$emit('selectColor', color.name)"
         >
           <span
-            class="w-4 h-4 rounded-full border border-gray-300 block"
+            class="w-4 h-4 sm:w-5 sm:h-5 rounded-full border border-gray-300 block"
             :class="selectedColor === color.name ? 'ring-2 ring-gray-900 ring-offset-1' : ''"
             :style="{ background: color.hex || '#6B7280' }"
           />
@@ -88,7 +88,7 @@
 
       <button
         type="button"
-        class="h-9 px-3 rounded-md bg-gray-900 text-white hover:bg-gray-700 disabled:bg-gray-200 disabled:text-gray-600 disabled:cursor-not-allowed flex items-center justify-center gap-1 transition-colors cursor-pointer text-sm font-semibold flex-shrink-0"
+        class="h-10 sm:h-11 px-3.5 rounded-lg bg-gray-900 text-white hover:bg-gray-700 active:scale-[0.98] disabled:bg-gray-200 disabled:text-gray-600 disabled:cursor-not-allowed flex items-center justify-center gap-1.5 transition-all cursor-pointer text-sm font-semibold flex-shrink-0 touch-manipulation select-none"
         :title="stock <= 0 ? 'Out of stock' : needsChoice ? `Choose variant for ${product.name}` : `Add ${product.name} to order`"
         :disabled="stock <= 0"
         @click.stop="$emit('quickAdd')"

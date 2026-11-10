@@ -34,7 +34,9 @@
       <div class="flex-1 min-w-0 min-h-0 flex overflow-hidden relative">
         <!-- ─── Product Selection Section ────────────────────────────── -->
         <main
-          class="flex-1 min-w-0 min-h-0 flex flex-col overflow-hidden p-2.5 sm:p-3 gap-2.5 no-print"
+          id="pos-main-content"
+          tabindex="-1"
+          class="flex-1 min-w-0 min-h-0 flex flex-col overflow-hidden p-2.5 sm:p-3 gap-2.5 no-print outline-none"
           :class="{ 'pb-20 lg:pb-2.5': posStore.itemCount > 0 }"
           aria-label="Products"
         >
@@ -730,8 +732,21 @@ const isCheckoutDisabled = computed(() => {
 
 const fastCashPresets = computed(() => {
   const tot = posStore.grandTotal
-  const bases = [5, 10, 20, 50, 100, 200]
-  return bases.filter((b) => b >= tot).slice(0, 4)
+  if (tot <= 0) return [5, 10, 20, 50, 100]
+
+  const presets = new Set<number>()
+  const ceil5 = Math.ceil(tot / 5) * 5
+  if (ceil5 > tot) presets.add(ceil5)
+
+  const ceil10 = Math.ceil(tot / 10) * 10
+  if (ceil10 > tot) presets.add(ceil10)
+
+  const bills = [10, 20, 50, 100]
+  for (const bill of bills) {
+    if (bill > tot) presets.add(bill)
+  }
+
+  return Array.from(presets).sort((a, b) => a - b).slice(0, 4)
 })
 
 // Filtered and grouped products — now server-side via posProducts composable.
