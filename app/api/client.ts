@@ -59,7 +59,8 @@ export function createCashierApiClient() {
     async onResponseError({ response }) {
       if (response.status === 401) {
         const refreshed = await authStore.refreshSession()
-        if (!refreshed) {
+        // Log out only when the server explicitly rejected the refresh token (not on network/5xx blips).
+        if (!refreshed && authStore.refreshRejected) {
           await authStore.logout()
           if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
             window.location.replace('/login')
