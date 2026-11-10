@@ -50,20 +50,3 @@ import { useAppToast } from '~/composables/useAppToast'
 const { toasts, dismiss } = useAppToast()
 </script>
 
-<style scoped>
-.a-toast-enter-active,
-.a-toast-leave-active {
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-}
-.a-toast-enter-from {
-  opacity: 0;
-  transform: translateY(-12px) scale(0.96);
-}
-.a-toast-leave-to {
-  opacity: 0;
-  transform: translateX(20px) scale(0.96);
-}
-.a-toast-move {
-  transition: transform 0.2s ease;
-}
-</style>
