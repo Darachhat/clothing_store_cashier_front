@@ -27,7 +27,7 @@
 
       <!-- Printable 80mm Slip Body -->
       <div class="p-4 overflow-y-auto font-mono text-xs text-gray-900 space-y-3 bg-white">
-        <!-- Store Brand Header -->
+        <!-- Store BRAND_MODEL Header -->
         <div class="text-center space-y-0.5 border-b border-gray-300 pb-3">
           <p class="font-bold text-sm tracking-wider uppercase text-gray-900">
             {{ storeName || 'CLOTHING STORE' }}

@@ -61,17 +61,29 @@ export default defineEventHandler(async (event) => {
   }
 
   const controller = new AbortController()
-  // 45s upstream timeout to accommodate Render / backend server cold starts
-  const timeoutId = setTimeout(() => controller.abort(), 45000)
+  // 90s upstream timeout: Render free instances sleep and can take 50s+ to wake (stays under Cloudflare's 100s limit)
+  const timeoutId = setTimeout(() => controller.abort(), 90000)
 
   try {
-    const upstream = await fetch(targetUrl, {
+    const doFetch = () => fetch(targetUrl, {
       method,
       headers: forwardHeaders,
       body,
       redirect: 'manual',
       signal: controller.signal,
     })
+    let upstream: Response
+    try {
+      upstream = await doFetch()
+    } catch (firstErr: any) {
+      // A waking instance can drop the first connection; retry idempotent requests once.
+      if ((method === 'GET' || method === 'HEAD') && firstErr?.name !== 'AbortError') {
+        await new Promise((r) => setTimeout(r, 1500))
+        upstream = await doFetch()
+      } else {
+        throw firstErr
+      }
+    }
 
     const data = await upstream.arrayBuffer()
     const resHeaders = new Headers()

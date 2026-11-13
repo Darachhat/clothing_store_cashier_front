@@ -1,6 +1,6 @@
 <template>
   <div class="flex items-center gap-3 bg-white px-3 py-2 rounded-lg border border-gray-200 select-none flex-shrink-0">
-    <!-- Category navigation -->
+    <!-- CATEGORY_MODEL navigation -->
     <nav
       class="flex-1 min-w-0 flex items-center gap-1.5 overflow-x-auto pos-scroll pb-0.5"
       aria-label="Product categories"
@@ -32,7 +32,7 @@
       </button>
     </nav>
 
-    <!-- Brand filter, active search chip, result count -->
+    <!-- BRAND_MODEL filter, active search chip, result count -->
     <div class="flex items-center gap-2 flex-shrink-0 pl-3 border-l border-gray-200">
       <div
         v-if="searchQuery"

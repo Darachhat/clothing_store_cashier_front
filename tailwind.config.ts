@@ -51,9 +51,9 @@ export default ({
           inverse: '#FFFFFF',   // white text on dark bg
         },
 
-        // Brand palette — charcoal/navy, no rainbow
+        // BRAND_MODEL palette — charcoal/navy, no rainbow
         brand: {
-          50:  '#F9FAFB',
+          50: '#F9FAFB',
           700: '#374151',
           800: '#1F2937',
           900: '#111827',  // main brand accent  (`bg-brand-900`, `text-brand-900`)
@@ -68,13 +68,13 @@ export default ({
 
         // Status — muted, matches --status-* vars
         status: {
-          green:    '#1A7F37',
+          green: '#1A7F37',
           'green-bg': '#DCFCE7',
-          amber:    '#92400E',
+          amber: '#92400E',
           'amber-bg': '#FEF3C7',
-          red:      '#9B1C1C',
+          red: '#9B1C1C',
           'red-bg': '#FEE2E2',
-          blue:     '#1D4ED8',
+          blue: '#1D4ED8',
           'blue-bg': '#DBEAFE',
         },
       },

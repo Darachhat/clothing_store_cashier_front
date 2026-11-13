@@ -142,7 +142,7 @@ async function onLogout() {
     ]"
     :aria-label="ariaLabel || 'Main navigation'"
   >
-    <!-- ─── Header: Brand Logo & Title ─────────────────────────────── -->
+    <!-- ─── Header: BRAND_MODEL Logo & Title ─────────────────────────────── -->
     <div
       class="h-12 flex items-center border-b border-border-subtle shrink-0 w-full"
       :class="isRail ? 'justify-center px-0' : 'justify-between px-2.5'"

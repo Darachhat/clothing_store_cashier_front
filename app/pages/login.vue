@@ -31,7 +31,7 @@
 
     <div class="flex-1 flex items-center justify-center p-4 sm:p-8">
       <div class="w-full max-w-[360px] flex flex-col gap-6">
-        <!-- Mobile Brand Header (visible below 768px) -->
+        <!-- Mobile BRAND_MODEL Header (visible below 768px) -->
         <div class="flex md:hidden items-center gap-3 pb-3 border-b border-white/10">
           <div class="w-10 h-10 rounded-md bg-white/10 flex items-center justify-center shrink-0 overflow-hidden">
             <img

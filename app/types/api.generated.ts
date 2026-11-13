@@ -2068,10 +2068,10 @@ export type PurchaseFormRequest = PAYMENT_PURCHASE_FORM_REQUEST_SCHEMA;
 export type PurchaseFormResponse = PAYMENT_PURCHASE_FORM_RESPONSE_SCHEMA;
 
 /** Canonical Catalog Entities */
-export type Category = CATEGORY_RESPONSE_SCHEMA;
+export type CATEGORY_MODEL = CATEGORY_RESPONSE_SCHEMA;
 export type CategoryCreate = CATEGORY_CREATE_SCHEMA;
 export type CategoryUpdate = CATEGORY_UPDATE_SCHEMA;
-export type Brand = BRAND_RESPONSE_SCHEMA;
+export type BRAND_MODEL = BRAND_RESPONSE_SCHEMA;
 export type BrandCreate = BRAND_CREATE_SCHEMA;
 export type BrandUpdate = BRAND_UPDATE_SCHEMA;
 export type Color = COLOR_RESPONSE_SCHEMA;
@@ -2085,10 +2085,10 @@ export type Promotion = PROMOTION_RESPONSE_SCHEMA;
 export type CouponValidationRequest = COUPON_VALIDATION_REQUEST_SCHEMA;
 export type CouponValidationResponse = COUPON_VALIDATION_RESPONSE_SCHEMA;
 
-/** Canonical User, Role & Auth Entities */
+/** Canonical User, ROLE_MODEL & Auth Entities */
 export type User = USER_RESPONSE_SCHEMA;
-export type Role = ROLE_RESPONSE_SCHEMA;
-export type Permission = PERMISSION_RESPONSE_SCHEMA;
+export type ROLE_MODEL = ROLE_RESPONSE_SCHEMA;
+export type PERMISSION_MODEL = PERMISSION_RESPONSE_SCHEMA;
 export type TokenResponse = TOKEN_RESPONSE_SCHEMA;
 export type LoginResponse = LOGIN_RESPONSE_SCHEMA;
 
